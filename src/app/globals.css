@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-void text-slate-200 antialiased;
+  background-image:
+    radial-gradient(60rem 60rem at 80% -10%, rgba(47, 212, 199, 0.08), transparent 60%),
+    radial-gradient(50rem 50rem at -10% 20%, rgba(12, 74, 69, 0.25), transparent 55%);
+  background-attachment: fixed;
+}
+
+@layer components {
+  .container-x {
+    @apply mx-auto w-full max-w-6xl px-5;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-teal/50 disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply btn bg-teal text-void hover:bg-teal/90;
+  }
+  .btn-ghost {
+    @apply btn border border-edge bg-panel/60 text-slate-200 hover:border-teal/50 hover:text-white;
+  }
+  .btn-danger {
+    @apply btn border border-red-500/40 bg-red-500/10 text-red-300 hover:bg-red-500/20;
+  }
+  .card {
+    @apply rounded-xl border border-edge bg-panel/70 p-5 backdrop-blur;
+  }
+  .input {
+    @apply w-full rounded-md border border-edge bg-void/70 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-teal/60 focus:outline-none focus:ring-1 focus:ring-teal/40;
+  }
+  .label {
+    @apply mb-1 block text-xs font-medium uppercase tracking-wide text-slate-400;
+  }
+  .badge {
+    @apply inline-flex items-center rounded-full border border-edge bg-panel-2 px-2 py-0.5 text-xs font-medium text-slate-300;
+  }
+  .link {
+    @apply text-teal hover:text-teal/80 underline-offset-2 hover:underline;
+  }
+}

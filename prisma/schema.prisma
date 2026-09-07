@@ -1,0 +1,298 @@
+// ASCENITH RAIDZONE — data model
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Auth (Auth.js) — identity only
+// ---------------------------------------------------------------------------
+
+model User {
+  id            String    @id @default(cuid())
+  email         String?   @unique
+  emailVerified DateTime?
+  passwordHash  String?
+  name          String?
+  image         String?
+
+  discordId       String? @unique
+  discordUsername String?
+  discordAvatar   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  accounts  Account[]
+  sessions  Session[]
+  player    Player?
+  staffRole StaffRole?
+
+  authoredNotes StaffNote[] @relation("NoteAuthor")
+  authoredFlags Flag[]      @relation("FlagAuthor")
+  createdEvents Event[]     @relation("EventCreator")
+  markedAttend  EventAttendance[] @relation("AttendanceMarker")
+  grantedReward Reward[]    @relation("RewardGranter")
+  auditLogs     AuditLog[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ---------------------------------------------------------------------------
+// Community
+// ---------------------------------------------------------------------------
+
+enum PlayerStatus {
+  PENDING
+  ACTIVE
+  INACTIVE
+  BANNED
+}
+
+enum Platform {
+  PC
+  PLAYSTATION
+  XBOX
+}
+
+model Player {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Once Human identity
+  characterName String?
+  platform      Platform?
+  region        String? // server / world / region
+  powerLevel    Int?
+
+  // Contact & scheduling
+  timezone  String?
+  playHours String?
+  languages String?
+
+  // Community
+  status    PlayerStatus @default(PENDING)
+  factionId String?
+  faction   Faction?     @relation(fields: [factionId], references: [id], onDelete: SetNull)
+  joinedAt  DateTime     @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  signups     EventSignup[]
+  attendance  EventAttendance[]
+  rewards     Reward[]
+  notes       StaffNote[]
+  flags       Flag[]
+
+  @@index([status])
+  @@index([factionId])
+}
+
+model Faction {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  tag         String?
+  color       String? // hex
+  description String?
+  createdAt   DateTime @default(now())
+
+  players Player[]
+}
+
+model StaffRole {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   Role
+  createdAt DateTime @default(now())
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  MODERATOR
+}
+
+model StaffNote {
+  id        String   @id @default(cuid())
+  playerId  String
+  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation("NoteAuthor", fields: [authorId], references: [id])
+  body      String
+  pinned    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([playerId])
+}
+
+enum FlagType {
+  NOTE
+  WARNING
+  BAN
+}
+
+model Flag {
+  id        String   @id @default(cuid())
+  playerId  String
+  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation("FlagAuthor", fields: [authorId], references: [id])
+  type      FlagType @default(NOTE)
+  reason    String
+  createdAt DateTime @default(now())
+
+  @@index([playerId])
+}
+
+// ---------------------------------------------------------------------------
+// Events
+// ---------------------------------------------------------------------------
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  COMPLETED
+  CANCELLED
+}
+
+enum SignupState {
+  SIGNED_UP
+  WAITLIST
+  WITHDRAWN
+}
+
+model Event {
+  id             String      @id @default(cuid())
+  title          String
+  description    String?
+  startsAt       DateTime
+  endsAt         DateTime?
+  server         String? // which custom server / world
+  maxSlots       Int?
+  rewardPoolText String?
+  status         EventStatus @default(DRAFT)
+
+  discordMessageId String?
+  discordChannelId String?
+
+  createdById String
+  createdBy   User   @relation("EventCreator", fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  signups    EventSignup[]
+  attendance EventAttendance[]
+  rewards    Reward[]
+
+  @@index([status, startsAt])
+}
+
+model EventSignup {
+  id        String      @id @default(cuid())
+  eventId   String
+  event     Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  playerId  String
+  player    Player      @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  state     SignupState @default(SIGNED_UP)
+  createdAt DateTime    @default(now())
+
+  @@unique([eventId, playerId])
+  @@index([eventId])
+}
+
+model EventAttendance {
+  id        String   @id @default(cuid())
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  playerId  String
+  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  attended  Boolean  @default(true)
+  markedById String
+  markedBy   User     @relation("AttendanceMarker", fields: [markedById], references: [id])
+  markedAt  DateTime @default(now())
+
+  @@unique([eventId, playerId])
+  @@index([eventId])
+}
+
+// ---------------------------------------------------------------------------
+// Rewards
+// ---------------------------------------------------------------------------
+
+model Reward {
+  id           String   @id @default(cuid())
+  playerId     String
+  player       Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  eventId      String?
+  event        Event?   @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  item         String
+  amount       String?
+  reason       String
+  isPublic     Boolean  @default(false)
+  proofImageUrl String?
+  grantedById  String
+  grantedBy    User     @relation("RewardGranter", fields: [grantedById], references: [id])
+  grantedAt    DateTime @default(now())
+
+  @@index([playerId])
+  @@index([isPublic, grantedAt])
+}
+
+// ---------------------------------------------------------------------------
+// Audit
+// ---------------------------------------------------------------------------
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  actor      User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  action     String
+  targetType String?
+  targetId   String?
+  meta       Json?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+}
