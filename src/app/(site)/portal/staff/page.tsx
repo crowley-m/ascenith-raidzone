@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { fmtDate } from "@/lib/format";
 import { StaffRoleForm } from "@/components/portal/staff-role-form";
 import { ConfirmButton } from "@/components/portal/confirm-button";
-import { removeStaffRole } from "@/app/portal/actions";
+import { removeStaffRole } from "@/app/(site)/portal/actions";
 
 export const dynamic = "force-dynamic";
 

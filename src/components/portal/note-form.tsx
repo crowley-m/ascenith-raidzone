@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef } from "react";
-import { addNote } from "@/app/portal/actions";
+import { addNote } from "@/app/(site)/portal/actions";
 
 export function NoteForm({ playerId }: { playerId: string }) {
   const [state, action, pending] = useActionState(addNote, {});

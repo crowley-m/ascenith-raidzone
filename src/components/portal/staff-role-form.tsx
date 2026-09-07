@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef } from "react";
-import { setStaffRole } from "@/app/portal/actions";
+import { setStaffRole } from "@/app/(site)/portal/actions";
 
 export function StaffRoleForm() {
   const [state, action, pending] = useActionState(setStaffRole, {});

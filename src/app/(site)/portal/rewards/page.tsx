@@ -5,7 +5,7 @@ import { can } from "@/lib/rbac";
 import { fmtDate } from "@/lib/format";
 import { RewardForm } from "@/components/portal/reward-form";
 import { ConfirmButton } from "@/components/portal/confirm-button";
-import { deleteReward } from "@/app/portal/actions";
+import { deleteReward } from "@/app/(site)/portal/actions";
 
 export const dynamic = "force-dynamic";
 

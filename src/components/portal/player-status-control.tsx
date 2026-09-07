@@ -2,7 +2,7 @@
 
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { setPlayerStatus } from "@/app/portal/actions";
+import { setPlayerStatus } from "@/app/(site)/portal/actions";
 import type { PlayerStatus } from "@prisma/client";
 
 const OPTIONS: PlayerStatus[] = ["PENDING", "ACTIVE", "INACTIVE", "BANNED"];

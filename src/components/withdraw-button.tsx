@@ -2,7 +2,7 @@
 
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { withdrawFromEvent } from "@/app/events/actions";
+import { withdrawFromEvent } from "@/app/(site)/events/actions";
 
 export function WithdrawButton({ eventId }: { eventId: string }) {
   const [pending, start] = useTransition();

@@ -9,7 +9,7 @@ import { NoteForm } from "@/components/portal/note-form";
 import { FlagForm } from "@/components/portal/flag-form";
 import { RewardForm } from "@/components/portal/reward-form";
 import { ConfirmButton } from "@/components/portal/confirm-button";
-import { deleteNote, deleteReward } from "@/app/portal/actions";
+import { deleteNote, deleteReward } from "@/app/(site)/portal/actions";
 
 export const dynamic = "force-dynamic";
 

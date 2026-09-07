@@ -2,7 +2,7 @@ import { requirePermission } from "@/lib/session";
 import { db } from "@/lib/db";
 import { FactionForm } from "@/components/portal/faction-form";
 import { ConfirmButton } from "@/components/portal/confirm-button";
-import { deleteFaction } from "@/app/portal/actions";
+import { deleteFaction } from "@/app/(site)/portal/actions";
 
 export const dynamic = "force-dynamic";
 

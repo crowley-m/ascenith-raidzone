@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef } from "react";
-import { saveFaction } from "@/app/portal/actions";
+import { saveFaction } from "@/app/(site)/portal/actions";
 
 export function FactionForm() {
   const [state, action, pending] = useActionState(saveFaction, {});

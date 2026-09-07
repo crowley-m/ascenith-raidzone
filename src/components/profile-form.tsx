@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { updateProfileAction, type ProfileState } from "@/app/me/actions";
+import { updateProfileAction, type ProfileState } from "@/app/(site)/me/actions";
 
 type PlayerInit = {
   characterName: string | null;

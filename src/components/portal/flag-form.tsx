@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef } from "react";
-import { addFlag } from "@/app/portal/actions";
+import { addFlag } from "@/app/(site)/portal/actions";
 
 export function FlagForm({ playerId }: { playerId: string }) {
   const [state, action, pending] = useActionState(addFlag, {});

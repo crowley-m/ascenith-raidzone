@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef } from "react";
-import { grantReward } from "@/app/portal/actions";
+import { grantReward } from "@/app/(site)/portal/actions";
 
 export function RewardForm({
   players,

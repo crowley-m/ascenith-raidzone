@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { saveEvent } from "@/app/portal/actions";
+import { saveEvent } from "@/app/(site)/portal/actions";
 
 type EventInit = {
   id: string;

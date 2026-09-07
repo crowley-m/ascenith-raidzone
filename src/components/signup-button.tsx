@@ -2,7 +2,7 @@
 
 import { useTransition, useState } from "react";
 import { useRouter } from "next/navigation";
-import { signUpForEvent, withdrawFromEvent } from "@/app/events/actions";
+import { signUpForEvent, withdrawFromEvent } from "@/app/(site)/events/actions";
 
 export function SignupButton({
   eventId,

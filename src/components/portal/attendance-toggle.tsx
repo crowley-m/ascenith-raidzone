@@ -2,7 +2,7 @@
 
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { markAttendance } from "@/app/portal/actions";
+import { markAttendance } from "@/app/(site)/portal/actions";
 
 export function AttendanceToggle({
   eventId,
