@@ -118,14 +118,5 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
       return token;
     },
-    async session({ session, token }) {
-      if (session.user) {
-        session.user.id = (token.uid as string) ?? session.user.id;
-        session.user.role = (token.role as never) ?? null;
-        session.user.playerId = (token.playerId as never) ?? null;
-        session.user.playerStatus = (token.playerStatus as never) ?? null;
-      }
-      return session;
-    },
   },
 });
