@@ -145,76 +145,88 @@ export function useImmersive(rootRef: RefObject<HTMLDivElement | null>, ready: b
           }
         }
 
-        /* panels */
+        /* reveal helper — content stays visible at rest; animates once on enter */
+        const revealOnEnter = (
+          trigger: Element,
+          start: string,
+          run: () => void,
+        ) => {
+          ScrollTrigger.create({ trigger, start, once: true, onEnter: run });
+        };
+
         if (!reduce) {
           qa("[data-panel]").forEach((p) => {
             const h2 = p.querySelector<HTMLElement>("[data-split]");
             const metas = Array.from(p.querySelectorAll("[data-meta]"));
+            let chars: Element[] = [];
             if (SplitText && h2) {
               const split = new SplitText(h2, { type: "words,chars", charsClass: "rz-char" });
+              chars = split.chars;
               disposers.push(() => split.revert());
-              gsap.from(split.chars, {
-                yPercent: 120,
-                autoAlpha: 0,
-                stagger: 0.02,
-                duration: 0.9,
-                ease: "expo.out",
-                scrollTrigger: { trigger: p, start: "top 74%" },
-              });
-            } else if (h2) {
-              gsap.from(h2, {
-                y: 40,
-                autoAlpha: 0,
-                duration: 0.8,
-                scrollTrigger: { trigger: p, start: "top 74%" },
-              });
             }
-            if (metas.length) {
-              gsap.from(metas, {
-                y: 24,
-                autoAlpha: 0,
-                stagger: 0.1,
-                duration: 0.7,
-                ease: "power2.out",
-                scrollTrigger: { trigger: p, start: "top 70%" },
-              });
-            }
+            revealOnEnter(p, "top 80%", () => {
+              if (chars.length) {
+                gsap.fromTo(
+                  chars,
+                  { yPercent: 60, rotateX: -55, transformOrigin: "50% 100%" },
+                  {
+                    yPercent: 0,
+                    rotateX: 0,
+                    stagger: 0.02,
+                    duration: 0.8,
+                    ease: "power3.out",
+                  },
+                );
+              } else if (h2) {
+                gsap.fromTo(h2, { y: 34 }, { y: 0, duration: 0.8, ease: "power3.out" });
+              }
+              if (metas.length) {
+                gsap.fromTo(
+                  metas,
+                  { y: 28 },
+                  { y: 0, stagger: 0.08, duration: 0.7, ease: "power2.out" },
+                );
+              }
+            });
           });
 
-          /* finale */
           const finale = q("#enlist");
-          qa("[data-fin]").forEach((f) => {
-            if (SplitText) {
-              const split = new SplitText(f, { type: "chars", charsClass: "rz-char" });
-              disposers.push(() => split.revert());
-              gsap.from(split.chars, {
-                yPercent: 130,
-                rotationX: -60,
-                autoAlpha: 0,
-                stagger: 0.03,
-                duration: 0.9,
-                ease: "expo.out",
-                scrollTrigger: { trigger: finale ?? f, start: "top 62%" },
-              });
-            } else {
-              gsap.from(f, {
-                y: 40,
-                autoAlpha: 0,
-                duration: 0.8,
-                scrollTrigger: { trigger: finale ?? f, start: "top 70%" },
-              });
-            }
+          const finBits = qa("[data-fin]");
+          const finSplits = finBits.map((f) => {
+            if (!SplitText) return null;
+            const split = new SplitText(f, { type: "chars", charsClass: "rz-char" });
+            disposers.push(() => split.revert());
+            return split;
           });
           const finMetas = qa("#enlist [data-meta]");
-          if (finMetas.length) {
-            gsap.from(finMetas, {
-              y: 24,
-              autoAlpha: 0,
-              stagger: 0.12,
-              duration: 0.7,
-              scrollTrigger: { trigger: finale ?? root, start: "top 52%" },
+          revealOnEnter(finale ?? root, "top 68%", () => {
+            finBits.forEach((f, i) => {
+              const split = finSplits[i];
+              if (split) {
+                gsap.fromTo(
+                  split.chars,
+                  { yPercent: 70, rotateX: -55, transformOrigin: "50% 100%" },
+                  {
+                    yPercent: 0,
+                    rotateX: 0,
+                    stagger: 0.03,
+                    duration: 0.8,
+                    ease: "power3.out",
+                    delay: i * 0.12,
+                  },
+                );
+              } else {
+                gsap.fromTo(f, { y: 34 }, { y: 0, duration: 0.8, ease: "power3.out" });
+              }
             });
-          }
+            if (finMetas.length) {
+              gsap.fromTo(
+                finMetas,
+                { y: 26 },
+                { y: 0, stagger: 0.1, duration: 0.7, ease: "power2.out", delay: 0.2 },
+              );
+            }
+          });
         }
 
         /* anchor links */

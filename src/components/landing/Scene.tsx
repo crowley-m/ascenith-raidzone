@@ -48,7 +48,7 @@ void main(){
 }`;
 
 const FRAG = /* glsl */ `
-uniform float uTime; uniform float uGlow; uniform float uPulse;
+uniform float uTime; uniform float uGlow; uniform float uPulse; uniform float uFade;
 varying vec3 vNr; varying vec3 vV; varying float vNz;
 void main(){
   float f = pow(1.0 - clamp(dot(vNr, vV), 0.0, 1.0), 2.6);
@@ -57,7 +57,8 @@ void main(){
   vec3 crim = vec3(1.0, 0.24, 0.32);
   vec3 col = base + crim * crack * (0.55 + uPulse * 1.4) + crim * f * 0.7;
   col += crim * 0.10 * (0.5 + 0.5 * sin(uTime * 0.5 + vNz * 4.0));
-  float a = 0.30 + f * 0.55 + crack * 0.26 + uPulse * 0.3;
+  float a = (0.30 + f * 0.55 + crack * 0.26 + uPulse * 0.3) * uFade;
+  if (a < 0.002) discard;
   gl_FragColor = vec4(col, a);
 }`;
 
@@ -75,6 +76,7 @@ function Crystal() {
           uTurb: { value: 0.2 },
           uGlow: { value: 0.3 },
           uPulse: { value: 0 },
+          uFade: { value: 1 },
         },
         vertexShader: VERT,
         fragmentShader: FRAG,
@@ -90,6 +92,7 @@ function Crystal() {
   const epulse = useRef(0);
   const erot = useRef(0);
   const ez = useRef(6.2);
+  const efade = useRef(1);
   const placed = useRef(false);
 
   useFrame((st, dt) => {
@@ -106,10 +109,18 @@ function Crystal() {
     const hp = S.hero;
     const pg = S.page;
 
+    // the crystal belongs to the hero — it spins up, flares, then collapses and
+    // is gone by the time you reach the first panel.
+    const vanish = THREE.MathUtils.smoothstep(hp, 0.55, 0.9); // 0 -> 1 across the hero exit
+    const targetFade = 1 - vanish;
+    efade.current += (targetFade - efade.current) * 0.16;
+
     (mat.uniforms.uTime.value as number) = st.clock.elapsedTime;
     mat.uniforms.uPulse.value = epulse.current;
-    mat.uniforms.uTurb.value = 0.18 + hp * 0.9 + Math.min(S.scrollVel * 0.4, 0.5);
-    mat.uniforms.uGlow.value = 0.26 + hp * 1.4;
+    mat.uniforms.uTurb.value = 0.16 + hp * 0.3 + Math.min(S.scrollVel * 0.35, 0.4);
+    mat.uniforms.uGlow.value = 0.26 + hp * 0.6 + vanish * 0.9; // a flare as it goes
+    mat.uniforms.uFade.value = efade.current;
+    if (mesh.current) mesh.current.visible = efade.current > 0.01;
 
     if (mesh.current) {
       const m = mesh.current;
@@ -121,17 +132,20 @@ function Crystal() {
       }
       m.position.x += (driftX - m.position.x) * 0.05;
       m.position.y += (driftY - m.position.y) * 0.05;
-      m.scale.setScalar(baseS + hp * 0.5 + epulse.current * 0.05);
-      erot.current += d * 0.12;
+      // brief swell, then collapse to nothing
+      const swell = 1 + Math.sin(vanish * Math.PI) * 0.16;
+      const shrink = 1 - THREE.MathUtils.smoothstep(hp, 0.6, 0.92);
+      m.scale.setScalar((baseS * swell * shrink) + epulse.current * 0.05);
+      erot.current += d * (0.12 + vanish * 0.9);
       m.rotation.set(
-        0.12 + hp * 0.8 + smy.current * 0.4,
-        erot.current + hp * 2.2 + smx.current * 0.6,
-        hp * 0.4,
+        0.12 + smy.current * 0.4,
+        erot.current + smx.current * 0.6,
+        vanish * 0.6,
       );
     }
 
-    // fly toward / into the crystal across the hero
-    const tz = 6.2 - hp * 4.6;
+    // a gentle push-in across the hero (not all the way through — that got messy)
+    const tz = 6.2 - hp * 1.2;
     ez.current += (tz - ez.current) * 0.08;
     st.camera.position.z = ez.current;
     st.camera.position.x += (smx.current * 0.35 - st.camera.position.x) * 0.04;

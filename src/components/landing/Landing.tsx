@@ -69,9 +69,7 @@ export function Landing() {
         </div>
       </header>
 
-      <div id="rz-wrapper">
-        <div id="rz-content">
-          <section className={`${s.hero} ${s.wrap}`} id="top">
+      <section className={`${s.hero} ${s.wrap}`} id="top">
             <h1 className={s.kin} aria-label="RAIDZONE" data-kin>
               <span className={s.kinLine}>
                 <i>RAID</i>
@@ -103,7 +101,7 @@ export function Landing() {
 
           <section className={s.panel} id="raids" data-panel>
             <div className={s.panelInner}>
-              <span className={s.idx} data-meta>
+              <span className={s.eyebrow} data-meta>
                 01 — The server
               </span>
               <h2 data-split>Our server.</h2>
@@ -116,7 +114,7 @@ export function Landing() {
 
           <section className={`${s.panel} ${s.panelRight}`} data-panel>
             <div className={s.panelInner}>
-              <span className={s.idx} data-meta>
+              <span className={s.eyebrow} data-meta>
                 02 — The operations
               </span>
               <h2 data-split>Weekly raids.</h2>
@@ -129,7 +127,7 @@ export function Landing() {
 
           <section className={s.panel} id="rewards" data-panel>
             <div className={s.panelInner}>
-              <span className={s.idx} data-meta>
+              <span className={s.eyebrow} data-meta>
                 03 — The split
               </span>
               <h2 data-split>In-game rewards.</h2>
@@ -171,9 +169,7 @@ export function Landing() {
             <span className={s.footerCo}>
               Run by NOT POTATOZIE · not affiliated with the developers of Once Human.
             </span>
-          </footer>
-        </div>
-      </div>
+      </footer>
     </div>
   );
 }

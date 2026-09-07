@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Oxanium, Syne, Manrope } from "next/font/google";
+import { Inter, Oxanium, Archivo } from "next/font/google";
 import "./globals.css";
 
 const sans = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
@@ -9,16 +9,11 @@ const display = Oxanium({
   variable: "--font-display",
   display: "swap",
 });
-const syne = Syne({
+// landing display face — a clean, legible grotesque, used heavy
+const archivo = Archivo({
   subsets: ["latin"],
-  weight: ["700", "800"],
-  variable: "--font-syne",
-  display: "swap",
-});
-const manrope = Manrope({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-manrope",
+  weight: ["600", "700", "800", "900"],
+  variable: "--font-archivo",
   display: "swap",
 });
 
@@ -41,7 +36,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="en"
-      className={`${sans.variable} ${display.variable} ${syne.variable} ${manrope.variable}`}
+      className={`${sans.variable} ${display.variable} ${archivo.variable}`}
     >
       <body className="min-h-screen font-sans">{children}</body>
     </html>
