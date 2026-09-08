@@ -8,6 +8,11 @@ import type { NextAuthConfig } from "next-auth";
 export const authConfig = {
   pages: { signIn: "/login" },
   trustHost: true,
+  // Served over HTTPS behind nginx (on :8443). Force secure cookies so the
+  // sign-in and callback legs always agree on the cookie name — otherwise the
+  // PKCE verifier is encoded/decoded with a different salt and Discord login
+  // fails with "pkceCodeVerifier value could not be parsed".
+  useSecureCookies: true,
   session: { strategy: "jwt" },
   providers: [],
   callbacks: {
