@@ -2,40 +2,45 @@ import Link from "next/link";
 import { requireStaff } from "@/lib/session";
 import { db } from "@/lib/db";
 import { fmtDateTime } from "@/lib/format";
+import { hiddenActorIds, maskName } from "@/lib/staff-mask";
 
 export const dynamic = "force-dynamic";
 
 export default async function PortalOverview() {
-  await requireStaff();
+  const me = await requireStaff();
 
-  const [pending, activePlayers, upcoming, recentAudit, rewardCount] = await Promise.all([
-    db.player.findMany({
-      where: { status: "PENDING" },
-      orderBy: { createdAt: "desc" },
-      take: 8,
-      include: { user: { select: { email: true, discordUsername: true } } },
-    }),
-    db.player.count({ where: { status: "ACTIVE" } }),
-    db.event.findMany({
-      where: { status: "PUBLISHED", startsAt: { gte: new Date() } },
-      orderBy: { startsAt: "asc" },
-      take: 5,
-      include: { _count: { select: { signups: true } } },
-    }),
-    db.auditLog.findMany({
-      orderBy: { createdAt: "desc" },
-      take: 12,
-      include: { actor: { select: { name: true, email: true } } },
-    }),
-    db.reward.count(),
-  ]);
+  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+  const [recentPlayers, newThisWeek, activePlayers, upcoming, recentAudit, rewardCount, hidden] =
+    await Promise.all([
+      db.player.findMany({
+        orderBy: { joinedAt: "desc" },
+        take: 8,
+        include: { user: { select: { email: true, discordUsername: true } } },
+      }),
+      db.player.count({ where: { joinedAt: { gte: weekAgo } } }),
+      db.player.count({ where: { status: "ACTIVE" } }),
+      db.event.findMany({
+        where: { status: "PUBLISHED", startsAt: { gte: new Date() } },
+        orderBy: { startsAt: "asc" },
+        take: 5,
+        include: { _count: { select: { signups: true } } },
+      }),
+      db.auditLog.findMany({
+        orderBy: { createdAt: "desc" },
+        take: 12,
+        include: { actor: { select: { name: true, email: true } } },
+      }),
+      db.reward.count(),
+      hiddenActorIds(me.role),
+    ]);
 
   return (
     <div className="grid gap-6 lg:grid-cols-3">
       <div className="space-y-6 lg:col-span-2">
         <div className="grid grid-cols-3 gap-4">
           {[
-            { k: "Pending", v: pending.length, href: "/portal/players?status=PENDING" },
+            { k: "New this week", v: newThisWeek, href: "/portal/players" },
             { k: "Active players", v: activePlayers, href: "/portal/players" },
             { k: "Rewards logged", v: rewardCount, href: "/portal/rewards" },
           ].map((s) => (
@@ -47,10 +52,12 @@ export default async function PortalOverview() {
         </div>
 
         <div className="card">
-          <h2 className="font-display font-bold text-white">Pending registrations</h2>
+          <h2 className="font-display font-bold text-white">Recent registrations</h2>
           <ul className="mt-3 divide-y divide-edge/60">
-            {pending.length === 0 && <li className="py-3 text-sm text-slate-400">All caught up.</li>}
-            {pending.map((p) => (
+            {recentPlayers.length === 0 && (
+              <li className="py-3 text-sm text-slate-400">No players yet.</li>
+            )}
+            {recentPlayers.map((p) => (
               <li key={p.id} className="flex items-center justify-between py-3 text-sm">
                 <Link href={`/portal/players/${p.id}`} className="text-slate-200 hover:text-teal">
                   {p.characterName ?? "Unnamed"}
@@ -86,7 +93,9 @@ export default async function PortalOverview() {
         <ul className="mt-3 space-y-2 text-xs text-slate-400">
           {recentAudit.map((a) => (
             <li key={a.id}>
-              <span className="text-slate-300">{a.actor?.name ?? a.actor?.email ?? "system"}</span>{" "}
+              <span className="text-slate-300">
+                {maskName(a.actor?.name ?? a.actor?.email, a.actorId, hidden, "system")}
+              </span>{" "}
               {a.action}
               <span className="block text-slate-600">{fmtDateTime(a.createdAt)}</span>
             </li>

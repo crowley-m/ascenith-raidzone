@@ -8,7 +8,7 @@ import { useImmersive } from "./useImmersive";
 import { SparkleField } from "./SparkleField";
 import { Wordmark } from "./Wordmark";
 import { Watch } from "./Watch";
-import { Gallery } from "./Gallery";
+import { Gallery, type GalleryImage } from "./Gallery";
 import { EventBrief, type OpEvent } from "./EventBrief";
 import { HowItWorks } from "./HowItWorks";
 import type { YtVideo } from "@/lib/youtube";
@@ -86,10 +86,12 @@ export function Landing({
   event = null,
   videos = [],
   discordOnline = null,
+  gallery = [],
 }: {
   event?: OpEvent | null;
   videos?: YtVideo[];
   discordOnline?: number | null;
+  gallery?: GalleryImage[];
 }) {
   const { data: session } = useSession();
   const user = session?.user ?? null;
@@ -288,7 +290,7 @@ export function Landing({
 
         <Watch videos={videos} />
 
-        <Gallery />
+        <Gallery images={gallery} />
 
         {/* RUNBOOK */}
         <section className={`${s.runbook} ${s.wrap}`} id="run">

@@ -14,6 +14,7 @@ export default async function PortalLayout({ children }: { children: React.React
     { href: "/portal/events", label: "Events", show: can(user.role, "event:view") },
     { href: "/portal/rewards", label: "Rewards", show: can(user.role, "reward:view") },
     { href: "/portal/factions", label: "Factions", show: can(user.role, "faction:manage") },
+    { href: "/portal/media", label: "Gallery", show: can(user.role, "media:manage") },
     { href: "/portal/staff", label: "Staff", show: can(user.role, "staff:manage") },
   ].filter((i) => i.show);
 

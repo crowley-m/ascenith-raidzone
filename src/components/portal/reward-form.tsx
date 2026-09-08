@@ -70,8 +70,18 @@ export function RewardForm({
       )}
 
       <div>
-        <label className="label">Proof image URL (optional)</label>
-        <input name="proofImageUrl" className="input" placeholder="https://…" />
+        <label className="label">Proof image (optional)</label>
+        <input
+          type="file"
+          name="proofImage"
+          accept="image/png,image/jpeg,image/webp,image/gif"
+          className="block w-full text-sm text-slate-300 file:mr-3 file:border file:border-edge file:bg-void file:px-3 file:py-1.5 file:text-xs file:uppercase file:tracking-wide file:text-slate-200"
+        />
+        <input
+          name="proofImageUrl"
+          className="input mt-2"
+          placeholder="…or paste an image URL"
+        />
       </div>
 
       <label className="flex items-center gap-2 text-sm text-slate-300">

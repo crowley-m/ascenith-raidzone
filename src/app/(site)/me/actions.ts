@@ -41,7 +41,7 @@ export async function updateProfileAction(
     where: { userId: user.id },
     create: {
       userId: user.id,
-      status: "PENDING",
+      status: "ACTIVE",
       characterName: d.characterName,
       platform: d.platform ?? null,
       region: d.region ?? null,

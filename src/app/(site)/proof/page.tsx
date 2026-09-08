@@ -16,6 +16,9 @@ export default async function ProofPage() {
     },
   });
 
+  const proofSrc = (r: (typeof rewards)[number]) =>
+    r.proofImageId ? `/api/media/${r.proofImageId}` : r.proofImageUrl;
+
   return (
     <div className="container-x py-16">
       <h1 className="font-display text-3xl font-extrabold text-white">Reward proof</h1>
@@ -31,9 +34,10 @@ export default async function ProofPage() {
         <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {rewards.map((r) => (
             <div key={r.id} className="card overflow-hidden">
-              {r.proofImageUrl && (
+              {proofSrc(r) && (
+                // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={r.proofImageUrl}
+                  src={proofSrc(r) as string}
                   alt=""
                   className="-mx-5 -mt-5 mb-4 h-44 w-[calc(100%+2.5rem)] object-cover"
                 />

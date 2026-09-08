@@ -32,8 +32,8 @@ export function ProfileForm({
     <form action={action} className="grid max-w-2xl gap-5">
       {isNew && (
         <div className="card border-teal/30 text-sm text-slate-300">
-          Welcome! Fill this in so staff can find you in game. Your profile stays{" "}
-          <span className="text-ember">pending</span> until a staff member activates it.
+          Welcome to the roster! Fill this in so staff can find you in game and get you on
+          event sign-ups.
         </div>
       )}
       {state.ok && <p className="text-sm text-teal">Saved.</p>}

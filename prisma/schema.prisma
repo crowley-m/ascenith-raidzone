@@ -39,6 +39,7 @@ model User {
   markedAttend  EventAttendance[] @relation("AttendanceMarker")
   grantedReward Reward[]    @relation("RewardGranter")
   auditLogs     AuditLog[]
+  createdMedia  MediaAsset[] @relation("MediaCreator")
 }
 
 model Account {
@@ -110,7 +111,7 @@ model Player {
   languages String?
 
   // Community
-  status    PlayerStatus @default(PENDING)
+  status    PlayerStatus @default(ACTIVE)
   factionId String?
   faction   Faction?     @relation(fields: [factionId], references: [id], onDelete: SetNull)
   joinedAt  DateTime     @default(now())
@@ -281,6 +282,8 @@ model Reward {
   reason       String
   isPublic     Boolean  @default(false)
   proofImageUrl String?
+  proofImageId String?
+  proofImage   MediaAsset? @relation(fields: [proofImageId], references: [id], onDelete: SetNull)
   grantedById  String
   grantedBy    User     @relation("RewardGranter", fields: [grantedById], references: [id])
   grantedAt    DateTime @default(now())
@@ -304,4 +307,29 @@ model AuditLog {
   createdAt  DateTime @default(now())
 
   @@index([createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Media — image uploads (gallery stills, reward proof). Bytes live in the DB
+// so there's no upload volume to manage; served via /api/media/[id].
+// ---------------------------------------------------------------------------
+
+model MediaAsset {
+  id          String   @id @default(cuid())
+  kind        String // "gallery" | "reward"
+  data        Bytes
+  contentType String
+  bytes       Int
+  width       Int?
+  height      Int?
+  caption     String? // gallery: the big label (e.g. "PURGE 04")
+  tag         String? // gallery: the small label (e.g. "base hold")
+  sortOrder   Int      @default(0)
+  createdById String?
+  createdBy   User?    @relation("MediaCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+
+  rewards Reward[]
+
+  @@index([kind, sortOrder])
 }

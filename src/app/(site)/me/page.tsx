@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { fmtDateTime } from "@/lib/format";
 
 const STATUS_COPY: Record<string, string> = {
-  PENDING: "Pending — a staff member will activate your profile soon.",
+  PENDING: "Pending — a staff member will take a look shortly.",
   ACTIVE: "Active — you're all set for events and rewards.",
   INACTIVE: "Inactive — ping staff in Discord to reactivate.",
   BANNED: "Suspended — contact staff via a ticket.",

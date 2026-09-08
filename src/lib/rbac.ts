@@ -19,6 +19,7 @@ export type Permission =
   | "reward:view"
   | "reward:grant"
   | "faction:manage"
+  | "media:manage"
   | "staff:manage"
   | "settings:manage";
 
@@ -34,6 +35,7 @@ const MIN_RANK: Record<Permission, number> = {
   "reward:view": RANK.MODERATOR,
   "reward:grant": RANK.ADMIN,
   "faction:manage": RANK.ADMIN,
+  "media:manage": RANK.MODERATOR,
   "staff:manage": RANK.OWNER,
   "settings:manage": RANK.OWNER,
 };

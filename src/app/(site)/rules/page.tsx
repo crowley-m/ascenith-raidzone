@@ -102,10 +102,10 @@ export default function RulesPage() {
             </dd>
           </div>
           <div className="card">
-            <dt className="font-semibold text-white">My registration says &quot;pending&quot; — what now?</dt>
+            <dt className="font-semibold text-white">Do I need approval before I can sign up?</dt>
             <dd className="mt-1 text-sm text-slate-400">
-              A staff member reviews new profiles and marks them active. Ping staff in Discord if it
-              takes more than a day.
+              No — you&apos;re on the roster the moment you register. Fill in your in-game details
+              on your profile and you can sign up for the next event straight away.
             </dd>
           </div>
         </dl>

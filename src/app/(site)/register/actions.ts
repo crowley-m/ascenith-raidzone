@@ -41,7 +41,7 @@ export async function registerAction(
       passwordHash,
       name: parsed.data.characterName,
       player: {
-        create: { characterName: parsed.data.characterName, status: "PENDING" },
+        create: { characterName: parsed.data.characterName, status: "ACTIVE" },
       },
     },
   });

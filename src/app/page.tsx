@@ -1,5 +1,6 @@
 import { Landing } from "@/components/landing/Landing";
 import type { OpEvent } from "@/components/landing/EventBrief";
+import type { GalleryImage } from "@/components/landing/Gallery";
 import { db } from "@/lib/db";
 import { latestVideos } from "@/lib/youtube";
 import { guildPresence } from "@/lib/discord";
@@ -73,17 +74,32 @@ async function currentOp(): Promise<OpEvent | null> {
   };
 }
 
+async function galleryImages(): Promise<GalleryImage[]> {
+  try {
+    return await db.mediaAsset.findMany({
+      where: { kind: "gallery" },
+      orderBy: { sortOrder: "asc" },
+      take: 6,
+      select: { id: true, caption: true, tag: true },
+    });
+  } catch {
+    return [];
+  }
+}
+
 export default async function HomePage() {
-  const [event, videos, presence] = await Promise.all([
+  const [event, videos, presence, gallery] = await Promise.all([
     currentOp(),
     latestVideos(9),
     guildPresence(),
+    galleryImages(),
   ]);
   return (
     <Landing
       event={event ?? FALLBACK_EVENT}
       videos={videos}
       discordOnline={presence?.online ?? null}
+      gallery={gallery}
     />
   );
 }

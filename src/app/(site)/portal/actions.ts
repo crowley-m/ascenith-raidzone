@@ -14,6 +14,7 @@ import {
   rewardSchema,
 } from "@/lib/validation";
 import { postAnnouncement, editAnnouncement, eventEmbed } from "@/lib/discord";
+import { createMediaAsset } from "@/lib/media";
 import { Prisma } from "@prisma/client";
 import type { PlayerStatus, Role } from "@prisma/client";
 
@@ -224,6 +225,17 @@ export async function grantReward(_prev: FormState, formData: FormData): Promise
   });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid reward." };
 
+  let proofImageId: string | null = null;
+  const upload = formData.get("proofImage");
+  if (upload instanceof File && upload.size > 0) {
+    try {
+      const asset = await createMediaAsset({ kind: "reward", file: upload, createdById: actor.id });
+      proofImageId = asset.id;
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : "Could not process that image." };
+    }
+  }
+
   const r = await db.reward.create({
     data: {
       playerId: parsed.data.playerId,
@@ -233,6 +245,7 @@ export async function grantReward(_prev: FormState, formData: FormData): Promise
       reason: parsed.data.reason,
       isPublic: parsed.data.isPublic ?? false,
       proofImageUrl: parsed.data.proofImageUrl ?? null,
+      proofImageId,
       grantedById: actor.id,
     },
   });
@@ -251,7 +264,14 @@ export async function grantReward(_prev: FormState, formData: FormData): Promise
 
 export async function deleteReward(rewardId: string, playerId: string) {
   const actor = await assertPermission("reward:grant");
+  const existing = await db.reward.findUnique({
+    where: { id: rewardId },
+    select: { proofImageId: true },
+  });
   await db.reward.delete({ where: { id: rewardId } });
+  if (existing?.proofImageId) {
+    await db.mediaAsset.delete({ where: { id: existing.proofImageId } }).catch(() => {});
+  }
   await logAudit({ actorId: actor.id, action: "reward.delete", targetType: "Reward", targetId: rewardId });
   revalidatePath("/portal/rewards");
   revalidatePath(`/portal/players/${playerId}`);
@@ -326,4 +346,84 @@ export async function removeStaffRole(userId: string) {
   await db.staffRole.deleteMany({ where: { userId } });
   await logAudit({ actorId: actor.id, action: "staff.remove_role", targetType: "User", targetId: userId });
   revalidatePath("/portal/staff");
+}
+
+// --------------------------------------------------------------------------
+// Media — landing gallery images
+// --------------------------------------------------------------------------
+
+export async function addGalleryImage(_prev: FormState, formData: FormData): Promise<FormState> {
+  const actor = await assertPermission("media:manage");
+  const file = formData.get("image");
+  if (!(file instanceof File) || file.size === 0) return { error: "Pick an image to upload." };
+
+  const last = await db.mediaAsset.findFirst({
+    where: { kind: "gallery" },
+    orderBy: { sortOrder: "desc" },
+    select: { sortOrder: true },
+  });
+
+  try {
+    const asset = await createMediaAsset({
+      kind: "gallery",
+      file,
+      caption: (formData.get("caption") as string) || null,
+      tag: (formData.get("tag") as string) || null,
+      sortOrder: (last?.sortOrder ?? 0) + 1,
+      createdById: actor.id,
+    });
+    await logAudit({ actorId: actor.id, action: "media.add", targetType: "MediaAsset", targetId: asset.id });
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Could not process that image." };
+  }
+
+  revalidatePath("/portal/media");
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function updateGalleryImage(_prev: FormState, formData: FormData): Promise<FormState> {
+  const actor = await assertPermission("media:manage");
+  const id = formData.get("id") as string;
+  if (!id) return { error: "Missing image." };
+  await db.mediaAsset.update({
+    where: { id },
+    data: {
+      caption: ((formData.get("caption") as string) || "").trim() || null,
+      tag: ((formData.get("tag") as string) || "").trim() || null,
+    },
+  });
+  await logAudit({ actorId: actor.id, action: "media.update", targetType: "MediaAsset", targetId: id });
+  revalidatePath("/portal/media");
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function deleteGalleryImage(id: string) {
+  const actor = await assertPermission("media:manage");
+  await db.mediaAsset.delete({ where: { id } });
+  await logAudit({ actorId: actor.id, action: "media.delete", targetType: "MediaAsset", targetId: id });
+  revalidatePath("/portal/media");
+  revalidatePath("/");
+}
+
+/** Swap sortOrder with the neighbour in `dir` so staff can reorder the wall. */
+export async function moveGalleryImage(id: string, dir: "up" | "down") {
+  const actor = await assertPermission("media:manage");
+  const all = await db.mediaAsset.findMany({
+    where: { kind: "gallery" },
+    orderBy: { sortOrder: "asc" },
+    select: { id: true, sortOrder: true },
+  });
+  const i = all.findIndex((a) => a.id === id);
+  const j = dir === "up" ? i - 1 : i + 1;
+  if (i < 0 || j < 0 || j >= all.length) return;
+
+  await db.$transaction([
+    db.mediaAsset.update({ where: { id: all[i].id }, data: { sortOrder: all[j].sortOrder } }),
+    db.mediaAsset.update({ where: { id: all[j].id }, data: { sortOrder: all[i].sortOrder } }),
+  ]);
+  await logAudit({ actorId: actor.id, action: "media.reorder", targetType: "MediaAsset", targetId: id });
+  revalidatePath("/portal/media");
+  revalidatePath("/");
 }

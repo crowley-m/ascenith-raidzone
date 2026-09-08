@@ -4,6 +4,7 @@ import { requirePermission } from "@/lib/session";
 import { db } from "@/lib/db";
 import { can } from "@/lib/rbac";
 import { fmtDate, fmtDateTime } from "@/lib/format";
+import { hiddenActorIds, maskName } from "@/lib/staff-mask";
 import { PlayerStatusControl } from "@/components/portal/player-status-control";
 import { NoteForm } from "@/components/portal/note-form";
 import { FlagForm } from "@/components/portal/flag-form";
@@ -35,6 +36,7 @@ export default async function PlayerDetailPage({
   });
   if (!player) notFound();
 
+  const hidden = await hiddenActorIds(user.role);
   const attendedIds = new Set(player.attendance.filter((a) => a.attended).map((a) => a.eventId));
 
   const info: [string, React.ReactNode][] = [
@@ -147,7 +149,8 @@ export default async function PlayerDetailPage({
                   <div className="flex items-center justify-between text-xs text-slate-500">
                     <span>
                       {n.pinned && <span className="text-ember">📌 </span>}
-                      {n.author.name ?? n.author.email} · {fmtDateTime(n.createdAt)}
+                      {maskName(n.author.name ?? n.author.email, n.authorId, hidden)} ·{" "}
+                      {fmtDateTime(n.createdAt)}
                     </span>
                     {can(user.role, "note:write") && (
                       <ConfirmButton
@@ -188,7 +191,8 @@ export default async function PlayerDetailPage({
                     <span className="text-slate-200">{f.reason}</span>
                   </span>
                   <span className="text-xs text-slate-500">
-                    {f.author.name ?? f.author.email} · {fmtDate(f.createdAt)}
+                    {maskName(f.author.name ?? f.author.email, f.authorId, hidden)} ·{" "}
+                    {fmtDate(f.createdAt)}
                   </span>
                 </li>
               ))}
