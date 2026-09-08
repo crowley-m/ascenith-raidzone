@@ -9,7 +9,7 @@ import { EventForm } from "@/components/portal/event-form";
 import { AttendanceToggle } from "@/components/portal/attendance-toggle";
 import { RewardForm } from "@/components/portal/reward-form";
 import { RosterCopy } from "@/components/portal/roster-copy";
-import { BuildSpaceButton } from "@/components/portal/build-space-button";
+import { BuildSpaceButton, ArchiveSpaceButton } from "@/components/portal/build-space-button";
 
 export const dynamic = "force-dynamic";
 
@@ -112,10 +112,18 @@ export default async function PortalEventDetail({
           </Link>
           {canManage &&
             (event.discordCategoryId ? (
-              <span className="badge border-teal/40 text-teal">
-                Discord:{" "}
-                {Object.keys((event.discordChannels as Record<string, string>) ?? {}).length} channels
-              </span>
+              event.discordArchivedAt ? (
+                <span className="badge border-edge text-slate-500">Discord archived</span>
+              ) : (
+                <>
+                  <span className="badge border-teal/40 text-teal">
+                    Discord:{" "}
+                    {Object.keys((event.discordChannels as Record<string, string>) ?? {}).length}{" "}
+                    channels
+                  </span>
+                  <ArchiveSpaceButton eventId={event.id} />
+                </>
+              )
             ) : (
               <BuildSpaceButton eventId={event.id} />
             ))}

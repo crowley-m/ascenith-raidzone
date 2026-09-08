@@ -263,6 +263,35 @@ export async function createEventSpace(opts: {
   return { categoryId: category.id, channels };
 }
 
+/**
+ * Archive an event's space: rename the category to mark it done, sink it to the
+ * bottom of the list, and best-effort lock its channels to read-only for
+ * @everyone. Non-destructive — nothing is deleted.
+ */
+export async function archiveEventSpace(categoryId: string, channelIds: string[]): Promise<void> {
+  const gid = process.env.DISCORD_GUILD_ID;
+  if (!gid || !process.env.DISCORD_BOT_TOKEN) return;
+
+  const cat = (await discordFetch(`/channels/${categoryId}`, { method: "GET" }).catch(
+    () => null,
+  )) as { name?: string } | null;
+  const base = (cat?.name ?? "event").replace(/^[^A-Za-z0-9\uD800-\uDFFF]*/, "").trim();
+
+  await discordFetch(`/channels/${categoryId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ name: `🗄️ ARCHIVED — ${base}`.slice(0, 95), position: 900 }),
+  }).catch(() => {});
+
+  // deny SEND_MESSAGES to @everyone on each channel (role id == guild id)
+  const DENY_SEND = "2048"; // 1 << 11
+  for (const id of channelIds) {
+    await discordFetch(`/channels/${id}/permissions/${gid}`, {
+      method: "PUT",
+      body: JSON.stringify({ type: 0, deny: DENY_SEND }),
+    }).catch(() => {});
+  }
+}
+
 /** Plain message (optionally with an embed / components) to a channel. */
 export async function postToChannel(
   channelId: string,

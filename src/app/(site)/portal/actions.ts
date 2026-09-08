@@ -19,6 +19,7 @@ import {
   eventEmbed,
   signupButtonRow,
   createEventSpace,
+  archiveEventSpace,
   postToChannel,
   eventEmoji,
 } from "@/lib/discord";
@@ -286,6 +287,25 @@ export async function buildEventSpace(eventId: string): Promise<FormState> {
     targetId: ev.id,
     meta: { categoryId: space.categoryId, channels: Object.keys(space.channels).length },
   });
+  revalidatePath(`/portal/events/${ev.id}`);
+  return { ok: true };
+}
+
+export async function archiveEventDiscord(eventId: string): Promise<FormState> {
+  const actor = await assertPermission("event:manage");
+  const ev = await db.event.findUnique({ where: { id: eventId } });
+  if (!ev?.discordCategoryId) return { error: "This event has no Discord space." };
+  if (ev.discordArchivedAt) return { error: "Already archived." };
+
+  const channels = Object.values((ev.discordChannels as Record<string, string>) ?? {});
+  try {
+    await archiveEventSpace(ev.discordCategoryId, channels);
+  } catch (err) {
+    console.error("archiveEventSpace failed", err);
+    return { error: `Discord: ${err instanceof Error ? err.message : "archive failed"}` };
+  }
+  await db.event.update({ where: { id: ev.id }, data: { discordArchivedAt: new Date() } });
+  await logAudit({ actorId: actor.id, action: "event.discord_archive", targetType: "Event", targetId: ev.id });
   revalidatePath(`/portal/events/${ev.id}`);
   return { ok: true };
 }
