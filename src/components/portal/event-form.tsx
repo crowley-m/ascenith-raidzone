@@ -26,6 +26,7 @@ type EventInit = {
   detailsMd: string | null;
   howToJoinVideoUrl: string | null;
   announcePing: boolean;
+  announcePingAll: boolean;
   announcementMd: string | null;
   howToJoinMd: string | null;
   gameplayMd: string | null;
@@ -349,9 +350,25 @@ export function EventForm({
           className="mt-0.5 accent-teal"
         />
         <span>
-          Ping <span className="font-mono">@everyone</span> when the announcement posts
+          Ping <span className="font-mono">@everyone</span> in the announcement
           <span className="mt-0.5 block text-xs text-slate-500">
             On by default. Editing the announcement afterwards won&apos;t re-ping.
+          </span>
+        </span>
+      </label>
+
+      <label className="flex items-start gap-2 text-sm text-slate-300">
+        <input
+          type="checkbox"
+          name="announcePingAll"
+          defaultChecked={event?.announcePingAll ?? false}
+          className="mt-0.5 accent-teal"
+        />
+        <span>
+          Ping <span className="font-mono">@everyone</span> in <em>every</em> event channel
+          <span className="mt-0.5 block text-xs text-slate-500">
+            how-to-join, rules, gameplay, wipe-info and rewards too — one ping per channel
+            when the space is first built. Off by default (it&apos;s a lot of pings).
           </span>
         </span>
       </label>

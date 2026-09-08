@@ -153,6 +153,7 @@ export async function saveEvent(_prev: FormState, formData: FormData): Promise<F
     detailsMd: str("detailsMd"),
     howToJoinVideoUrl: str("howToJoinVideoUrl"),
     announcePing: formData.get("announcePing") === "on",
+    announcePingAll: formData.get("announcePingAll") === "on",
     announcementMd: str("announcementMd"),
     howToJoinMd: str("howToJoinMd"),
     gameplayMd: str("gameplayMd"),
@@ -193,6 +194,7 @@ export async function saveEvent(_prev: FormState, formData: FormData): Promise<F
     detailsMd: d.detailsMd ?? null,
     howToJoinVideoUrl: d.howToJoinVideoUrl ? d.howToJoinVideoUrl : null,
     announcePing: d.announcePing ?? false,
+    announcePingAll: d.announcePingAll ?? false,
     announcementMd: d.announcementMd ?? null,
     howToJoinMd: d.howToJoinMd ?? null,
     gameplayMd: d.gameplayMd ?? null,
@@ -299,7 +301,7 @@ function eventChannelPayloads(ev: FullEvent): Record<string, ChannelPayload> {
     content: ev.announcementMd ? clip(ev.announcementMd) : undefined,
     embed: eventEmbed({ ...ev, signupCount: 0, url }),
     components: [signupButtonRow(url, "Sign up on the website")],
-    mentionEveryone: ev.announcePing,
+    mentionEveryone: ev.announcePing || ev.announcePingAll,
   };
 
   out["how-to-join"] = {
@@ -333,6 +335,10 @@ function eventChannelPayloads(ev: FullEvent): Record<string, ChannelPayload> {
     if (!tiers.length && ev.rewardPoolText) lines.push(ev.rewardPoolText);
     if (ev.bonusText) lines.push(`\n**Bonus:** ${ev.bonusText}`);
     out.rewards = { content: clip(lines.join("\n")) };
+  }
+
+  if (ev.announcePingAll) {
+    for (const p of Object.values(out)) p.mentionEveryone = true;
   }
 
   return out;
@@ -524,6 +530,7 @@ export async function cloneEvent(eventId: string): Promise<void> {
       detailsMd: src.detailsMd,
       howToJoinVideoUrl: src.howToJoinVideoUrl,
       announcePing: src.announcePing,
+      announcePingAll: src.announcePingAll,
       announcementMd: src.announcementMd,
       howToJoinMd: src.howToJoinMd,
       gameplayMd: src.gameplayMd,

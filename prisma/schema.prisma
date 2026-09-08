@@ -325,7 +325,8 @@ model Event {
   rulesMd     String? // markdown rules for this event (shown on the page + Discord)
   detailsMd   String? // full markdown brief shown on /events/[id]
   howToJoinVideoUrl String? // YouTube link — plays on the event page + the landing (when featured)
-  announcePing Boolean @default(false) // ping @everyone when the announcement posts
+  announcePing    Boolean @default(false) // ping @everyone when the announcement posts
+  announcePingAll Boolean @default(false) // ping @everyone in every event channel, not just announcement
 
   // per-Discord-channel content (posted to the event's channels)
   announcementMd String?
