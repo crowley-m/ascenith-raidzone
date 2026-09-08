@@ -19,7 +19,7 @@ export async function SiteHeader() {
   const user = session?.user;
 
   return (
-    <header className="sticky top-0 z-40 border-b border-edge bg-void/85 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b border-white/10 bg-black/70 backdrop-blur-xl">
       <div className="container-x flex h-16 items-center justify-between gap-4">
         <Link
           href="/"

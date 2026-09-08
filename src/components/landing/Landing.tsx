@@ -144,6 +144,11 @@ function SeasonHistory({
 function About() {
   return (
     <section className={s.about} id="about">
+      <div
+        className={s.sectionBg}
+        aria-hidden
+        style={{ backgroundImage: "url(/media/bg-redroot.webp)" }}
+      />
       <div className={`${s.aboutInner} ${s.wrap}`}>
         <div className={s.aboutHead}>
           <span className={s.mark} data-reveal>
@@ -400,6 +405,11 @@ export function Landing({
 
         {/* CLOSE */}
         <section className={s.close} id="register">
+          <div
+            className={s.sectionBg}
+            aria-hidden
+            style={{ backgroundImage: "url(/media/bg-raidzone.webp)" }}
+          />
           <div className={s.closeInner}>
             {user ? (
               <>

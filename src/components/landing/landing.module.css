@@ -877,34 +877,24 @@
   max-width: 60ch;
   margin-bottom: clamp(14px, 2.5vw, 22px);
 }
-.eventGrid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: clamp(14px, 2.5vw, 22px);
-}
-@media (min-width: 820px) {
-  .eventGrid {
-    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-    align-items: stretch;
-  }
-}
+/* fact tiles sit as a full-width row below the rewards block */
 .eventFacts {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  align-content: start;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: clamp(10px, 1.6vw, 16px);
+  margin-top: clamp(14px, 2.5vw, 22px);
 }
 .eventFacts > div {
   border: 1px solid var(--rule);
   background: rgba(0, 0, 0, 0.3);
-  padding: 12px 14px;
+  padding: 14px 16px;
   font-family: var(--f-poster);
   font-size: clamp(1.05rem, 0.9rem + 0.6vw, 1.35rem);
   text-transform: uppercase;
   color: var(--cream);
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
 }
 .eventFacts b {
   font-family: var(--f-mono);
@@ -1462,10 +1452,38 @@
   max-width: 54ch;
 }
 
+/* ---- shared section background image (about, close) ---- */
+.sectionBg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  opacity: 0.5;
+}
+.sectionBg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(5, 4, 4, 0.9) 0%,
+    rgba(6, 4, 4, 0.74) 45%,
+    rgba(5, 4, 4, 0.93) 100%
+  );
+}
+.aboutInner,
+.closeInner {
+  position: relative;
+  z-index: 1;
+}
+
 /* ---- close / enlist ---- */
 .close {
   position: relative;
   z-index: 10;
+  overflow: hidden;
   border-top: 1px solid var(--rule);
   text-align: center;
   padding: clamp(80px, 16vh, 190px) var(--pad);
@@ -1637,6 +1655,7 @@
 .about {
   position: relative;
   z-index: 10;
+  overflow: hidden;
   padding-block: clamp(56px, 11vh, 128px);
   scroll-margin-top: 90px;
 }

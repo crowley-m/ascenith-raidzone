@@ -156,35 +156,7 @@ export function EventBrief({
               </div>
             </div>
 
-            <div className={s.eventGrid}>
-              <div className={s.eventFacts}>
-                {event.endsAt && (
-                  <div>
-                    <b>Wipe (GMT+8)</b>
-                    {fmtManila(event.startsAt, false)} &ndash; {fmtManila(event.endsAt, false)}
-                  </div>
-                )}
-                {event.wipeCycle && (
-                  <div>
-                    <b>Cycle</b>
-                    {event.wipeCycle}
-                  </div>
-                )}
-                {event.raidWindow && (
-                  <div>
-                    <b>Raid</b>
-                    {event.raidWindow}
-                  </div>
-                )}
-                {event.maxSlots ? (
-                  <div>
-                    <b>Roster</b>
-                    {event.signups} / {event.maxSlots} slots
-                  </div>
-                ) : null}
-              </div>
-
-              <div className={`${s.card2} ${s.card2Hot} ${s.rewardsCard}`} id="rewards">
+            <div className={`${s.card2} ${s.card2Hot} ${s.rewardsCard}`} id="rewards">
                 <div className={s.card2Head}>Rewards</div>
                 {event.rewardPoolText && (
                   <div className={s.rewardTotal}>
@@ -224,7 +196,33 @@ export function EventBrief({
                     {event.bonusText}
                   </p>
                 )}
-              </div>
+            </div>
+
+            <div className={s.eventFacts}>
+              {event.endsAt && (
+                <div>
+                  <b>Wipe (GMT+8)</b>
+                  {fmtManila(event.startsAt, false)} &ndash; {fmtManila(event.endsAt, false)}
+                </div>
+              )}
+              {event.wipeCycle && (
+                <div>
+                  <b>Cycle</b>
+                  {event.wipeCycle}
+                </div>
+              )}
+              {event.raidWindow && (
+                <div>
+                  <b>Raid</b>
+                  {event.raidWindow}
+                </div>
+              )}
+              {event.maxSlots ? (
+                <div>
+                  <b>Roster</b>
+                  {event.signups} / {event.maxSlots} slots
+                </div>
+              ) : null}
             </div>
 
             <div className={s.eventActs}>

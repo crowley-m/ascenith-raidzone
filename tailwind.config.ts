@@ -5,31 +5,32 @@ export default {
   theme: {
     extend: {
       colors: {
-        // ASCENITH RAIDZONE — warm near-black, cream, one bruised-crimson accent
-        void: "#0c0a08",
-        panel: "#161210",
-        "panel-2": "#1e1813",
-        edge: "#2b2118",
+        // ASCENITH RAIDZONE (site pages) — true black, near-white, one crimson accent.
+        // The landing keeps its own warm palette in landing.module.css.
+        void: "#0a0a0b",
+        panel: "#141416",
+        "panel-2": "#1d1d20",
+        edge: "#2c2c31",
         cream: {
-          DEFAULT: "#e9e1d1",
-          dim: "#b8ae9c",
+          DEFAULT: "#ededef",
+          dim: "#b4b4bb",
         },
-        // warm-tinted neutral ramp so existing text-slate-* classes match the theme
+        // neutral grey ramp — existing text-slate-* classes recolor in place
         slate: {
-          100: "#f0eade",
-          200: "#e2dac9",
-          300: "#cabfa9",
-          400: "#9d9280",
-          500: "#7d7364",
-          600: "#5f574a",
-          700: "#443d33",
-          800: "#2b2620",
-          900: "#191510",
+          100: "#f4f4f5",
+          200: "#e4e4e7",
+          300: "#c9c9ce",
+          400: "#9a9aa3",
+          500: "#71717a",
+          600: "#52525b",
+          700: "#3f3f46",
+          800: "#27272a",
+          900: "#18181b",
         },
         // `teal` kept as the accent token name so existing classes recolor in place
         teal: {
-          DEFAULT: "#d5303f",
-          dim: "#b0242f",
+          DEFAULT: "#e5484d",
+          dim: "#c13a40",
           deep: "#7a1c26",
         },
         ember: "#e0a13a",

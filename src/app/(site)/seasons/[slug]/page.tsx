@@ -53,7 +53,7 @@ export default async function SeasonPage({
   if (!season) notFound();
 
   return (
-    <div className="bg-black">
+    <div className="bg-void">
       <div className="container-x py-16">
         <Link href="/seasons" className="link text-xs uppercase tracking-widest">
           &larr; All seasons

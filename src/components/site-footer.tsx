@@ -3,7 +3,7 @@ import { site, socials } from "@/lib/site";
 
 export function SiteFooter() {
   return (
-    <footer className="mt-24 border-t border-edge bg-void/60">
+    <footer className="mt-24 border-t border-white/10 bg-black/70 backdrop-blur-xl">
       <div className="container-x grid gap-8 py-12 md:grid-cols-3">
         <div>
           <div className="font-mono text-[0.78rem] font-bold uppercase tracking-[0.16em] text-white">

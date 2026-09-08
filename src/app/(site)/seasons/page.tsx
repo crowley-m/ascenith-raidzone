@@ -31,7 +31,7 @@ export default async function SeasonsPage() {
   }
 
   return (
-    <div className="bg-black">
+    <div className="bg-void">
       <div className="container-x py-16">
         <h1 className="font-poster text-5xl uppercase leading-[0.95] text-white sm:text-6xl">
           Seasons
