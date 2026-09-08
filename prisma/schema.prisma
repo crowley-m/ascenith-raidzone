@@ -213,6 +213,15 @@ model Event {
   rewardPoolText String?
   status         EventStatus @default(DRAFT)
 
+  // landing / public brief
+  summary     String? // 1-2 line teaser for the landing card
+  mode        String? // e.g. "PURGE" — shown next to RAIDZONE
+  wipeCycle   String? // e.g. "2 weeks"
+  raidWindow  String? // e.g. "15:30 – 21:29 · 6 hrs/day"
+  rewardTiers Json? // [{ "place": "1st", "reward": "30K Crystgen" }, ...]
+  bonusText   String? // e.g. "20K Crystgen · hidden across airdrops, cards, alpha boss"
+  detailsMd   String? // full markdown brief shown on /events/[id]
+
   discordMessageId String?
   discordChannelId String?
 

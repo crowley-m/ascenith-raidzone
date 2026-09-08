@@ -32,7 +32,41 @@ export const eventSchema = z.object({
   maxSlots: z.coerce.number().int().min(0).max(10000).nullable().optional(),
   rewardPoolText: z.string().max(2000).nullable().optional(),
   status: z.enum(["DRAFT", "PUBLISHED", "COMPLETED", "CANCELLED"]),
+  // landing / public brief
+  summary: z.string().max(400).nullable().optional(),
+  mode: z.string().max(40).nullable().optional(),
+  wipeCycle: z.string().max(80).nullable().optional(),
+  raidWindow: z.string().max(120).nullable().optional(),
+  rewardTiersText: z.string().max(2000).nullable().optional(),
+  bonusText: z.string().max(400).nullable().optional(),
+  detailsMd: z.string().max(20000).nullable().optional(),
 });
+
+export type RewardTier = { place: string; reward: string };
+
+/** stored JSON → editable textarea value */
+export function tiersToText(raw: unknown): string {
+  if (!Array.isArray(raw)) return "";
+  return (raw as RewardTier[])
+    .filter((t) => t && typeof t.place === "string")
+    .map((t) => `${t.place} | ${t.reward}`)
+    .join("\n");
+}
+
+/** "1st | 30K Crystgen" per line → [{ place, reward }] */
+export function parseRewardTiers(text: string | null | undefined) {
+  if (!text) return null;
+  const tiers = text
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .map((l) => {
+      const [place, ...rest] = l.split("|");
+      return { place: place.trim(), reward: rest.join("|").trim() };
+    })
+    .filter((t) => t.place && t.reward);
+  return tiers.length ? tiers : null;
+}
 
 export const rewardSchema = z.object({
   playerId: z.string().min(1),

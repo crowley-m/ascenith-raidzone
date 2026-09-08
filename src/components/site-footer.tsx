@@ -3,33 +3,66 @@ import { site } from "@/lib/site";
 
 export function SiteFooter() {
   return (
-    <footer className="mt-20 border-t border-edge/70 bg-void/60">
+    <footer className="mt-24 border-t border-edge bg-void/60">
       <div className="container-x grid gap-8 py-12 md:grid-cols-3">
         <div>
-          <div className="font-display text-lg font-bold text-white">ASCENITH RAIDZONE</div>
-          <p className="mt-2 max-w-xs text-sm text-slate-400">
-            A {site.game} community running custom servers, events, and rewards. Run by {site.owner}.
+          <div className="font-mono text-[0.8rem] font-bold uppercase tracking-[0.16em] text-white">
+            ASCENITH&middot;RAIDZONE
+          </div>
+          <p className="mt-3 max-w-xs font-mono text-[0.72rem] uppercase leading-relaxed tracking-wide text-slate-400">
+            A {site.game} community running a custom server, weekly RaidZone tournaments, and
+            sponsored prizes. Run by {site.owner}.
           </p>
         </div>
-        <div className="text-sm">
-          <div className="label">Community</div>
-          <ul className="space-y-1 text-slate-400">
-            <li><Link href="/events" className="hover:text-white">Events</Link></li>
-            <li><Link href="/proof" className="hover:text-white">Reward proof</Link></li>
-            <li><Link href="/rules" className="hover:text-white">Rules &amp; how to join</Link></li>
+        <div>
+          <div className="eyebrow">Community</div>
+          <ul className="mt-2 space-y-1.5 font-mono text-[0.72rem] uppercase tracking-wide text-slate-400">
+            <li>
+              <Link href="/events" className="hover:text-white">
+                Events
+              </Link>
+            </li>
+            <li>
+              <Link href="/proof" className="hover:text-white">
+                Results wall
+              </Link>
+            </li>
+            <li>
+              <Link href="/rules" className="hover:text-white">
+                Rules &amp; how to join
+              </Link>
+            </li>
           </ul>
         </div>
-        <div className="text-sm">
-          <div className="label">Account</div>
-          <ul className="space-y-1 text-slate-400">
-            <li><Link href="/register" className="hover:text-white">Register</Link></li>
-            <li><Link href="/login" className="hover:text-white">Log in</Link></li>
-            <li><a href={site.discordInvite} target="_blank" rel="noreferrer" className="hover:text-white">Join the Discord</a></li>
+        <div>
+          <div className="eyebrow">Account</div>
+          <ul className="mt-2 space-y-1.5 font-mono text-[0.72rem] uppercase tracking-wide text-slate-400">
+            <li>
+              <Link href="/register" className="hover:text-white">
+                Register
+              </Link>
+            </li>
+            <li>
+              <Link href="/login" className="hover:text-white">
+                Sign in
+              </Link>
+            </li>
+            <li>
+              <a
+                href={site.discordInvite}
+                target="_blank"
+                rel="noreferrer"
+                className="hover:text-white"
+              >
+                Join the Discord
+              </a>
+            </li>
           </ul>
         </div>
       </div>
-      <div className="container-x border-t border-edge/50 py-5 text-xs text-slate-500">
-        © {new Date().getFullYear()} ASCENITH RAIDZONE. Not affiliated with the developers of {site.game}.
+      <div className="container-x flex flex-wrap items-center justify-between gap-3 border-t border-edge py-5 font-mono text-[0.62rem] uppercase tracking-[0.14em] text-slate-500">
+        <span>&copy; {new Date().getFullYear()} ASCENITH RAIDZONE</span>
+        <span>Made by Crowley</span>
       </div>
     </footer>
   );

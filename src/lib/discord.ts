@@ -100,3 +100,24 @@ export function eventEmbed(e: {
     footer: { text: "ASCENITH RAIDZONE" },
   };
 }
+
+/**
+ * Live presence from the guild's public widget (Server Settings → Widget → Enable).
+ * No bot token needed — just DISCORD_GUILD_ID and the widget switched on.
+ * Returns null if unavailable.
+ */
+export async function guildPresence(): Promise<{ online: number; name?: string } | null> {
+  const gid = process.env.DISCORD_GUILD_ID;
+  if (!gid) return null;
+  try {
+    const res = await fetch(`https://discord.com/api/guilds/${gid}/widget.json`, {
+      next: { revalidate: 60 },
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { presence_count?: number; name?: string };
+    if (typeof data.presence_count !== "number") return null;
+    return { online: data.presence_count, name: data.name };
+  } catch {
+    return null;
+  }
+}

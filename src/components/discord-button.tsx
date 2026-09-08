@@ -8,7 +8,7 @@ export function DiscordButton({ callbackUrl = "/me" }: { callbackUrl?: string })
   return (
     <button
       type="button"
-      className="btn w-full bg-[#5865F2] text-white hover:bg-[#4752c4]"
+      className="btn w-full border-transparent bg-[#5865F2] text-white hover:bg-[#4752c4]"
       disabled={pending}
       onClick={() =>
         start(() => {

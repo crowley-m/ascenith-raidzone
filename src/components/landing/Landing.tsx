@@ -1,175 +1,309 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import dynamic from "next/dynamic";
 import s from "./landing.module.css";
-import { rzState } from "./state";
 import { useImmersive } from "./useImmersive";
-
-const Scene = dynamic(() => import("./Scene"), { ssr: false });
+import { SparkleField } from "./SparkleField";
+import { Wordmark } from "./Wordmark";
+import { Watch } from "./Watch";
+import { Gallery } from "./Gallery";
+import { EventBrief, type OpEvent } from "./EventBrief";
+import { HowItWorks } from "./HowItWorks";
+import type { YtVideo } from "@/lib/youtube";
 
 const DISCORD = process.env.NEXT_PUBLIC_DISCORD_INVITE ?? "https://discord.gg/a4k3KTfE7";
 const REGISTER = "/register";
+const LOGIN = "/login";
 
-export function Landing() {
+function Box({
+  href,
+  k,
+  children,
+  variant,
+}: {
+  href: string;
+  k?: string;
+  children: React.ReactNode;
+  variant?: "solid" | "plain";
+}) {
+  return (
+    <a
+      className={`${s.box} ${variant === "solid" ? s.solid : ""} ${variant === "plain" ? s.plain : ""}`}
+      href={href}
+    >
+      {k ? <span className={s.k}>{k}</span> : null}
+      <span className={s.t}>{children}</span>
+      <span className={s.arw}>{"→"}</span>
+    </a>
+  );
+}
+
+function About() {
+  return (
+    <section className={`${s.about} ${s.wrap}`} id="about">
+      <div className={s.aboutInner}>
+        <div className={s.aboutHead}>
+          <span className={s.mark} data-reveal>
+            Who we are
+          </span>
+          <h2 data-split>Competitive survival, run properly.</h2>
+        </div>
+        <div className={s.aboutBody} data-reveal>
+          <p>
+            A community server that treats <em>Once Human</em> like a competitive sport &mdash;
+            custom RaidZone scenarios where skill decides the outcome.
+          </p>
+          <p>Fair play, real stakes. Seasoned raider or first drop, there&apos;s a spot on the roster.</p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+const MARQUEE = [
+  "One custom server",
+  "Weekly tournaments",
+  "Sponsored prizes",
+  "Custom scenarios",
+  "Purge nights",
+  "Prime raids",
+  "Deviant sweeps",
+  "Fair play",
+  "Roster tracked",
+];
+
+const RUN: [string, string, string][] = [
+  ["Register", "Once. Link your Discord.", "One time"],
+  ["Get the call", "Op drops in Discord — time, target, slots.", "In Discord"],
+  ["Claim a slot", "First in fills the roster.", "Roster + waitlist"],
+  ["Work the op", "Show up, run it with the squad.", "On comms"],
+  ["Take the win", "Winners take the prizes.", "Logged"],
+];
+
+export function Landing({
+  event = null,
+  videos = [],
+  discordOnline = null,
+}: {
+  event?: OpEvent | null;
+  videos?: YtVideo[];
+  discordOnline?: number | null;
+}) {
   const rootRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
-  const [gl, setGl] = useState(false);
+  const [heroVideo, setHeroVideo] = useState(false);
+  const cursorRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     setMounted(true);
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    let hasWebGL = false;
-    try {
-      hasWebGL = !!document.createElement("canvas").getContext("webgl2");
-    } catch {
-      hasWebGL = false;
-    }
-    if (hasWebGL && !reduce) setGl(true);
+    const bigEnough = window.matchMedia("(min-width: 820px)").matches;
+    if (!reduce && bigEnough) setHeroVideo(true);
 
-    // pointer + click feed the 3D scene; scroll is handled by useImmersive
-    const onMove = (e: PointerEvent) => {
-      rzState.mx = (e.clientX / window.innerWidth) * 2 - 1;
-      rzState.my = -((e.clientY / window.innerHeight) * 2 - 1);
+    // custom cursor
+    const fine = window.matchMedia("(pointer: fine)").matches;
+    let raf = 0;
+    let cx = 0;
+    let cy = 0;
+    let tx = 0;
+    let ty = 0;
+    const cur = cursorRef.current;
+    const move = (e: PointerEvent) => {
+      tx = e.clientX;
+      ty = e.clientY;
     };
-    const onDown = () => {
-      rzState.down = 1;
+    const loop = () => {
+      cx += (tx - cx) * 0.2;
+      cy += (ty - cy) * 0.2;
+      if (cur) cur.style.transform = `translate(${cx}px, ${cy}px)`;
+      raf = requestAnimationFrame(loop);
     };
-    window.addEventListener("pointermove", onMove, { passive: true });
-    window.addEventListener("pointerdown", onDown, { passive: true });
-    return () => {
-      window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerdown", onDown);
-    };
+    if (fine && !reduce && cur) {
+      window.addEventListener("pointermove", move, { passive: true });
+      raf = requestAnimationFrame(loop);
+      const hot = () => cur.classList.add(s.hot);
+      const cold = () => cur.classList.remove(s.hot);
+      const targets = rootRef.current?.querySelectorAll("a, button, [data-wm]") ?? [];
+      targets.forEach((t) => {
+        t.addEventListener("pointerenter", hot);
+        t.addEventListener("pointerleave", cold);
+      });
+      return () => {
+        window.removeEventListener("pointermove", move);
+        cancelAnimationFrame(raf);
+        targets.forEach((t) => {
+          t.removeEventListener("pointerenter", hot);
+          t.removeEventListener("pointerleave", cold);
+        });
+      };
+    }
+    return () => cancelAnimationFrame(raf);
   }, []);
+
+  useEffect(() => {
+    if (heroVideo) videoRef.current?.play().catch(() => {});
+  }, [heroVideo]);
 
   useImmersive(rootRef, mounted);
 
   return (
     <div className={s.root} ref={rootRef}>
-      <div className={s.bg} aria-hidden />
-      {mounted && gl && <Scene />}
       <div className={s.grain} aria-hidden />
-      <div id="rz-prog" className={s.prog} aria-hidden />
+      <div className={s.vignette} aria-hidden />
+      <div className={s.cursor} ref={cursorRef} aria-hidden />
+      {mounted && <SparkleField />}
 
-      <header className={s.nav}>
+      <nav className={s.nav}>
         <span className={s.brand}>
-          ASCENITH<b>·</b>RAIDZONE
+          <span className={s.dot} />
+          ASCENITH&middot;RAIDZONE
         </span>
-        <div className={s.navRight}>
-          <a className={s.navLink} href="#raids">
-            Raids
-          </a>
-          <a className={s.navLink} href={DISCORD}>
-            Discord
-          </a>
-          <a className={s.cta} href={REGISTER}>
-            Enlist
-          </a>
+        <div className={s.navMid}>
+          <a href="#event">Event</a>
+          <a href="#how">How it works</a>
+          <a href="#watch">Watch</a>
+          <a href="#run">Field manual</a>
         </div>
-      </header>
+        <span className={s.navStatus}>&bull; Server live &mdash; S1 2026</span>
+        <a className={s.navSignin} href={LOGIN}>
+          Sign in
+        </a>
+        <Box href={REGISTER} variant="solid">
+          Register
+        </Box>
+      </nav>
 
+      {/* HERO */}
       <section className={`${s.hero} ${s.wrap}`} id="top">
-            <h1 className={s.kin} aria-label="RAIDZONE" data-kin>
-              <span className={s.kinLine}>
-                <i>RAID</i>
-              </span>
-              <span className={s.kinLine}>
-                <i>ZONE</i>
-              </span>
-            </h1>
-            <div className={s.under} data-hero-under>
-              <p className={s.say}>
-                Our server. Your loot. <b>Every week.</b>
-              </p>
-              <div className={s.acts}>
-                <a className={`${s.cta} ${s.ctaBig}`} href={REGISTER}>
-                  Enlist your raider
-                </a>
-                <a className={`${s.cta} ${s.ctaBig} ${s.ctaLine}`} href={DISCORD}>
-                  Join Discord
-                </a>
-              </div>
-              <div className={`${s.corner} ${s.micro}`}>
-                <span className={s.dot} /> Server&apos;s up · run by NOT POTATOZIE
-              </div>
-            </div>
-            <div className={`${s.scrollCue} ${s.micro}`}>
-              Scroll <i />
-            </div>
-          </section>
+        <div className={s.heroMedia} aria-hidden>
+          {heroVideo ? (
+            <video
+              ref={videoRef}
+              className={s.heroVideo}
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="auto"
+              tabIndex={-1}
+              poster="/media/hero-poster.jpg"
+            >
+              <source src="/media/hero.mp4" type="video/mp4" />
+            </video>
+          ) : (
+            <div
+              className={s.heroPoster}
+              style={{ backgroundImage: "url(/media/hero-poster.jpg)" }}
+            />
+          )}
+          <div className={s.heroTint} />
+        </div>
 
-          <section className={s.panel} id="raids" data-panel>
-            <div className={s.panelInner}>
-              <span className={s.eyebrow} data-meta>
-                01 — The server
-              </span>
-              <h2 data-split>Our server.</h2>
-              <p className={s.say2} data-meta>
-                One custom world, always up. Tuned rulesets, boosted rates on op nights,
-                admin-run scenarios. Not an official server.
-              </p>
-            </div>
-          </section>
+        <div className={s.kinWrap}>
+          <Wordmark />
+        </div>
 
-          <section className={`${s.panel} ${s.panelRight}`} data-panel>
-            <div className={s.panelInner}>
-              <span className={s.eyebrow} data-meta>
-                02 — The operations
-              </span>
-              <h2 data-split>Weekly raids.</h2>
-              <p className={s.say2} data-meta>
-                Purge nights, Prime raids, Deviant sweeps. Home base is our server — big ops
-                sometimes run elsewhere, and we&apos;ll say where. Slots and rosters in Discord.
-              </p>
-            </div>
-          </section>
+        <div className={s.heroUnder}>
+          <p className={s.heroTag} data-reveal>
+            One custom Once Human server. Weekly RaidZone tournaments.{" "}
+            <span className={s.x}>Sponsored prizes for the squads that take it.</span>
+          </p>
+          <p className={s.heroSub} data-reveal>
+            Run by NOT POTATOZIE &mdash; Season 1 roster open
+          </p>
+          <div className={s.heroActs} data-reveal>
+            <Box href={REGISTER} k="New here?">
+              Register your raider
+            </Box>
+            <Box href={DISCORD} k="·" variant="plain">
+              Join Discord
+            </Box>
+          </div>
+        </div>
 
-          <section className={s.panel} id="rewards" data-panel>
-            <div className={s.panelInner}>
-              <span className={s.eyebrow} data-meta>
-                03 — The split
-              </span>
-              <h2 data-split>In-game rewards.</h2>
-              <p className={s.say2} data-meta>
-                Crystgen, Energy Link, mats, blueprints — split to every raider who shows. No
-                real money, no cash prizes.
-              </p>
-            </div>
-          </section>
+        <div className={s.scrollCue}>
+          Scroll <i />
+        </div>
+      </section>
 
-          <section className={s.finale} id="enlist">
-            <h2 className={s.finaleHead}>
-              <span data-fin>Enlist. Raid.</span>
-              <br />
-              <span data-fin className={s.c2}>
-                Keep the drop.
-              </span>
-            </h2>
-            <p data-meta>Sign in, link Discord, and you&apos;re on the roster for the next one.</p>
-            <div className={s.finaleActs} data-meta>
-              <a className={`${s.cta} ${s.ctaBig}`} href={REGISTER}>
-                Enlist your raider
-              </a>
-              <a className={`${s.cta} ${s.ctaBig} ${s.ctaLine}`} href={DISCORD}>
-                Come to the Discord
-              </a>
-            </div>
-          </section>
+      <div className={s.after}>
+        <EventBrief event={event} discordOnline={discordOnline} />
 
-          <footer className={s.footer}>
-            <span className={s.footerBrand}>
-              ASCENITH<b>·</b>RAIDZONE
+        <HowItWorks />
+
+        <About />
+
+        {/* marquee */}
+        <div className={s.marquee} aria-hidden>
+          {[0, 1].map((row) => (
+            <div className={s.marqueeRow} key={row}>
+              {MARQUEE.map((m) => (
+                <span key={m}>
+                  <i />
+                  {m}
+                </span>
+              ))}
+            </div>
+          ))}
+        </div>
+
+        <Watch videos={videos} />
+
+        <Gallery />
+
+        {/* RUNBOOK */}
+        <section className={`${s.runbook} ${s.wrap}`} id="run">
+          <div className={s.runbookHead}>
+            <span className={s.mark} data-reveal>
+              Field manual
             </span>
-            <nav className={s.footerNav}>
-              <a href={REGISTER}>Enlist</a>
-              <a href={DISCORD}>Discord</a>
-              <a href="/rules">Rules</a>
-            </nav>
-            <span className={s.footerCo}>
-              Run by NOT POTATOZIE · not affiliated with the developers of Once Human.
-            </span>
-      </footer>
+            <h2 data-split>How a night runs.</h2>
+          </div>
+          <ol className={s.steps}>
+            {RUN.map(([k, t, m], i) => (
+              <li className={s.step} key={k} data-reveal>
+                <span className={s.stepN}>{String(i + 1).padStart(2, "0")}</span>
+                <span className={s.stepBody}>
+                  <span className={s.stepK}>{k}</span>
+                  <span className={s.stepT}>{t}</span>
+                </span>
+                <span className={s.stepMeta}>{m}</span>
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        {/* CLOSE */}
+        <section className={s.close} id="register">
+          <h2 data-split>
+            Register<span className={s.x}>.</span>
+          </h2>
+          <p className={s.sub} data-reveal>
+            New here &mdash; register your raider. Already on the roster &mdash; sign in. Either way,
+            you&apos;re in for the next one.
+          </p>
+          <div className={s.acts} data-reveal>
+            <Box href={REGISTER} k="New" variant="solid">
+              Register your raider
+            </Box>
+            <Box href={LOGIN} k="·" variant="plain">
+              Sign in
+            </Box>
+          </div>
+        </section>
+
+        <footer className={s.footer}>
+          <span>ASCENITH&middot;RAIDZONE</span>
+          <nav>
+            <a href={REGISTER}>Register</a>
+            <a href={LOGIN}>Sign in</a>
+            <a href={DISCORD}>Discord</a>
+            <a href="/rules">Rules</a>
+          </nav>
+          <span>Made by Crowley</span>
+        </footer>
+      </div>
     </div>
   );
 }

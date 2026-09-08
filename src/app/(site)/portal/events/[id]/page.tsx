@@ -4,6 +4,7 @@ import { requirePermission } from "@/lib/session";
 import { db } from "@/lib/db";
 import { can } from "@/lib/rbac";
 import { toInputDateTime, fmtDateTime } from "@/lib/format";
+import { tiersToText } from "@/lib/validation";
 import { EventForm } from "@/components/portal/event-form";
 import { AttendanceToggle } from "@/components/portal/attendance-toggle";
 import { RewardForm } from "@/components/portal/reward-form";
@@ -128,6 +129,13 @@ export default async function PortalEventDetail({
                     maxSlots: event.maxSlots,
                     rewardPoolText: event.rewardPoolText,
                     status: event.status,
+                    summary: event.summary,
+                    mode: event.mode,
+                    wipeCycle: event.wipeCycle,
+                    raidWindow: event.raidWindow,
+                    rewardTiersText: tiersToText(event.rewardTiers),
+                    bonusText: event.bonusText,
+                    detailsMd: event.detailsMd,
                   }}
                 />
               </div>

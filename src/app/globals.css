@@ -13,40 +13,103 @@ html {
 body {
   @apply bg-void text-slate-200 antialiased;
   background-image:
-    radial-gradient(60rem 60rem at 80% -10%, rgba(47, 212, 199, 0.08), transparent 60%),
-    radial-gradient(50rem 50rem at -10% 20%, rgba(12, 74, 69, 0.25), transparent 55%);
+    radial-gradient(60rem 60rem at 82% -12%, rgba(213, 48, 63, 0.07), transparent 60%),
+    radial-gradient(50rem 50rem at -10% 15%, rgba(122, 28, 38, 0.14), transparent 55%);
   background-attachment: fixed;
+}
+
+::selection {
+  background: #d5303f;
+  color: #0c0a08;
 }
 
 @layer components {
   .container-x {
-    @apply mx-auto w-full max-w-6xl px-5;
+    @apply mx-auto w-full max-w-5xl px-5;
   }
+
+  /* section eyebrow — mono, crimson, uppercase */
+  .eyebrow {
+    @apply font-mono text-[0.7rem] font-bold uppercase tracking-[0.22em] text-teal;
+  }
+
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-teal/50 disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 border border-transparent px-4 py-2.5
+      font-mono text-[0.8rem] font-bold uppercase tracking-[0.08em] transition
+      focus:outline-none focus:ring-2 focus:ring-teal/50 disabled:opacity-50;
   }
   .btn-primary {
-    @apply btn bg-teal text-void hover:bg-teal/90;
+    @apply btn bg-teal text-void hover:bg-cream hover:text-void;
   }
   .btn-ghost {
-    @apply btn border border-edge bg-panel/60 text-slate-200 hover:border-teal/50 hover:text-white;
+    @apply btn border-edge bg-transparent text-slate-200 hover:border-cream hover:bg-cream hover:text-void;
   }
   .btn-danger {
-    @apply btn border border-red-500/40 bg-red-500/10 text-red-300 hover:bg-red-500/20;
+    @apply btn border-red-500/40 bg-red-500/10 text-red-300 hover:bg-red-500/20;
   }
+
   .card {
-    @apply rounded-xl border border-edge bg-panel/70 p-5 backdrop-blur;
+    @apply border border-edge bg-panel/70 p-6 backdrop-blur;
   }
+
   .input {
-    @apply w-full rounded-md border border-edge bg-void/70 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-teal/60 focus:outline-none focus:ring-1 focus:ring-teal/40;
+    @apply w-full border border-edge bg-void/70 px-3 py-2.5 font-mono text-sm text-slate-100
+      placeholder:text-slate-500 focus:border-teal focus:outline-none focus:ring-1 focus:ring-teal/50;
   }
   .label {
-    @apply mb-1 block text-xs font-medium uppercase tracking-wide text-slate-400;
+    @apply mb-1.5 block font-mono text-[0.64rem] font-bold uppercase tracking-[0.18em] text-slate-400;
   }
   .badge {
-    @apply inline-flex items-center rounded-full border border-edge bg-panel-2 px-2 py-0.5 text-xs font-medium text-slate-300;
+    @apply inline-flex items-center border border-edge bg-panel-2 px-2 py-0.5
+      font-mono text-[0.6rem] font-bold uppercase tracking-[0.12em] text-slate-300;
   }
   .link {
-    @apply text-teal hover:text-teal/80 underline-offset-2 hover:underline;
+    @apply text-teal underline-offset-2 hover:text-cream hover:underline;
   }
+}
+
+/* headings across the app pick up the condensed poster face */
+h1.font-display,
+h2.font-display,
+.font-display {
+  letter-spacing: 0.005em;
+}
+
+/* staff-authored markdown (event briefs, etc.) */
+.md {
+  @apply font-mono text-sm leading-relaxed text-slate-300;
+}
+.md h2 {
+  @apply mb-2 mt-8 font-poster text-2xl uppercase text-white;
+}
+.md h3 {
+  @apply mb-2 mt-6 font-poster text-lg uppercase text-white;
+}
+.md h4 {
+  @apply mb-1 mt-4 font-mono text-[0.7rem] font-bold uppercase tracking-[0.18em] text-teal;
+}
+.md p {
+  @apply my-3;
+}
+.md ul,
+.md ol {
+  @apply my-3 space-y-1.5 pl-5;
+}
+.md ul {
+  @apply list-disc marker:text-teal;
+}
+.md ol {
+  @apply list-decimal marker:text-teal;
+}
+.md strong {
+  @apply font-bold text-slate-100;
+}
+.md code {
+  @apply border border-edge bg-void px-1 py-0.5 text-[0.8em] text-teal;
+}
+.md a {
+  @apply text-teal underline-offset-2 hover:underline;
+}
+.md hr {
+  @apply my-6 border-edge;
 }

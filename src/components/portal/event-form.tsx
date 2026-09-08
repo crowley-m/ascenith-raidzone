@@ -13,6 +13,13 @@ type EventInit = {
   maxSlots: number | null;
   rewardPoolText: string | null;
   status: string;
+  summary: string | null;
+  mode: string | null;
+  wipeCycle: string | null;
+  raidWindow: string | null;
+  rewardTiersText: string;
+  bonusText: string | null;
+  detailsMd: string | null;
 };
 
 export function EventForm({ event }: { event?: EventInit }) {
@@ -28,8 +35,8 @@ export function EventForm({ event }: { event?: EventInit }) {
       </div>
 
       <div>
-        <label className="label">Description</label>
-        <textarea name="description" rows={4} className="input" defaultValue={event?.description ?? ""} />
+        <label className="label">Description (internal / short)</label>
+        <textarea name="description" rows={3} className="input" defaultValue={event?.description ?? ""} />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -38,7 +45,7 @@ export function EventForm({ event }: { event?: EventInit }) {
           <input type="datetime-local" name="startsAt" required className="input" defaultValue={event?.startsAt ?? ""} />
         </div>
         <div>
-          <label className="label">Ends</label>
+          <label className="label">Ends (wipe)</label>
           <input type="datetime-local" name="endsAt" className="input" defaultValue={event?.endsAt ?? ""} />
         </div>
       </div>
@@ -55,13 +62,8 @@ export function EventForm({ event }: { event?: EventInit }) {
       </div>
 
       <div>
-        <label className="label">Reward pool</label>
-        <textarea name="rewardPoolText" rows={2} className="input" defaultValue={event?.rewardPoolText ?? ""} />
-      </div>
-
-      <div>
         <label className="label">Status</label>
-        <select name="status" className="input max-w-[12rem]" defaultValue={event?.status ?? "DRAFT"}>
+        <select name="status" className="input max-w-[16rem]" defaultValue={event?.status ?? "DRAFT"}>
           <option value="DRAFT">Draft</option>
           <option value="PUBLISHED">Published (announces to Discord)</option>
           <option value="COMPLETED">Completed</option>
@@ -69,7 +71,64 @@ export function EventForm({ event }: { event?: EventInit }) {
         </select>
       </div>
 
-      {state.error && <p className="text-sm text-ember">{state.error}</p>}
+      <hr className="border-edge" />
+      <p className="font-mono text-[0.68rem] font-bold uppercase tracking-[0.18em] text-teal">
+        Public brief — shown on the landing page + /events/{event ? event.id : "…"}
+      </p>
+
+      <div>
+        <label className="label">Summary (1–2 lines, landing card)</label>
+        <textarea name="summary" rows={2} className="input" defaultValue={event?.summary ?? ""} placeholder="No rules, no limits. 2-week wipe. Top 3 on the Glory Points board take the pool." />
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <div>
+          <label className="label">Mode (next to RAIDZONE)</label>
+          <input name="mode" className="input" defaultValue={event?.mode ?? ""} placeholder="PURGE" />
+        </div>
+        <div>
+          <label className="label">Wipe cycle</label>
+          <input name="wipeCycle" className="input" defaultValue={event?.wipeCycle ?? ""} placeholder="2 weeks" />
+        </div>
+        <div>
+          <label className="label">Raid window</label>
+          <input name="raidWindow" className="input" defaultValue={event?.raidWindow ?? ""} placeholder="15:30 – 21:29 · 6 hrs/day" />
+        </div>
+      </div>
+
+      <div>
+        <label className="label">Reward tiers — one per line, &ldquo;place | reward&rdquo;</label>
+        <textarea
+          name="rewardTiersText"
+          rows={4}
+          className="input font-mono text-xs"
+          defaultValue={event?.rewardTiersText ?? ""}
+          placeholder={"1st | 30K Crystgen\n2nd | 25K Crystgen\n3rd | 15K Crystgen"}
+        />
+      </div>
+
+      <div>
+        <label className="label">Bonus line</label>
+        <input name="bonusText" className="input" defaultValue={event?.bonusText ?? ""} placeholder="20K Crystgen · hidden across airdrops, cards, alpha boss" />
+      </div>
+
+      <div>
+        <label className="label">Reward pool (free text — optional)</label>
+        <textarea name="rewardPoolText" rows={2} className="input" defaultValue={event?.rewardPoolText ?? ""} />
+      </div>
+
+      <div>
+        <label className="label">Full brief (Markdown) — the whole event details page</label>
+        <textarea
+          name="detailsMd"
+          rows={14}
+          className="input font-mono text-xs"
+          defaultValue={event?.detailsMd ?? ""}
+          placeholder={"## Wipe & raid schedule\n\n- Start: 28 Aug 2026 09:30\n- End: 11 Sep 2026 21:29\n- Raid time: 15:30 – 21:29 (6 hrs/day)\n\n## Glory Points\n\n**Red Room** — 2 pts, spawns every 2h\n**Blue Room** — 1 pt, spawns every 1h\n\n## Rules\n\n- No cheating — permanent ban\n- No bug exploiting\n- Keep toxicity in check"}
+        />
+      </div>
+
+      {state.error && <p className="font-mono text-sm text-ember">{state.error}</p>}
 
       <div>
         <button className="btn-primary" disabled={pending}>

@@ -15,34 +15,54 @@ function LoginForm() {
 
   return (
     <div className="w-full max-w-md">
-      <h1 className="font-display text-2xl font-extrabold text-white">Log in</h1>
-      <p className="mt-2 text-sm text-slate-400">Welcome back to ASCENITH RAIDZONE.</p>
+      <p className="eyebrow">{"// access"}</p>
+      <h1 className="mt-2 font-poster text-5xl uppercase leading-none text-white">
+        Sign in<span className="text-teal">.</span>
+      </h1>
+      <p className="mt-3 font-mono text-[0.78rem] uppercase tracking-wide text-slate-400">
+        Back to the roster.
+      </p>
 
-      <div className="card mt-6">
-        <DiscordButton callbackUrl={callbackUrl} />
-        <div className="my-4 flex items-center gap-3 text-xs text-slate-500">
-          <span className="h-px flex-1 bg-edge" /> or <span className="h-px flex-1 bg-edge" />
+      <div className="mt-6 border border-edge bg-panel/70">
+        <div className="flex items-center gap-3 border-b border-edge px-4 py-3 font-mono text-[0.62rem] font-bold uppercase tracking-[0.18em] text-slate-400">
+          <span className="text-white">AUTH</span>
+          <span className="text-teal">{"//"}</span>
+          <span>SESSION</span>
         </div>
 
-        <form action={action} className="space-y-4">
-          <input type="hidden" name="callbackUrl" value={callbackUrl} />
-          <div>
-            <label className="label" htmlFor="email">Email</label>
-            <input id="email" name="email" type="email" className="input" required />
+        <div className="p-5">
+          <DiscordButton callbackUrl={callbackUrl} />
+          <div className="my-4 flex items-center gap-3 font-mono text-[0.6rem] uppercase tracking-widest text-slate-500">
+            <span className="h-px flex-1 bg-edge" /> or <span className="h-px flex-1 bg-edge" />
           </div>
-          <div>
-            <label className="label" htmlFor="password">Password</label>
-            <input id="password" name="password" type="password" className="input" required />
-          </div>
-          {state.error && <p className="text-sm text-ember">{state.error}</p>}
-          <button type="submit" className="btn-primary w-full" disabled={pending}>
-            {pending ? "Logging in…" : "Log in"}
-          </button>
-        </form>
+
+          <form action={action} className="space-y-4">
+            <input type="hidden" name="callbackUrl" value={callbackUrl} />
+            <div>
+              <label className="label" htmlFor="email">
+                Email
+              </label>
+              <input id="email" name="email" type="email" className="input" required />
+            </div>
+            <div>
+              <label className="label" htmlFor="password">
+                Password
+              </label>
+              <input id="password" name="password" type="password" className="input" required />
+            </div>
+            {state.error && <p className="font-mono text-sm text-ember">{state.error}</p>}
+            <button type="submit" className="btn-primary w-full" disabled={pending}>
+              {pending ? "Signing in…" : "Sign in"}
+            </button>
+          </form>
+        </div>
       </div>
 
-      <p className="mt-4 text-center text-sm text-slate-400">
-        No account? <Link href="/register" className="link">Register</Link>
+      <p className="mt-4 text-center font-mono text-[0.72rem] uppercase tracking-wide text-slate-400">
+        New here?{" "}
+        <Link href="/register" className="link">
+          Register
+        </Link>
       </p>
     </div>
   );
@@ -50,7 +70,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="container-x flex justify-center py-20">
+    <div className="container-x flex min-h-[80vh] items-center justify-center py-16">
       <Suspense>
         <LoginForm />
       </Suspense>

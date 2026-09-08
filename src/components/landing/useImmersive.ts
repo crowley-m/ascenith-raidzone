@@ -1,12 +1,11 @@
 "use client";
 
 import { useEffect, type RefObject } from "react";
-import { rzState } from "./state";
 
 /**
- * Lenis smooth-scroll + GSAP ScrollTrigger/SplitText choreography for the landing.
- * Libs are dynamically imported after mount. Everything is cleaned up on unmount,
- * and it no-ops for reduced-motion (the page is then a plain, readable scroll).
+ * Lenis smooth-scroll + light GSAP reveals for the landing.
+ * Libs are dynamically imported after mount. Cleaned up on unmount.
+ * No-ops for reduced-motion (plain, readable scroll).
  */
 export function useImmersive(rootRef: RefObject<HTMLDivElement | null>, ready: boolean) {
   useEffect(() => {
@@ -42,18 +41,15 @@ export function useImmersive(rootRef: RefObject<HTMLDivElement | null>, ready: b
       if (SplitText) gsap.registerPlugin(SplitText);
 
       const disposers: Array<() => void> = [];
-      const q = <T extends Element = HTMLElement>(sel: string) => root.querySelector<T>(sel);
-      const qa = <T extends Element = HTMLElement>(sel: string) =>
-        Array.from(root.querySelectorAll<T>(sel));
+      const qa = (sel: string) => Array.from(root.querySelectorAll<HTMLElement>(sel));
+
+      let lenis: any = null;
 
       const ctx = gsap.context(() => {
-        /* smooth scroll */
-        let lenis: any = null;
         if (!reduce) {
-          lenis = new Lenis({ duration: 1.1, smoothWheel: true });
-          const onLenis = () => ScrollTrigger.update();
-          lenis.on("scroll", onLenis);
-          const raf = (time: number) => lenis.raf(time * 1000);
+          lenis = new Lenis({ duration: 1.05, smoothWheel: true });
+          lenis.on("scroll", ScrollTrigger.update);
+          const raf = (t: number) => lenis.raf(t * 1000);
           gsap.ticker.add(raf);
           gsap.ticker.lagSmoothing(0);
           disposers.push(() => {
@@ -62,206 +58,130 @@ export function useImmersive(rootRef: RefObject<HTMLDivElement | null>, ready: b
           });
         }
 
-        /* progress bar + page progress */
-        gsap.fromTo(
-          "#rz-prog",
-          { scaleX: 0 },
-          {
-            scaleX: 1,
-            ease: "none",
-            scrollTrigger: { trigger: root, start: "top top", end: "bottom bottom", scrub: 0.3 },
-          },
-        );
-        ScrollTrigger.create({
-          trigger: root,
-          start: "top top",
-          end: "bottom bottom",
-          onUpdate: (self: any) => {
-            rzState.page = self.progress;
-          },
-        });
-
-        /* hero — pin + fly into the crystal */
-        const hero = q("#top");
-        const kin = q("[data-kin]");
-        const under = q("[data-hero-under]");
-
-        if (hero && !reduce) {
-          ScrollTrigger.create({
-            trigger: hero,
-            start: "top top",
-            end: "+=140%",
-            pin: true,
-            scrub: 1,
-            onUpdate: (self: any) => {
-              rzState.hero = self.progress;
-            },
-          });
-          gsap.to(kin, {
-            scale: 1.5,
-            yPercent: -10,
-            filter: "blur(9px)",
-            autoAlpha: 0,
-            ease: "power1.in",
-            scrollTrigger: { trigger: hero, start: "top top", end: "+=110%", scrub: 1 },
-          });
-          gsap.to(under, {
-            autoAlpha: 0,
-            y: -30,
-            ease: "power1.in",
-            scrollTrigger: { trigger: hero, start: "top top", end: "+=70%", scrub: 1 },
-          });
-        }
-
-        /* hero intro — autoplays, ends on the visible resting state */
         if (!reduce) {
-          const tl = gsap.timeline({ delay: 0.15, defaults: { ease: "expo.out" } });
-          let chars: Element[] = [];
-          if (SplitText && kin) {
-            const split = new SplitText(Array.from(kin.querySelectorAll("i")), {
-              type: "chars",
-              charsClass: "rz-char",
-            });
-            chars = split.chars;
-            disposers.push(() => split.revert());
-          }
-          if (chars.length) {
-            tl.from(chars, {
-              yPercent: 130,
-              rotationX: -75,
-              autoAlpha: 0,
-              stagger: 0.045,
-              duration: 1.1,
-            });
-          } else if (kin) {
-            tl.from(kin, { autoAlpha: 0, y: 30, duration: 0.8 });
-          }
-          if (under) {
-            tl.from(
-              Array.from(under.children),
-              { y: 24, autoAlpha: 0, stagger: 0.1, duration: 0.6 },
-              "-=0.5",
-            );
-          }
-        }
+          const TA = "play none none reverse";
 
-        /* reveal helper — content stays visible at rest; animates once on enter */
-        const revealOnEnter = (
-          trigger: Element,
-          start: string,
-          run: () => void,
-        ) => {
-          ScrollTrigger.create({ trigger, start, once: true, onEnter: run });
-        };
-
-        if (!reduce) {
-          qa("[data-panel]").forEach((p) => {
-            const h2 = p.querySelector<HTMLElement>("[data-split]");
-            const metas = Array.from(p.querySelectorAll("[data-meta]"));
-            let chars: Element[] = [];
-            if (SplitText && h2) {
-              const split = new SplitText(h2, { type: "words,chars", charsClass: "rz-char" });
-              chars = split.chars;
-              disposers.push(() => split.revert());
-            }
-            revealOnEnter(p, "top 80%", () => {
-              if (chars.length) {
-                gsap.fromTo(
-                  chars,
-                  { yPercent: 60, rotateX: -55, transformOrigin: "50% 100%" },
-                  {
-                    yPercent: 0,
-                    rotateX: 0,
-                    stagger: 0.02,
-                    duration: 0.8,
-                    ease: "power3.out",
-                  },
-                );
-              } else if (h2) {
-                gsap.fromTo(h2, { y: 34 }, { y: 0, duration: 0.8, ease: "power3.out" });
-              }
-              if (metas.length) {
-                gsap.fromTo(
-                  metas,
-                  { y: 28 },
-                  { y: 0, stagger: 0.08, duration: 0.7, ease: "power2.out" },
-                );
-              }
-            });
-          });
-
-          const finale = q("#enlist");
-          const finBits = qa("[data-fin]");
-          const finSplits = finBits.map((f) => {
-            if (!SplitText) return null;
-            const split = new SplitText(f, { type: "chars", charsClass: "rz-char" });
-            disposers.push(() => split.revert());
-            return split;
-          });
-          const finMetas = qa("#enlist [data-meta]");
-          revealOnEnter(finale ?? root, "top 68%", () => {
-            finBits.forEach((f, i) => {
-              const split = finSplits[i];
-              if (split) {
-                gsap.fromTo(
-                  split.chars,
-                  { yPercent: 70, rotateX: -55, transformOrigin: "50% 100%" },
-                  {
-                    yPercent: 0,
-                    rotateX: 0,
-                    stagger: 0.03,
-                    duration: 0.8,
-                    ease: "power3.out",
-                    delay: i * 0.12,
-                  },
-                );
-              } else {
-                gsap.fromTo(f, { y: 34 }, { y: 0, duration: 0.8, ease: "power3.out" });
-              }
-            });
-            if (finMetas.length) {
+          // headline splits — per-word mask wipe, reverses on scroll back
+          qa("[data-split]").forEach((h) => {
+            if (!SplitText) {
               gsap.fromTo(
-                finMetas,
-                { y: 26 },
-                { y: 0, stagger: 0.1, duration: 0.7, ease: "power2.out", delay: 0.2 },
+                h,
+                { yPercent: 40, autoAlpha: 0 },
+                {
+                  yPercent: 0,
+                  autoAlpha: 1,
+                  duration: 0.7,
+                  ease: "power3.out",
+                  scrollTrigger: { trigger: h, start: "top 84%", toggleActions: TA },
+                },
               );
+              return;
             }
+            const split = new SplitText(h, {
+              type: "words,chars",
+              charsClass: "rz-char",
+              wordsClass: "rz-word",
+            });
+            disposers.push(() => split.revert());
+            gsap.fromTo(
+              split.chars,
+              { yPercent: 115 },
+              {
+                yPercent: 0,
+                stagger: 0.018,
+                duration: 0.62,
+                ease: "power4.out",
+                scrollTrigger: { trigger: h, start: "top 85%", toggleActions: TA },
+              },
+            );
           });
+
+          // reveals — fade + rise on the way down, undo on the way back up
+          qa("[data-reveal]").forEach((el) => {
+            gsap.fromTo(
+              el,
+              { y: 26, autoAlpha: 0 },
+              {
+                y: 0,
+                autoAlpha: 1,
+                duration: 0.6,
+                ease: "power2.out",
+                scrollTrigger: { trigger: el, start: "top 90%", toggleActions: TA },
+              },
+            );
+          });
+
+          // terminal panels — lines type in, reverse on scroll back
+          qa("[data-term]").forEach((panel) => {
+            const lines = Array.from(panel.querySelectorAll<HTMLElement>("[data-tl]"));
+            if (!lines.length) return;
+            gsap.fromTo(
+              lines,
+              { autoAlpha: 0, x: -14 },
+              {
+                autoAlpha: 1,
+                x: 0,
+                stagger: 0.05,
+                duration: 0.34,
+                ease: "power2.out",
+                scrollTrigger: { trigger: panel, start: "top 82%", toggleActions: TA },
+              },
+            );
+          });
+
+          // parallax — layers drift at different rates as you scroll
+          qa("[data-parallax]").forEach((el) => {
+            gsap.fromTo(
+              el,
+              { yPercent: 10 },
+              {
+                yPercent: -10,
+                ease: "none",
+                scrollTrigger: {
+                  trigger: el,
+                  start: "top bottom",
+                  end: "bottom top",
+                  scrub: 0.7,
+                },
+              },
+            );
+          });
+
+          // hero wordmark drifts up slowly behind the fold
+          const wm = root.querySelector<HTMLElement>("[data-wm] svg");
+          const hero = root.querySelector<HTMLElement>("#top");
+          if (wm && hero) {
+            gsap.to(wm, {
+              yPercent: -24,
+              ease: "none",
+              scrollTrigger: {
+                trigger: hero,
+                start: "top top",
+                end: "bottom top",
+                scrub: true,
+              },
+            });
+          }
         }
 
-        /* anchor links */
-        qa<HTMLAnchorElement>('a[href^="#"]').forEach((a) => {
+        // anchor links through Lenis
+        qa('a[href^="#"]').forEach((a) => {
           const handler = (e: Event) => {
             const href = a.getAttribute("href");
-            if (!href) return;
+            if (!href || href === "#") return;
             const t = root.querySelector<HTMLElement>(href);
             if (!t) return;
             e.preventDefault();
-            if (lenis) lenis.scrollTo(t, { offset: 0 });
+            if (lenis) lenis.scrollTo(t, { offset: -20 });
             else t.scrollIntoView({ behavior: reduce ? "auto" : "smooth" });
           };
           a.addEventListener("click", handler);
           disposers.push(() => a.removeEventListener("click", handler));
         });
 
-        /* scroll velocity → shader */
-        let lastY = window.scrollY;
-        let lastT = performance.now();
-        const velTick = () => {
-          const now = performance.now();
-          const y = window.scrollY;
-          const dt = Math.max(1, now - lastT);
-          rzState.scrollVel = rzState.scrollVel * 0.85 + (Math.abs(y - lastY) / dt) * 0.15;
-          lastY = y;
-          lastT = now;
-        };
-        gsap.ticker.add(velTick);
-        disposers.push(() => gsap.ticker.remove(velTick));
-
         if (document.fonts?.ready) {
           document.fonts.ready.then(() => ScrollTrigger.refresh());
         }
-        rzState.ready = true;
       }, root);
 
       cleanup = () => {
@@ -273,7 +193,6 @@ export function useImmersive(rootRef: RefObject<HTMLDivElement | null>, ready: b
             /* ignore */
           }
         });
-        rzState.ready = false;
       };
     })();
 

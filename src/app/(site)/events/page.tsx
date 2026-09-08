@@ -7,19 +7,25 @@ export const dynamic = "force-dynamic";
 
 export default async function EventsPage() {
   const now = new Date();
-  const [upcoming, past] = await Promise.all([
-    db.event.findMany({
-      where: { status: "PUBLISHED", startsAt: { gte: now } },
-      orderBy: { startsAt: "asc" },
-      include: { _count: { select: { signups: true } } },
-    }),
-    db.event.findMany({
-      where: { status: { in: ["PUBLISHED", "COMPLETED"] }, startsAt: { lt: now } },
-      orderBy: { startsAt: "desc" },
-      take: 12,
-      include: { _count: { select: { signups: true } } },
-    }),
-  ]);
+  let upcoming: Awaited<ReturnType<typeof db.event.findMany>> = [];
+  let past: Awaited<ReturnType<typeof db.event.findMany>> = [];
+  try {
+    [upcoming, past] = await Promise.all([
+      db.event.findMany({
+        where: { status: "PUBLISHED", startsAt: { gte: now } },
+        orderBy: { startsAt: "asc" },
+        include: { _count: { select: { signups: true } } },
+      }),
+      db.event.findMany({
+        where: { status: { in: ["PUBLISHED", "COMPLETED"] }, startsAt: { lt: now } },
+        orderBy: { startsAt: "desc" },
+        take: 12,
+        include: { _count: { select: { signups: true } } },
+      }),
+    ]);
+  } catch {
+    /* db unreachable — render empty */
+  }
 
   return (
     <div className="container-x py-16">

@@ -8,31 +8,59 @@ export async function SiteHeader() {
   const user = session?.user;
 
   return (
-    <header className="sticky top-0 z-40 border-b border-edge/70 bg-void/80 backdrop-blur">
-      <div className="container-x flex h-16 items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 font-display text-lg font-extrabold tracking-wide text-white">
-          <span className="text-teal">▲</span> ASCENITH<span className="text-teal">RAIDZONE</span>
+    <header className="sticky top-0 z-40 border-b border-edge bg-void/85 backdrop-blur">
+      <div className="container-x flex h-16 items-center justify-between gap-4">
+        <Link
+          href="/"
+          className="flex items-center gap-2 font-mono text-[0.78rem] font-bold uppercase tracking-[0.16em] text-white"
+        >
+          <span className="h-2 w-2 flex-none rounded-full bg-teal" />
+          ASCENITH&middot;RAIDZONE
         </Link>
 
-        <nav className="hidden items-center gap-6 text-sm text-slate-300 md:flex">
-          <Link href="/events" className="hover:text-white">Events</Link>
-          <Link href="/proof" className="hover:text-white">Rewards</Link>
-          <Link href="/rules" className="hover:text-white">Rules &amp; Join</Link>
-          <a href={site.discordInvite} target="_blank" rel="noreferrer" className="hover:text-white">Discord</a>
+        <nav className="hidden items-center gap-6 font-mono text-[0.68rem] uppercase tracking-[0.14em] text-slate-300 md:flex">
+          <Link href="/events" className="hover:text-white">
+            Events
+          </Link>
+          <Link href="/proof" className="hover:text-white">
+            Results
+          </Link>
+          <Link href="/rules" className="hover:text-white">
+            Rules
+          </Link>
+          <a
+            href={site.discordInvite}
+            target="_blank"
+            rel="noreferrer"
+            className="hover:text-white"
+          >
+            Discord
+          </a>
         </nav>
 
         <div className="flex items-center gap-2">
           {user ? (
             <>
               {isStaff(user.role) && (
-                <Link href="/portal" className="btn-ghost hidden sm:inline-flex">Portal</Link>
+                <Link href="/portal" className="btn-ghost hidden sm:inline-flex">
+                  Portal
+                </Link>
               )}
-              <Link href="/me" className="btn-primary">My Profile</Link>
+              <Link href="/me" className="btn-primary">
+                My profile
+              </Link>
             </>
           ) : (
             <>
-              <Link href="/login" className="btn-ghost">Log in</Link>
-              <Link href="/register" className="btn-primary">Register</Link>
+              <Link
+                href="/login"
+                className="hidden font-mono text-[0.66rem] font-bold uppercase tracking-[0.16em] text-slate-300 hover:text-white sm:inline"
+              >
+                Sign in
+              </Link>
+              <Link href="/register" className="btn-primary">
+                Register
+              </Link>
             </>
           )}
         </div>

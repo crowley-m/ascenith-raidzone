@@ -10,9 +10,11 @@ import {
   factionSchema,
   flagSchema,
   noteSchema,
+  parseRewardTiers,
   rewardSchema,
 } from "@/lib/validation";
 import { postAnnouncement, editAnnouncement, eventEmbed } from "@/lib/discord";
+import { Prisma } from "@prisma/client";
 import type { PlayerStatus, Role } from "@prisma/client";
 
 type FormState = { ok?: boolean; error?: string };
@@ -98,15 +100,23 @@ export async function saveEvent(_prev: FormState, formData: FormData): Promise<F
   const actor = await assertPermission("event:manage");
   const id = (formData.get("id") as string) || null;
 
+  const str = (k: string) => (formData.get(k) as string) || null;
   const parsed = eventSchema.safeParse({
     title: formData.get("title"),
-    description: (formData.get("description") as string) || null,
+    description: str("description"),
     startsAt: formData.get("startsAt"),
-    endsAt: (formData.get("endsAt") as string) || null,
-    server: (formData.get("server") as string) || null,
-    maxSlots: (formData.get("maxSlots") as string) || null,
-    rewardPoolText: (formData.get("rewardPoolText") as string) || null,
+    endsAt: str("endsAt"),
+    server: str("server"),
+    maxSlots: str("maxSlots"),
+    rewardPoolText: str("rewardPoolText"),
     status: formData.get("status"),
+    summary: str("summary"),
+    mode: str("mode"),
+    wipeCycle: str("wipeCycle"),
+    raidWindow: str("raidWindow"),
+    rewardTiersText: str("rewardTiersText"),
+    bonusText: str("bonusText"),
+    detailsMd: str("detailsMd"),
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid event." };
@@ -121,6 +131,14 @@ export async function saveEvent(_prev: FormState, formData: FormData): Promise<F
     maxSlots: d.maxSlots ?? null,
     rewardPoolText: d.rewardPoolText ?? null,
     status: d.status,
+    summary: d.summary ?? null,
+    mode: d.mode ?? null,
+    wipeCycle: d.wipeCycle ?? null,
+    raidWindow: d.raidWindow ?? null,
+    rewardTiers:
+      (parseRewardTiers(d.rewardTiersText) as Prisma.InputJsonValue) ?? Prisma.JsonNull,
+    bonusText: d.bonusText ?? null,
+    detailsMd: d.detailsMd ?? null,
   };
 
   let eventId: string;
