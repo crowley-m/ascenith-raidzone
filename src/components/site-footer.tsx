@@ -18,6 +18,11 @@ export function SiteFooter() {
           <div className="eyebrow">Community</div>
           <ul className="mt-2 space-y-1.5 font-mono text-[0.72rem] uppercase tracking-wide text-slate-400">
             <li>
+              <Link href="/about" className="hover:text-white">
+                About
+              </Link>
+            </li>
+            <li>
               <Link href="/events" className="hover:text-white">
                 Events
               </Link>

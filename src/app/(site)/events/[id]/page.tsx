@@ -17,7 +17,10 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { id } = await params;
   try {
-    const event = await db.event.findUnique({ where: { id }, select: { title: true } });
+    const event = await db.event.findUnique({
+      where: { id, status: { in: ["PUBLISHED", "COMPLETED"] } },
+      select: { title: true },
+    });
     return { title: event?.title ?? "Event" };
   } catch {
     return { title: "Event" };

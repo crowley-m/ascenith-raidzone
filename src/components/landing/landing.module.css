@@ -1464,6 +1464,31 @@
   .navSignin { display: none; }
 }
 
+/* fullscreen-menu trigger — mobile nav + desktop "full menu" */
+.navMenu {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--rule);
+  padding: 8px 13px;
+  font-family: var(--f-mono);
+  font-weight: 700;
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--cream);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.navMenu:hover { border-color: var(--crimson); color: var(--crimson); }
+@media (min-width: 901px) {
+  /* keep the inline links AND the menu on desktop, menu sits before the CTA */
+  .navMenu { margin-left: 12px; }
+}
+@media (max-width: 900px) {
+  .navMenu { margin-left: auto; }
+}
+
 /* ---- about / who we are ---- */
 .about {
   position: relative;

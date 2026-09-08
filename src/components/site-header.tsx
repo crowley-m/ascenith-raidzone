@@ -3,11 +3,13 @@ import { auth } from "@/auth";
 import { isStaff } from "@/lib/rbac";
 import { site } from "@/lib/site";
 import { AccountMenu } from "@/components/account-menu";
+import { NavOverlay } from "@/components/nav-overlay";
 
 const NAV = [
   { href: "/events", label: "Events" },
   { href: "/proof", label: "Results" },
   { href: "/rules", label: "Rules" },
+  { href: "/about", label: "About" },
 ];
 
 export async function SiteHeader() {
@@ -41,7 +43,8 @@ export async function SiteHeader() {
           </a>
         </nav>
 
-        <div className="flex items-center gap-2">
+        {/* desktop: account / auth */}
+        <div className="hidden items-center gap-2 md:flex">
           {user ? (
             <AccountMenu
               name={user.name ?? user.email ?? "Account"}
@@ -52,7 +55,7 @@ export async function SiteHeader() {
             <>
               <Link
                 href="/login"
-                className="hidden font-mono text-[0.66rem] font-bold uppercase tracking-[0.16em] text-slate-300 hover:text-white sm:inline"
+                className="font-mono text-[0.66rem] font-bold uppercase tracking-[0.16em] text-slate-300 hover:text-white"
               >
                 Sign in
               </Link>
@@ -61,6 +64,16 @@ export async function SiteHeader() {
               </Link>
             </>
           )}
+        </div>
+
+        {/* mobile: everything behind one fullscreen menu */}
+        <div className="md:hidden">
+          <NavOverlay
+            pages={[...NAV, { href: site.discordInvite, label: "Discord", external: true }]}
+            account={
+              user ? { name: user.name ?? user.email ?? "Account", isStaff: isStaff(user.role) } : null
+            }
+          />
         </div>
       </div>
     </header>

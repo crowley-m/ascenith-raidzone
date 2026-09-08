@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { isStaff } from "@/lib/rbac";
+import { NavOverlay } from "@/components/nav-overlay";
 import s from "./landing.module.css";
 import { useImmersive } from "./useImmersive";
 import { SparkleField } from "./SparkleField";
@@ -17,6 +18,22 @@ import type { YtVideo } from "@/lib/youtube";
 const DISCORD = process.env.NEXT_PUBLIC_DISCORD_INVITE ?? "https://discord.gg/a4k3KTfE7";
 const REGISTER = "/register";
 const LOGIN = "/login";
+
+const NAV_PAGES = [
+  { href: "/events", label: "Events" },
+  { href: "/proof", label: "Results" },
+  { href: "/rules", label: "Rules" },
+  { href: "/about", label: "About" },
+  { href: DISCORD, label: "Discord", external: true },
+];
+const NAV_SECTIONS = [
+  { href: "#event", label: "Current event" },
+  { href: "#how", label: "How it works" },
+  { href: "#watch", label: "Watch" },
+  { href: "#gallery", label: "The field" },
+  { href: "#run", label: "Field manual" },
+  { href: "#register", label: "Register" },
+];
 
 function Box({
   href,
@@ -175,9 +192,7 @@ export function Landing({
           <Link href="/events">Events</Link>
           <Link href="/proof">Results</Link>
           <Link href="/rules">Rules</Link>
-          <a href={DISCORD} target="_blank" rel="noreferrer">
-            Discord
-          </a>
+          <Link href="/about">About</Link>
         </div>
         <span className={s.navStatus}>
           <span className={s.liveDot} />
@@ -186,6 +201,16 @@ export function Landing({
             : "Server live"}{" "}
           &mdash; S1 2026
         </span>
+        <NavOverlay
+          pages={NAV_PAGES}
+          sections={NAV_SECTIONS}
+          account={
+            user
+              ? { name: user.name ?? user.email ?? "Account", isStaff: staff }
+              : null
+          }
+          triggerClassName={s.navMenu}
+        />
         {user ? (
           <>
             {staff && (
@@ -365,6 +390,7 @@ export function Landing({
         <footer className={s.footer}>
           <span>ASCENITH&middot;RAIDZONE</span>
           <nav>
+            <Link href="/about">About</Link>
             <Link href="/events">Events</Link>
             <Link href="/proof">Results</Link>
             <Link href="/rules">Rules</Link>
