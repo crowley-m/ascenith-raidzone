@@ -14,7 +14,6 @@ import { Gallery, type GalleryImage } from "./Gallery";
 import { EventBrief, type OpEvent, type UpcomingOp } from "./EventBrief";
 import { HowItWorks } from "./HowItWorks";
 import { HowToJoinVideo } from "./HowToJoinVideo";
-import { Posters } from "./Posters";
 import type { YtVideo } from "@/lib/youtube";
 
 const DISCORD = process.env.NEXT_PUBLIC_DISCORD_INVITE ?? "https://discord.gg/a4k3KTfE7";
@@ -32,7 +31,6 @@ const NAV_PAGES = [
 const NAV_SECTIONS = [
   { href: "#event", label: "Current event" },
   { href: "#how", label: "How it works" },
-  { href: "#seasons", label: "Seasons" },
   { href: "#watch", label: "Watch" },
   { href: "#gallery", label: "The field" },
   { href: "#run", label: "Field manual" },
@@ -302,8 +300,6 @@ export function Landing({
         <HowItWorks />
 
         <About />
-
-        <Posters />
 
         <Watch videos={videos} />
 
