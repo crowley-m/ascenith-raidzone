@@ -108,16 +108,13 @@ async function main() {
       number: 1,
       slug: "faction-war-1",
       status: "ENDED",
+      prizePoolText: "105,820 Crystgin",
       videos: [
         "https://youtube.com/live/qBr7j1-5Ui0",
         "https://youtube.com/live/2PsAW_zjOac",
         "https://youtube.com/live/816-cHYU7n0",
         "https://youtube.com/live/TsyC2-GCEfk",
         "https://youtube.com/live/xlhdg_S5fMU",
-        "https://youtube.com/live/WzxGxAnPdeQ",
-        "https://youtube.com/live/sZv1E62EruE",
-        "https://youtube.com/live/b25zv4v2XFg",
-        "https://youtube.com/live/1UknknxiGy0",
       ],
     },
     {
@@ -131,7 +128,7 @@ async function main() {
       number: 1,
       slug: "hyperbrawl-1",
       status: "ENDED",
-      prizePoolText: "3,880 Crystgin",
+      prizePoolText: "8,000 Crystgin",
       videos: ["https://youtube.com/live/AiPgNkdZ1_8"],
     },
     {
@@ -139,7 +136,7 @@ async function main() {
       number: 1,
       slug: "solo-mode-1",
       status: "ENDED",
-      prizePoolText: "10,000 Crystgin",
+      prizePoolText: "15,000 Crystgin",
       posterUrl: "/media/promo-solo-season-1.webp",
     },
     {
@@ -159,6 +156,7 @@ async function main() {
       number: 1,
       slug: "cash-1",
       status: "ENDED",
+      prizePoolText: "$200",
       videos: ["https://www.twitch.tv/videos/2836622232"],
     },
     {
@@ -166,6 +164,7 @@ async function main() {
       number: 2,
       slug: "cash-2",
       status: "ENDED",
+      prizePoolText: "$200",
     },
   ];
   for (const s of seasons) {
