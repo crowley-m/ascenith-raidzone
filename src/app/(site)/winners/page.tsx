@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { fmtDate } from "@/lib/format";
+import { topRaiders } from "@/lib/leaderboard";
+import { TopRaiders } from "@/components/top-raiders";
 import type { RewardTier } from "@/lib/validation";
 
 export const metadata: Metadata = {
@@ -13,6 +15,15 @@ export const dynamic = "force-dynamic";
 const MEDAL = ["1st", "2nd", "3rd", "4th", "5th"];
 
 export default async function WinnersPage() {
+  const raiders = await topRaiders(15);
+  const proofImages = await db.mediaAsset
+    .findMany({
+      where: { kind: "proof" },
+      orderBy: { sortOrder: "asc" },
+      select: { id: true, caption: true, tag: true },
+    })
+    .catch(() => []);
+
   let events: Awaited<ReturnType<typeof db.event.findMany>> = [];
   let looseRewards: Awaited<ReturnType<typeof db.reward.findMany>> = [];
   try {
@@ -54,7 +65,47 @@ export default async function WinnersPage() {
         Every RAIDZONE event, who placed, and what they took home. Real events, real payouts.
       </p>
 
-      {events.length === 0 && looseRewards.length === 0 ? (
+      {raiders.length > 0 && (
+        <section className="mt-12 border-t border-edge pt-8">
+          <h2 className="font-display text-xl font-bold text-white">Top raiders</h2>
+          <p className="mt-1 text-sm text-slate-500">
+            Weighted by podium finishes and events played.
+          </p>
+          <div className="mt-4 max-w-xl">
+            <TopRaiders raiders={raiders} />
+          </div>
+        </section>
+      )}
+
+      {proofImages.length > 0 && (
+        <section className="mt-12 border-t border-edge pt-8">
+          <h2 className="font-display text-xl font-bold text-white">Proof</h2>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {proofImages.map((img) => (
+              <figure key={img.id} className="border border-edge">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`/api/media/${img.id}`}
+                  alt={img.caption ?? ""}
+                  loading="lazy"
+                  className="aspect-video w-full object-cover"
+                />
+                {(img.caption || img.tag) && (
+                  <figcaption className="px-3 py-2 text-xs text-slate-400">
+                    {img.caption}
+                    {img.tag ? ` · ${img.tag}` : ""}
+                  </figcaption>
+                )}
+              </figure>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {events.length === 0 &&
+      looseRewards.length === 0 &&
+      raiders.length === 0 &&
+      proofImages.length === 0 ? (
         <p className="mt-12 text-sm text-slate-400">
           No results logged yet — check back after the next event.
         </p>

@@ -26,16 +26,21 @@ export default async function PlayersPage({
     ];
   }
 
-  const players = await db.player.findMany({
-    where,
-    orderBy: [{ status: "asc" }, { createdAt: "desc" }],
-    take: 200,
-    include: {
-      user: { select: { email: true, discordUsername: true } },
-      faction: { select: { name: true } },
-      _count: { select: { rewards: true } },
-    },
-  });
+  const [players, counts] = await Promise.all([
+    db.player.findMany({
+      where,
+      orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+      take: 200,
+      include: {
+        user: { select: { email: true, discordUsername: true } },
+        faction: { select: { name: true } },
+        _count: { select: { rewards: true } },
+      },
+    }),
+    db.player.groupBy({ by: ["status"], _count: true }),
+  ]);
+  const countFor = (s: string) => counts.find((c) => c.status === s)?._count ?? 0;
+  const total = counts.reduce((n, c) => n + (typeof c._count === "number" ? c._count : 0), 0);
 
   return (
     <div>
@@ -43,6 +48,27 @@ export default async function PlayersPage({
         <h2 className="font-display text-xl font-bold text-white">Players</h2>
         <span className="text-sm text-slate-500">{players.length} shown</span>
       </div>
+
+      <nav className="mt-3 flex flex-wrap gap-2 text-xs">
+        {[
+          { k: "", label: `All ${total}` },
+          { k: "ACTIVE", label: `Active ${countFor("ACTIVE")}` },
+          { k: "INACTIVE", label: `Inactive ${countFor("INACTIVE")}` },
+          { k: "BANNED", label: `Banned ${countFor("BANNED")}` },
+        ].map((t) => (
+          <Link
+            key={t.k}
+            href={t.k ? `/portal/players?status=${t.k}` : "/portal/players"}
+            className={`border px-3 py-1 uppercase tracking-wide ${
+              (status ?? "") === t.k
+                ? "border-teal text-teal"
+                : "border-edge text-slate-400 hover:text-white"
+            }`}
+          >
+            {t.label}
+          </Link>
+        ))}
+      </nav>
 
       <form className="mt-4 flex flex-wrap gap-2" action="/portal/players">
         <input

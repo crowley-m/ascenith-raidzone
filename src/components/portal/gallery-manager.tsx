@@ -19,13 +19,21 @@ type Img = {
   createdAt: string;
 };
 
-const LIVE_SLOTS = 6;
-
 function kb(n: number) {
   return n < 1024 * 1024 ? `${Math.round(n / 1024)} KB` : `${(n / 1024 / 1024).toFixed(1)} MB`;
 }
 
-export function GalleryManager({ images }: { images: Img[] }) {
+export function GalleryManager({
+  images,
+  kind = "gallery",
+  liveSlots,
+  note,
+}: {
+  images: Img[];
+  kind?: "gallery" | "proof";
+  liveSlots?: number; // gallery: first N show on landing. proof: undefined = all show
+  note?: string;
+}) {
   const [addState, addAction, adding] = useActionState(addGalleryImage, {});
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -36,13 +44,14 @@ export function GalleryManager({ images }: { images: Img[] }) {
   return (
     <div className="mt-6 space-y-8">
       <form ref={formRef} action={addAction} className="card grid gap-3">
+        <input type="hidden" name="kind" value={kind} />
         <h3 className="font-display font-bold text-white">Add an image</h3>
         <div>
-          <label className="label" htmlFor="image">
+          <label className="label" htmlFor={`image-${kind}`}>
             Image file
           </label>
           <input
-            id="image"
+            id={`image-${kind}`}
             name="image"
             type="file"
             accept="image/png,image/jpeg,image/webp,image/gif"
@@ -52,16 +61,22 @@ export function GalleryManager({ images }: { images: Img[] }) {
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
           <div>
-            <label className="label" htmlFor="caption">
-              Caption
-            </label>
-            <input id="caption" name="caption" className="input" maxLength={40} placeholder="PURGE 04" />
+            <label className="label">Caption</label>
+            <input
+              name="caption"
+              className="input"
+              maxLength={40}
+              placeholder={kind === "proof" ? "PURGE — 1st place payout" : "PURGE 04"}
+            />
           </div>
           <div>
-            <label className="label" htmlFor="tag">
-              Small label
-            </label>
-            <input id="tag" name="tag" className="input" maxLength={40} placeholder="base hold" />
+            <label className="label">Small label</label>
+            <input
+              name="tag"
+              className="input"
+              maxLength={40}
+              placeholder={kind === "proof" ? "30K Crystgin" : "base hold"}
+            />
           </div>
         </div>
         {addState.error && <p className="text-sm text-ember">{addState.error}</p>}
@@ -74,17 +89,15 @@ export function GalleryManager({ images }: { images: Img[] }) {
 
       <div>
         <p className="text-xs uppercase tracking-widest text-slate-500">
-          {images.length} image{images.length === 1 ? "" : "s"} · first {LIVE_SLOTS} show on the
-          landing page
+          {images.length} image{images.length === 1 ? "" : "s"}
+          {liveSlots ? ` · first ${liveSlots} show on the landing page` : ""}
         </p>
         <ul className="mt-3 space-y-3">
           {images.map((img, i) => (
-            <ImageRow key={img.id} img={img} index={i} count={images.length} />
+            <ImageRow key={img.id} img={img} index={i} count={images.length} liveSlots={liveSlots} />
           ))}
           {images.length === 0 && (
-            <li className="text-sm text-slate-400">
-              Nothing uploaded yet — the landing page shows placeholder frames.
-            </li>
+            <li className="text-sm text-slate-400">{note ?? "Nothing uploaded yet."}</li>
           )}
         </ul>
       </div>
@@ -92,11 +105,21 @@ export function GalleryManager({ images }: { images: Img[] }) {
   );
 }
 
-function ImageRow({ img, index, count }: { img: Img; index: number; count: number }) {
+function ImageRow({
+  img,
+  index,
+  count,
+  liveSlots,
+}: {
+  img: Img;
+  index: number;
+  count: number;
+  liveSlots?: number;
+}) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [saved, setSaved] = useState(false);
-  const live = index < LIVE_SLOTS;
+  const live = liveSlots === undefined || index < liveSlots;
 
   function run(fn: () => Promise<unknown>) {
     start(async () => {
@@ -142,7 +165,7 @@ function ImageRow({ img, index, count }: { img: Img; index: number; count: numbe
           <span
             className={`badge ${live ? "border-teal/40 text-teal" : "border-edge text-slate-500"}`}
           >
-            {live ? `slot ${index + 1}` : "hidden"}
+            {liveSlots === undefined ? "shown" : live ? `slot ${index + 1}` : "hidden"}
           </span>
           <span>
             {img.width && img.height ? `${img.width}×${img.height} · ` : ""}

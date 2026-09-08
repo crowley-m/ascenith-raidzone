@@ -3,6 +3,8 @@ import { requireStaff } from "@/lib/session";
 import { db } from "@/lib/db";
 import { fmtDateTime } from "@/lib/format";
 import { hiddenActorIds, maskName } from "@/lib/staff-mask";
+import { topRaiders } from "@/lib/leaderboard";
+import { TopRaiders } from "@/components/top-raiders";
 
 export const dynamic = "force-dynamic";
 
@@ -56,6 +58,8 @@ export default async function PortalOverview() {
     }),
     hiddenActorIds(me.role),
   ]);
+
+  const raiders = await topRaiders(8);
 
   const avgTeamSize = teamCount ? (teamMemberCount / teamCount).toFixed(1) : "0";
   const lastRate =
@@ -127,19 +131,30 @@ export default async function PortalOverview() {
         </div>
       </div>
 
-      <div className="card">
-        <h2 className="font-display font-bold text-white">Activity</h2>
-        <ul className="mt-3 space-y-2 text-xs text-slate-400">
-          {recentAudit.map((a) => (
-            <li key={a.id}>
-              <span className="text-slate-300">
-                {maskName(a.actor?.name ?? a.actor?.email, a.actorId, hidden, "system")}
-              </span>{" "}
-              {a.action}
-              <span className="block text-slate-600">{fmtDateTime(a.createdAt)}</span>
-            </li>
-          ))}
-        </ul>
+      <div className="space-y-6">
+        {raiders.length > 0 && (
+          <div className="card">
+            <h2 className="font-display font-bold text-white">Top raiders</h2>
+            <div className="mt-2">
+              <TopRaiders raiders={raiders} compact />
+            </div>
+          </div>
+        )}
+
+        <div className="card">
+          <h2 className="font-display font-bold text-white">Activity</h2>
+          <ul className="mt-3 space-y-2 text-xs text-slate-400">
+            {recentAudit.map((a) => (
+              <li key={a.id}>
+                <span className="text-slate-300">
+                  {maskName(a.actor?.name ?? a.actor?.email, a.actorId, hidden, "system")}
+                </span>{" "}
+                {a.action}
+                <span className="block text-slate-600">{fmtDateTime(a.createdAt)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
     </div>
   );

@@ -784,20 +784,26 @@ export async function removeStaffRole(userId: string) {
 // Media — landing gallery images
 // --------------------------------------------------------------------------
 
+function mediaKind(v: FormDataEntryValue | null): "gallery" | "proof" {
+  return v === "proof" ? "proof" : "gallery";
+}
+const mediaRevalidate = (kind: string) => (kind === "proof" ? "/winners" : "/");
+
 export async function addGalleryImage(_prev: FormState, formData: FormData): Promise<FormState> {
   const actor = await assertPermission("media:manage");
+  const kind = mediaKind(formData.get("kind"));
   const file = formData.get("image");
   if (!(file instanceof File) || file.size === 0) return { error: "Pick an image to upload." };
 
   const last = await db.mediaAsset.findFirst({
-    where: { kind: "gallery" },
+    where: { kind },
     orderBy: { sortOrder: "desc" },
     select: { sortOrder: true },
   });
 
   try {
     const asset = await createMediaAsset({
-      kind: "gallery",
+      kind,
       file,
       caption: (formData.get("caption") as string) || null,
       tag: (formData.get("tag") as string) || null,
@@ -810,7 +816,7 @@ export async function addGalleryImage(_prev: FormState, formData: FormData): Pro
   }
 
   revalidatePath("/portal/media");
-  revalidatePath("/");
+  revalidatePath(mediaRevalidate(kind));
   return { ok: true };
 }
 
@@ -818,32 +824,35 @@ export async function updateGalleryImage(_prev: FormState, formData: FormData): 
   const actor = await assertPermission("media:manage");
   const id = formData.get("id") as string;
   if (!id) return { error: "Missing image." };
-  await db.mediaAsset.update({
+  const asset = await db.mediaAsset.update({
     where: { id },
     data: {
       caption: ((formData.get("caption") as string) || "").trim() || null,
       tag: ((formData.get("tag") as string) || "").trim() || null,
     },
+    select: { kind: true },
   });
   await logAudit({ actorId: actor.id, action: "media.update", targetType: "MediaAsset", targetId: id });
   revalidatePath("/portal/media");
-  revalidatePath("/");
+  revalidatePath(mediaRevalidate(asset.kind));
   return { ok: true };
 }
 
 export async function deleteGalleryImage(id: string) {
   const actor = await assertPermission("media:manage");
-  await db.mediaAsset.delete({ where: { id } });
+  const asset = await db.mediaAsset.delete({ where: { id }, select: { kind: true } });
   await logAudit({ actorId: actor.id, action: "media.delete", targetType: "MediaAsset", targetId: id });
   revalidatePath("/portal/media");
-  revalidatePath("/");
+  revalidatePath(mediaRevalidate(asset.kind));
 }
 
-/** Swap sortOrder with the neighbour in `dir` so staff can reorder the wall. */
+/** Swap sortOrder with the neighbour in `dir` so staff can reorder within a kind. */
 export async function moveGalleryImage(id: string, dir: "up" | "down") {
   const actor = await assertPermission("media:manage");
+  const self = await db.mediaAsset.findUnique({ where: { id }, select: { kind: true } });
+  if (!self) return;
   const all = await db.mediaAsset.findMany({
-    where: { kind: "gallery" },
+    where: { kind: self.kind },
     orderBy: { sortOrder: "asc" },
     select: { id: true, sortOrder: true },
   });
@@ -857,5 +866,5 @@ export async function moveGalleryImage(id: string, dir: "up" | "down") {
   ]);
   await logAudit({ actorId: actor.id, action: "media.reorder", targetType: "MediaAsset", targetId: id });
   revalidatePath("/portal/media");
-  revalidatePath("/");
+  revalidatePath(mediaRevalidate(self.kind));
 }
