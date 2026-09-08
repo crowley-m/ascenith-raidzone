@@ -13,7 +13,7 @@ import {
   parseRewardTiers,
   rewardSchema,
 } from "@/lib/validation";
-import { postAnnouncement, editAnnouncement, eventEmbed } from "@/lib/discord";
+import { postAnnouncement, editAnnouncement, eventEmbed, signupButtonRow } from "@/lib/discord";
 import { createMediaAsset } from "@/lib/media";
 import { Prisma } from "@prisma/client";
 import type { PlayerStatus, Role } from "@prisma/client";
@@ -169,10 +169,11 @@ export async function saveEvent(_prev: FormState, formData: FormData): Promise<F
         signupCount: ev._count.signups,
         url: `${APP_URL}/events/${ev.id}`,
       });
+      const components = [signupButtonRow(ev.id, `Sign up: ${ev.title}`)];
       if (ev.discordMessageId && ev.discordChannelId) {
-        await editAnnouncement(ev.discordChannelId, ev.discordMessageId, embed);
+        await editAnnouncement(ev.discordChannelId, ev.discordMessageId, embed, undefined, components);
       } else {
-        const posted = await postAnnouncement({ embed });
+        const posted = await postAnnouncement({ embed, components });
         if (posted) {
           await db.event.update({
             where: { id: ev.id },

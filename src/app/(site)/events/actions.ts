@@ -10,7 +10,18 @@ import { logAudit } from "@/lib/audit";
 export async function signUpForEvent(eventId: string) {
   const session = await auth();
   if (!session?.user) redirect(`/login?callbackUrl=/events/${eventId}`);
-  if (!session.user.playerId) redirect("/me/profile?new=1");
+
+  // token.playerId can lag a fresh profile by a few minutes (jwt refresh window),
+  // so fall back to a direct lookup before sending them off to make one.
+  let playerId = session.user.playerId;
+  if (!playerId) {
+    const p = await db.player.findUnique({
+      where: { userId: session.user.id },
+      select: { id: true },
+    });
+    playerId = p?.id ?? null;
+  }
+  if (!playerId) redirect("/me/profile?new=1");
 
   const event = await db.event.findUnique({
     where: { id: eventId },
@@ -24,8 +35,8 @@ export async function signUpForEvent(eventId: string) {
   const state = full ? "WAITLIST" : "SIGNED_UP";
 
   await db.eventSignup.upsert({
-    where: { eventId_playerId: { eventId, playerId: session.user.playerId } },
-    create: { eventId, playerId: session.user.playerId, state },
+    where: { eventId_playerId: { eventId, playerId } },
+    create: { eventId, playerId, state },
     update: { state },
   });
   await logAudit({

@@ -33,11 +33,26 @@ async function discordFetch(path: string, init: RequestInit) {
   return res.json();
 }
 
+// A single-button action row (Discord message component). Used for "Sign up".
+type ButtonRow = {
+  type: 1;
+  components: { type: 2; style: number; custom_id: string; label: string }[];
+};
+
+/** A "Sign up" button that the bot's interaction handler picks up (signup:<id>). */
+export function signupButtonRow(eventId: string, label = "Sign up"): ButtonRow {
+  return {
+    type: 1,
+    components: [{ type: 2, style: 1, custom_id: `signup:${eventId}`, label: label.slice(0, 80) }],
+  };
+}
+
 /** Post a message with an embed to a channel. Returns the message id. */
 export async function postAnnouncement(opts: {
   channelId?: string;
   content?: string;
   embed: Embed;
+  components?: ButtonRow[];
 }): Promise<{ id: string; channelId: string } | null> {
   const channelId = opts.channelId ?? process.env.DISCORD_ANNOUNCE_CHANNEL_ID;
   if (!channelId || !process.env.DISCORD_BOT_TOKEN) return null;
@@ -47,6 +62,7 @@ export async function postAnnouncement(opts: {
     body: JSON.stringify({
       content: opts.content,
       embeds: [{ color: 0x2fd4c7, ...opts.embed }],
+      components: opts.components ?? [],
       allowed_mentions: { parse: ["roles"] },
     }),
   })) as { id: string };
@@ -60,11 +76,16 @@ export async function editAnnouncement(
   messageId: string,
   embed: Embed,
   content?: string,
+  components?: ButtonRow[],
 ): Promise<void> {
   if (!process.env.DISCORD_BOT_TOKEN) return;
   await discordFetch(`/channels/${channelId}/messages/${messageId}`, {
     method: "PATCH",
-    body: JSON.stringify({ content, embeds: [{ color: 0x2fd4c7, ...embed }] }),
+    body: JSON.stringify({
+      content,
+      embeds: [{ color: 0x2fd4c7, ...embed }],
+      ...(components ? { components } : {}),
+    }),
   });
 }
 
