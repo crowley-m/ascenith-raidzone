@@ -189,6 +189,8 @@ export async function saveEvent(_prev: FormState, formData: FormData): Promise<F
   revalidatePath("/portal/events");
   revalidatePath(`/portal/events/${eventId}`);
   revalidatePath("/events");
+  revalidatePath(`/events/${eventId}`);
+  revalidatePath("/"); // landing shows the current / next published event
   redirect(`/portal/events/${eventId}`);
 }
 
