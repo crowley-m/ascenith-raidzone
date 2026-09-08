@@ -83,6 +83,18 @@ export async function deleteNote(noteId: string, playerId: string) {
   revalidatePath(`/portal/players/${playerId}`);
 }
 
+export async function deleteFlag(flagId: string, playerId: string) {
+  const actor = await assertPermission("flag:write");
+  await db.flag.delete({ where: { id: flagId } });
+  await logAudit({
+    actorId: actor.id,
+    action: "player.flag_delete",
+    targetType: "Player",
+    targetId: playerId,
+  });
+  revalidatePath(`/portal/players/${playerId}`);
+}
+
 export async function addFlag(_prev: FormState, formData: FormData): Promise<FormState> {
   const actor = await assertPermission("flag:write");
   const parsed = flagSchema.safeParse({

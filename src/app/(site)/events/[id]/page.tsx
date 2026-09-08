@@ -111,17 +111,20 @@ export default async function EventDetailPage({
     };
   })();
   const now = Date.now();
-  const open = event.status === "PUBLISHED" && event.startsAt.getTime() > now;
   const live =
     event.status === "PUBLISHED" &&
     event.startsAt.getTime() <= now &&
     (!event.endsAt || event.endsAt.getTime() > now);
+  // sign-ups stay open through a running wipe — closed only once it ends
+  const open =
+    event.status === "PUBLISHED" && (!event.endsAt || event.endsAt.getTime() > now);
+  const upcoming = event.startsAt.getTime() > now;
   const statusWord =
     event.status === "COMPLETED"
       ? "Over"
       : live
         ? "Live"
-        : open
+        : upcoming
           ? "Upcoming"
           : "Locked";
 
@@ -304,19 +307,19 @@ export default async function EventDetailPage({
               {event.status === "COMPLETED"
                 ? "This event is over"
                 : open
-                  ? "Claim a slot"
-                  : live
-                    ? "Op is live"
-                    : "Sign-ups closed"}
+                  ? live
+                    ? "Join the wipe"
+                    : "Claim a slot"
+                  : "Sign-ups closed"}
             </h2>
             <p className="mt-1 font-mono text-xs uppercase tracking-wide text-slate-400">
               {event.status === "COMPLETED"
                 ? "Thanks to everyone who came out."
                 : open
-                  ? "You can withdraw any time before it starts."
-                  : live
-                    ? "Roster's locked, but get in the Discord."
-                    : "The roster is locked."}
+                  ? live
+                    ? "Wipe's running — sign up and jump in. Withdraw any time."
+                    : "You can withdraw any time before it starts."
+                  : "The roster is locked."}
             </p>
             <div className="mt-4">
               {open ? (

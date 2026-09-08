@@ -10,7 +10,7 @@ import { NoteForm } from "@/components/portal/note-form";
 import { FlagForm } from "@/components/portal/flag-form";
 import { RewardForm } from "@/components/portal/reward-form";
 import { ConfirmButton } from "@/components/portal/confirm-button";
-import { deleteNote, deleteReward } from "@/app/(site)/portal/actions";
+import { deleteNote, deleteReward, deleteFlag } from "@/app/(site)/portal/actions";
 
 export const dynamic = "force-dynamic";
 
@@ -182,7 +182,7 @@ export default async function PlayerDetailPage({
             <h3 className="font-display font-bold text-white">Flags</h3>
             <ul className="mt-3 space-y-2 text-sm">
               {player.flags.map((f) => (
-                <li key={f.id} className="flex items-center justify-between rounded-md border border-edge/60 bg-void/40 p-3">
+                <li key={f.id} className="flex items-center justify-between gap-3 rounded-md border border-edge/60 bg-void/40 p-3">
                   <span>
                     <span
                       className={`badge ${
@@ -197,9 +197,22 @@ export default async function PlayerDetailPage({
                     </span>{" "}
                     <span className="text-slate-200">{f.reason}</span>
                   </span>
-                  <span className="text-xs text-slate-500">
+                  <span className="flex shrink-0 items-center gap-3 text-xs text-slate-500">
                     {maskName(f.author.name ?? f.author.email, f.authorId, hidden)} ·{" "}
                     {fmtDate(f.createdAt)}
+                    {can(user.role, "flag:write") && (
+                      <ConfirmButton
+                        action={deleteFlag.bind(null, f.id, player.id)}
+                        confirm={
+                          f.type === "BAN"
+                            ? "Delete this ban flag? The player's status stays BANNED until you change it above."
+                            : "Delete this flag?"
+                        }
+                        className="text-slate-500 hover:text-red-300"
+                      >
+                        delete
+                      </ConfirmButton>
+                    )}
                   </span>
                 </li>
               ))}

@@ -21,6 +21,9 @@ export function EventCard({ event, href }: { event: EventCardData; href?: string
     event.status === "PUBLISHED" &&
     event.startsAt.getTime() <= now &&
     (event.endsAt ? event.endsAt.getTime() > now : false);
+  const open =
+    event.status === "PUBLISHED" &&
+    (event.endsAt ? event.endsAt.getTime() > now : event.startsAt.getTime() > now);
   return (
     <Link
       href={href ?? `/events/${event.id}`}
@@ -69,6 +72,11 @@ export function EventCard({ event, href }: { event: EventCardData; href?: string
           </dd>
         </div>
       </dl>
+      {open && (
+        <p className="mt-4 font-mono text-[0.7rem] font-bold uppercase tracking-[0.16em] text-teal">
+          {live ? "Join the wipe" : "Sign up"} <span aria-hidden>→</span>
+        </p>
+      )}
     </Link>
   );
 }
