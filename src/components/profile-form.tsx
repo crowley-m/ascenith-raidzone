@@ -5,6 +5,7 @@ import { updateProfileAction, type ProfileState } from "@/app/(site)/me/actions"
 
 type PlayerInit = {
   characterName: string | null;
+  gameUid: string | null;
   platform: string | null;
   region: string | null;
   timezone: string | null;
@@ -61,11 +62,22 @@ export function ProfileForm({
       {state.ok && <p className="text-sm text-teal">Saved.</p>}
       {state.error && <p className="text-sm text-ember">{state.error}</p>}
 
-      <div>
-        <label className="label" htmlFor="characterName">Character name *</label>
-        <input id="characterName" name="characterName" className="input" required maxLength={60}
-          defaultValue={player?.characterName ?? ""} />
-        {err("characterName") && <p className="mt-1 text-xs text-ember">{err("characterName")}</p>}
+      <div className="grid gap-5 sm:grid-cols-2">
+        <div>
+          <label className="label" htmlFor="characterName">Character name *</label>
+          <input id="characterName" name="characterName" className="input" required maxLength={60}
+            defaultValue={player?.characterName ?? ""} />
+          {err("characterName") && <p className="mt-1 text-xs text-ember">{err("characterName")}</p>}
+        </div>
+        <div>
+          <label className="label" htmlFor="gameUid">In-game ID (UID)</label>
+          <input id="gameUid" name="gameUid" className="input" maxLength={40}
+            defaultValue={player?.gameUid ?? ""} placeholder="e.g. 1000123456789" />
+          <p className="mt-1 text-xs text-slate-500">
+            Your main character&apos;s UID — this is where staff send event rewards.
+          </p>
+          {err("gameUid") && <p className="mt-1 text-xs text-ember">{err("gameUid")}</p>}
+        </div>
       </div>
 
       <div className="grid gap-5 sm:grid-cols-2">

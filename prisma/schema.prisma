@@ -101,6 +101,7 @@ model Player {
 
   // Once Human identity
   characterName String?
+  gameUid       String? // in-game UID of the main character — where rewards are sent
   platform      Platform?
   region        String? // server / world / region
 

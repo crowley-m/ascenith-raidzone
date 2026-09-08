@@ -39,12 +39,14 @@ export default async function MeOverviewPage() {
 
   const fields = [
     ["Character", player.characterName],
+    ["In-game ID", player.gameUid],
     ["Platform", player.platform],
     ["Region", player.region],
     ["Timezone", player.timezone],
     ["Faction", player.faction?.name],
   ].filter(([, v]) => v);
-  const missing = !player.characterName || !player.platform || !player.region;
+  const missing =
+    !player.characterName || !player.gameUid || !player.platform || !player.region;
 
   return (
     <div className="grid gap-6 lg:grid-cols-3">

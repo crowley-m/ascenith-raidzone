@@ -21,6 +21,7 @@ export async function updateProfileAction(
 
   const parsed = profileSchema.safeParse({
     characterName: formData.get("characterName"),
+    gameUid: clean(formData.get("gameUid")),
     platform: clean(formData.get("platform")),
     region: clean(formData.get("region")),
     timezone: clean(formData.get("timezone")),
@@ -42,6 +43,7 @@ export async function updateProfileAction(
       userId: user.id,
       status: "ACTIVE",
       characterName: d.characterName,
+      gameUid: d.gameUid ?? null,
       platform: d.platform ?? null,
       region: d.region ?? null,
       timezone: d.timezone ?? null,
@@ -51,6 +53,7 @@ export async function updateProfileAction(
     },
     update: {
       characterName: d.characterName,
+      gameUid: d.gameUid ?? null,
       platform: d.platform ?? null,
       region: d.region ?? null,
       timezone: d.timezone ?? null,

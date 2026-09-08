@@ -27,7 +27,7 @@ export default async function PortalRewardsPage() {
       ? db.player.findMany({
           where: { status: { not: "BANNED" } },
           orderBy: { characterName: "asc" },
-          select: { id: true, characterName: true, user: { select: { email: true } } },
+          select: { id: true, characterName: true, gameUid: true, user: { select: { email: true } } },
         })
       : Promise.resolve([]),
     canGrant
@@ -93,7 +93,7 @@ export default async function PortalRewardsPage() {
             <RewardForm
               players={players.map((p) => ({
                 id: p.id,
-                label: `${p.characterName ?? "Unnamed"}${p.user.email ? ` (${p.user.email})` : ""}`,
+                label: `${p.characterName ?? "Unnamed"}${p.gameUid ? ` · UID ${p.gameUid}` : " · no UID"}`,
               }))}
               events={events.map((e) => ({ id: e.id, label: e.title }))}
             />

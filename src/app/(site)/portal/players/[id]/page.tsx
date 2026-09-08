@@ -41,6 +41,14 @@ export default async function PlayerDetailPage({
 
   const info: [string, React.ReactNode][] = [
     ["Character", player.characterName ?? "—"],
+    [
+      "In-game ID",
+      player.gameUid ? (
+        <span className="font-mono text-teal">{player.gameUid}</span>
+      ) : (
+        <span className="text-ember">not set</span>
+      ),
+    ],
     ["Platform", player.platform ?? "—"],
     ["Region", player.region ?? "—"],
     ["Timezone", player.timezone ?? "—"],
