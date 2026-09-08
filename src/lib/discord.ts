@@ -229,10 +229,15 @@ export type EventSpace = {
   channels: Record<string, string>; // name -> channel id
 };
 
+// Channels members can read but not post in (staff bypass via role perms).
+export const READONLY_CHANNELS = new Set(["announcement", "how-to-join", "rules", "wipe-info"]);
+const PERM_VIEW_CHANNEL = (1n << 10n).toString();
+const PERM_SEND_MESSAGES = (1n << 11n).toString();
+
 /**
  * Create `<emoji> BOLD NAME <emoji>` category + the channel set under it.
- * Returns the ids; caller stores them on the event. No-op-safe: caller must
- * check the event doesn't already have a category.
+ * Read-only channels get a @everyone SEND_MESSAGES deny (needs Manage Roles on
+ * the bot; silently skipped otherwise).
  */
 export async function createEventSpace(opts: {
   name: string;
@@ -250,24 +255,46 @@ export async function createEventSpace(opts: {
 
   const channels: Record<string, string> = {};
   for (const name of opts.channels ?? EVENT_CHANNELS) {
+    const readonly = READONLY_CHANNELS.has(name);
     const ch = (await discordFetch(`/guilds/${gid}/channels`, {
       method: "POST",
       body: JSON.stringify({
+        ...(readonly
+          ? { permission_overwrites: [{ id: gid, type: 0, deny: PERM_SEND_MESSAGES }] }
+          : {}),
         name: `${opts.emoji}\u30FB${name}`, // emoji・name
         type: 0,
         parent_id: category.id,
       }),
     })) as { id: string };
     channels[name] = ch.id;
+    if (readonly) {
+      await discordFetch(`/channels/${ch.id}/permissions/${gid}`, {
+        method: "PUT",
+        body: JSON.stringify({ type: 0, deny: PERM_SEND_MESSAGES }),
+      }).catch(() => {});
+    }
   }
 
   return { categoryId: category.id, channels };
 }
 
+/** (Re)apply the @everyone SEND_MESSAGES deny on the read-only channels. */
+export async function lockReadonlyChannels(channels: Record<string, string>): Promise<void> {
+  const gid = process.env.DISCORD_GUILD_ID;
+  if (!gid || !process.env.DISCORD_BOT_TOKEN) return;
+  for (const [name, id] of Object.entries(channels)) {
+    if (!READONLY_CHANNELS.has(name)) continue;
+    await discordFetch(`/channels/${id}/permissions/${gid}`, {
+      method: "PUT",
+      body: JSON.stringify({ type: 0, deny: PERM_SEND_MESSAGES }),
+    }).catch(() => {});
+  }
+}
+
 /**
  * Archive an event's space: rename the category to mark it done, sink it to the
- * bottom of the list, and best-effort lock its channels to read-only for
- * @everyone. Non-destructive — nothing is deleted.
+ * bottom of the list, and best-effort hide it from @everyone. Non-destructive.
  */
 export async function archiveEventSpace(categoryId: string, channelIds: string[]): Promise<void> {
   const gid = process.env.DISCORD_GUILD_ID;
@@ -283,12 +310,13 @@ export async function archiveEventSpace(categoryId: string, channelIds: string[]
     body: JSON.stringify({ name: `🗄️ ARCHIVED — ${base}`.slice(0, 95), position: 900 }),
   }).catch(() => {});
 
-  // deny SEND_MESSAGES to @everyone on each channel (role id == guild id)
-  const DENY_SEND = "2048"; // 1 << 11
-  for (const id of channelIds) {
+  // hide from @everyone (deny VIEW_CHANNEL) on the category + every channel.
+  // Needs the bot to have Manage Roles; silently no-ops otherwise.
+  const deny = (BigInt(PERM_VIEW_CHANNEL) | BigInt(PERM_SEND_MESSAGES)).toString();
+  for (const id of [categoryId, ...channelIds]) {
     await discordFetch(`/channels/${id}/permissions/${gid}`, {
       method: "PUT",
-      body: JSON.stringify({ type: 0, deny: DENY_SEND }),
+      body: JSON.stringify({ type: 0, deny }),
     }).catch(() => {});
   }
 }

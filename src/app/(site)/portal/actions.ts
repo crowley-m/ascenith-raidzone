@@ -20,6 +20,7 @@ import {
   signupButtonRow,
   createEventSpace,
   archiveEventSpace,
+  lockReadonlyChannels,
   postToChannel,
   editChannelMessage,
   eventEmoji,
@@ -355,6 +356,7 @@ export async function syncEventChannels(eventId: string): Promise<FormState> {
   const seed = (ev.discordSeedMessages as Record<string, string>) ?? {};
   try {
     await pushEventChannelContent(eventId, channels, seed);
+    await lockReadonlyChannels(channels);
   } catch (err) {
     return { error: `Discord: ${err instanceof Error ? err.message : "sync failed"}` };
   }
