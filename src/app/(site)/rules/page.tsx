@@ -5,7 +5,7 @@ import { site } from "@/lib/site";
 export const metadata: Metadata = {
   title: "Rules & how to join",
   description:
-    "ASCENITH RAIDZONE community rules, Glory Points scoring, anti-cheat policy, and how to get on the roster.",
+    "ASCENITH RAIDZONE community rules, anti-cheat policy, and how to get on the roster. Event-specific rules are in each event brief.",
 };
 
 const RULES = [
@@ -16,12 +16,6 @@ const RULES = [
   "Use the right channels. Keep event talk in event channels and support requests in tickets.",
   "One account per person for events and rewards. Alt accounts used to farm rewards are removed.",
   "Staff decisions on rewards and disputes are final, but you can always appeal politely in a ticket.",
-];
-
-const GLORY = [
-  { where: "Red Room", pts: "2 pts" },
-  { where: "Blue Room", pts: "1 pt" },
-  { where: "Alpha Boss", pts: "1 pt" },
 ];
 
 const STEPS = [
@@ -85,7 +79,8 @@ export default function RulesPage() {
       </h1>
       <p className="mt-4 max-w-2xl text-slate-300">
         {site.name} is run by {site.owner}. Keep it fair, keep it friendly, and everyone gets to
-        enjoy the raids. These apply per event unless an event brief says otherwise.
+        enjoy the raids. These are the community rules — <b>each event&apos;s own rules, scoring
+        and objectives are in its brief</b> on the event page.
       </p>
 
       <Section title="Community rules">
@@ -97,25 +92,6 @@ export default function RulesPage() {
             </li>
           ))}
         </ol>
-      </Section>
-
-      <Section title="Glory Points">
-        <p className="mt-3 max-w-2xl text-sm text-slate-400">
-          Placement in most events is decided by Glory Points. You earn them by holding objectives
-          and taking targets during the raid window:
-        </p>
-        <ul className="mt-5 grid gap-3 sm:grid-cols-3">
-          {GLORY.map((g) => (
-            <li key={g.where} className="card text-center">
-              <div className="font-display text-2xl font-bold text-teal">{g.pts}</div>
-              <div className="mt-1 text-xs uppercase tracking-wide text-slate-500">{g.where}</div>
-            </li>
-          ))}
-        </ul>
-        <p className="mt-4 max-w-2xl text-xs text-slate-500">
-          Points contested or earned through cheating, bug abuse, or account sharing are removed and
-          may cost you the event. The exact objectives and window for a given event are in its brief.
-        </p>
       </Section>
 
       <Section title="Anti-cheat & fair play">

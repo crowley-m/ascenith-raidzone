@@ -184,6 +184,7 @@ export function Landing({
   howToJoinVideo = "",
   seasonLabel = "",
   seasons = [],
+  discordOnline = null,
 }: {
   event?: OpEvent | null;
   upcoming?: UpcomingOp[];
@@ -192,6 +193,7 @@ export function Landing({
   howToJoinVideo?: string;
   seasonLabel?: string;
   seasons?: { series: string; count: number; latestSlug: string; champion: string | null }[];
+  discordOnline?: number | null;
 }) {
   const season = seasonLabel || "S1";
   const { data: session } = useSession();
@@ -343,6 +345,12 @@ export function Landing({
               ? `${event.seasonNumber ? `Season ${event.seasonNumber} · ` : ""}RAIDZONE ${event.mode}`
               : `Season ${season.replace(/^S/, "")} roster open`}
           </p>
+          {typeof discordOnline === "number" && (
+            <p className={s.heroLive} data-reveal>
+              <span className={s.liveDot} />
+              {discordOnline.toLocaleString()} raiders online in Discord
+            </p>
+          )}
           <div className={s.heroActs} data-reveal>
             {user ? (
               <Box href={dashHref} k={staff ? "Staff" : "Roster"}>

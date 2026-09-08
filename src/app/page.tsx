@@ -3,6 +3,7 @@ import type { OpEvent, UpcomingOp } from "@/components/landing/EventBrief";
 import type { GalleryImage } from "@/components/landing/Gallery";
 import { db } from "@/lib/db";
 import { latestVideos } from "@/lib/youtube";
+import { guildPresence } from "@/lib/discord";
 import { getSettings } from "@/lib/settings";
 
 /** Shown when the DB has no published event yet (local dev, or before staff add one). */
@@ -147,14 +148,16 @@ async function galleryImages(): Promise<GalleryImage[]> {
 }
 
 export default async function HomePage() {
-  const [{ current, upcoming }, videos, gallery, settings, season, seasons] = await Promise.all([
-    eventData(),
-    latestVideos(9),
-    galleryImages(),
-    getSettings(),
-    seasonLabel(),
-    seasonSummary(),
-  ]);
+  const [{ current, upcoming }, videos, gallery, settings, season, seasons, presence] =
+    await Promise.all([
+      eventData(),
+      latestVideos(9),
+      galleryImages(),
+      getSettings(),
+      seasonLabel(),
+      seasonSummary(),
+      guildPresence(),
+    ]);
   return (
     <Landing
       event={current ?? FALLBACK_EVENT}
@@ -164,6 +167,7 @@ export default async function HomePage() {
       gallery={gallery}
       seasonLabel={season}
       seasons={seasons}
+      discordOnline={presence?.online ?? null}
     />
   );
 }

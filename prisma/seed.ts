@@ -109,6 +109,7 @@ async function main() {
       slug: "faction-war-1",
       status: "ENDED",
       prizePoolText: "105,820 Crystgin",
+      championName: "MAYFLY",
       videos: [
         "https://youtube.com/live/qBr7j1-5Ui0",
         "https://youtube.com/live/2PsAW_zjOac",
@@ -129,6 +130,7 @@ async function main() {
       slug: "hyperbrawl-1",
       status: "ENDED",
       prizePoolText: "8,000 Crystgin",
+      championName: "Summus",
       videos: ["https://youtube.com/live/AiPgNkdZ1_8"],
     },
     {
