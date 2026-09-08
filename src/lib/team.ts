@@ -26,6 +26,7 @@ export async function teamForPlayer(playerId: string) {
     where: { OR: [{ leaderId: playerId }, { members: { some: { playerId } } }] },
     include: {
       leader: { select: { id: true, characterName: true, gameUid: true, region: true } },
+      event: { select: { id: true, title: true, mode: true } },
       members: {
         include: {
           player: { select: { id: true, characterName: true, gameUid: true, region: true } },
@@ -34,6 +35,23 @@ export async function teamForPlayer(playerId: string) {
       },
     },
   });
+}
+
+/** Published team events that haven't ended — pickable when forming a team. */
+export async function selectableTeamEvents() {
+  try {
+    return await db.event.findMany({
+      where: {
+        status: "PUBLISHED",
+        format: "TEAM",
+        OR: [{ endsAt: null }, { endsAt: { gte: new Date() } }],
+      },
+      orderBy: { startsAt: "asc" },
+      select: { id: true, title: true, mode: true },
+    });
+  } catch {
+    return [];
+  }
 }
 
 export type TeamWithMembers = NonNullable<Awaited<ReturnType<typeof teamForPlayer>>>;

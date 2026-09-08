@@ -1,13 +1,16 @@
 import { requireUser } from "@/lib/session";
 import { db } from "@/lib/db";
-import { teamForPlayer } from "@/lib/team";
+import { teamForPlayer, selectableTeamEvents } from "@/lib/team";
 import { CreateTeamForm, JoinTeamForm, TeamPanel } from "@/components/team/team-forms";
 
 export const dynamic = "force-dynamic";
 
 export default async function MyTeamPage() {
   const user = await requireUser();
-  const player = await db.player.findUnique({ where: { userId: user.id }, select: { id: true } });
+  const [player, teamEvents] = await Promise.all([
+    db.player.findUnique({ where: { userId: user.id }, select: { id: true } }),
+    selectableTeamEvents(),
+  ]);
 
   if (!player) {
     return (
@@ -31,7 +34,7 @@ export default async function MyTeamPage() {
         </div>
         <div className="card">
           <h3 className="font-display font-bold text-white">Create a team</h3>
-          <CreateTeamForm />
+          <CreateTeamForm events={teamEvents} />
         </div>
         <div className="card">
           <h3 className="font-display font-bold text-white">Join a team</h3>
@@ -47,12 +50,19 @@ export default async function MyTeamPage() {
     <TeamPanel
       me={player.id}
       isLeader={isLeader}
+      events={teamEvents}
       team={{
         id: team.id,
         name: team.name,
         tag: team.tag,
         inviteCode: team.inviteCode,
         leaderId: team.leaderId,
+        eventId: team.eventId,
+        eventLabel: team.event
+          ? team.event.mode
+            ? `RAIDZONE ${team.event.mode}`
+            : team.event.title
+          : null,
         members: team.members.map((m) => ({
           playerId: m.playerId,
           name: m.player.characterName ?? "Unnamed",

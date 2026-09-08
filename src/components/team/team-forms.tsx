@@ -13,13 +13,32 @@ import {
   disbandTeam,
 } from "@/app/(site)/me/team/actions";
 
-export function CreateTeamForm() {
+type TeamEvent = { id: string; title: string; mode: string | null };
+
+function eventLabel(e: TeamEvent) {
+  return e.mode ? `RAIDZONE ${e.mode}` : e.title;
+}
+
+export function CreateTeamForm({ events = [] }: { events?: TeamEvent[] }) {
   const [state, action, pending] = useActionState(createTeam, {});
   return (
     <form action={action} className="mt-3 grid gap-3">
       <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
         <input name="name" required maxLength={40} className="input" placeholder="Team name" />
         <input name="tag" maxLength={6} className="input sm:w-24" placeholder="TAG" />
+      </div>
+      <div>
+        <label className="label" htmlFor="eventId">
+          For which event?
+        </label>
+        <select id="eventId" name="eventId" className="input" defaultValue="">
+          <option value="">No specific event / general squad</option>
+          {events.map((e) => (
+            <option key={e.id} value={e.id}>
+              {eventLabel(e)}
+            </option>
+          ))}
+        </select>
       </div>
       {state.error && <p className="text-sm text-ember">{state.error}</p>}
       <div>
@@ -60,18 +79,21 @@ type Member = {
 };
 
 export function TeamPanel({
-  me,
   isLeader,
+  events = [],
   team,
 }: {
-  me: string;
+  me?: string;
   isLeader: boolean;
+  events?: TeamEvent[];
   team: {
     id: string;
     name: string;
     tag: string | null;
     inviteCode: string;
     leaderId: string;
+    eventId: string | null;
+    eventLabel: string | null;
     members: Member[];
   };
 }) {
@@ -100,6 +122,10 @@ export function TeamPanel({
             {team.members.length} member{team.members.length === 1 ? "" : "s"} ·{" "}
             {isLeader ? "you lead this team" : "you're a member"}
           </p>
+          <p className="mt-1 text-sm">
+            <span className="text-slate-500">For: </span>
+            <span className="text-slate-200">{team.eventLabel ?? "no specific event"}</span>
+          </p>
         </div>
         {isLeader && (
           <button className="btn-ghost text-xs" onClick={() => setEditing((v) => !v)}>
@@ -108,7 +134,15 @@ export function TeamPanel({
         )}
       </div>
 
-      {editing && isLeader && <RenameForm name={team.name} tag={team.tag} onDone={() => setEditing(false)} />}
+      {editing && isLeader && (
+        <RenameForm
+          name={team.name}
+          tag={team.tag}
+          eventId={team.eventId}
+          events={events}
+          onDone={() => setEditing(false)}
+        />
+      )}
 
       {/* invite code */}
       <div className="card">
@@ -207,10 +241,14 @@ export function TeamPanel({
 function RenameForm({
   name,
   tag,
+  eventId,
+  events,
   onDone,
 }: {
   name: string;
   tag: string | null;
+  eventId: string | null;
+  events: TeamEvent[];
   onDone: () => void;
 }) {
   const [state, action, pending] = useActionState(renameTeam, {});
@@ -227,6 +265,14 @@ function RenameForm({
         <input name="name" defaultValue={name} required maxLength={40} className="input" />
         <input name="tag" defaultValue={tag ?? ""} maxLength={6} className="input sm:w-24" placeholder="TAG" />
       </div>
+      <select name="eventId" className="input" defaultValue={eventId ?? ""}>
+        <option value="">No specific event / general squad</option>
+        {events.map((e) => (
+          <option key={e.id} value={e.id}>
+            {eventLabel(e)}
+          </option>
+        ))}
+      </select>
       {state.error && <p className="text-sm text-ember">{state.error}</p>}
       <div>
         <button className="btn-primary text-xs" disabled={pending}>

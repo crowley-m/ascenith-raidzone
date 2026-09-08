@@ -19,17 +19,28 @@ async function myPlayerId(): Promise<string> {
   return p.id;
 }
 
+async function validEventId(raw: string | undefined): Promise<string | null> {
+  if (!raw) return null;
+  const e = await db.event.findFirst({
+    where: { id: raw, status: "PUBLISHED", format: "TEAM" },
+    select: { id: true },
+  });
+  return e?.id ?? null;
+}
+
 export async function createTeam(_prev: TeamState, formData: FormData): Promise<TeamState> {
   const playerId = await myPlayerId();
   const parsed = teamCreateSchema.safeParse({
     name: formData.get("name"),
     tag: formData.get("tag") ?? "",
+    eventId: formData.get("eventId") ?? "",
   });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid team." };
 
   if (await teamForPlayer(playerId)) return { error: "You're already in a team." };
 
   const code = await uniqueInviteCode();
+  const eventId = await validEventId(parsed.data.eventId || undefined);
   try {
     const team = await db.team.create({
       data: {
@@ -37,6 +48,7 @@ export async function createTeam(_prev: TeamState, formData: FormData): Promise<
         tag: parsed.data.tag ? parsed.data.tag.toUpperCase() : null,
         inviteCode: code,
         leaderId: playerId,
+        eventId,
         members: { create: { playerId } },
       },
     });
@@ -111,14 +123,17 @@ export async function renameTeam(_prev: TeamState, formData: FormData): Promise<
   const parsed = teamCreateSchema.safeParse({
     name: formData.get("name"),
     tag: formData.get("tag") ?? "",
+    eventId: formData.get("eventId") ?? "",
   });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid." };
+  const eventId = await validEventId(parsed.data.eventId || undefined);
   try {
     await db.team.update({
       where: { id: team.id },
       data: {
         name: parsed.data.name,
         tag: parsed.data.tag ? parsed.data.tag.toUpperCase() : null,
+        eventId,
       },
     });
   } catch (e) {

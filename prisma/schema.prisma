@@ -144,6 +144,8 @@ model Team {
   inviteCode String   @unique
   leaderId   String   @unique
   leader     Player   @relation("TeamLeader", fields: [leaderId], references: [id], onDelete: Cascade)
+  eventId    String? // the event this squad was formed for (optional)
+  event      Event?   @relation("TeamsForEvent", fields: [eventId], references: [id], onDelete: SetNull)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -280,6 +282,7 @@ model Event {
   attendance EventAttendance[]
   rewards    Reward[]
   placements EventPlacement[]
+  teamsFor   Team[]           @relation("TeamsForEvent")
 
   @@index([status, startsAt])
 }

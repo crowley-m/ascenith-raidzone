@@ -31,6 +31,7 @@ export const teamCreateSchema = z.object({
     .regex(/^[A-Za-z0-9]*$/, "Letters and numbers only")
     .optional()
     .or(z.literal("")),
+  eventId: z.string().trim().optional().or(z.literal("")),
 });
 
 export const teamJoinSchema = z.object({

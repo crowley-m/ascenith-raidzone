@@ -12,6 +12,7 @@ export default async function PortalTeamsPage() {
     orderBy: { createdAt: "asc" },
     include: {
       leader: { select: { characterName: true } },
+      event: { select: { title: true, mode: true } },
       _count: { select: { members: true, placements: true } },
     },
   });
@@ -30,6 +31,7 @@ export default async function PortalTeamsPage() {
           <thead className="text-left text-xs uppercase text-slate-500">
             <tr>
               <th className="py-2">Team</th>
+              <th className="py-2">For event</th>
               <th className="py-2">Leader</th>
               <th className="py-2">Members</th>
               <th className="py-2">Placements</th>
@@ -37,7 +39,14 @@ export default async function PortalTeamsPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-edge/60">
-            {teams.map((t) => (
+            {teams.map((t) => {
+              const tt = t as typeof t & { event: { title: string; mode: string | null } | null };
+              const forEvent = tt.event
+                ? tt.event.mode
+                  ? `RAIDZONE ${tt.event.mode}`
+                  : tt.event.title
+                : "—";
+              return (
               <tr key={t.id}>
                 <td className="py-2">
                   <Link href={`/portal/teams/${t.id}`} className="text-slate-200 hover:text-teal">
@@ -45,15 +54,17 @@ export default async function PortalTeamsPage() {
                     {t.name}
                   </Link>
                 </td>
+                <td className="py-2 text-slate-400">{forEvent}</td>
                 <td className="py-2 text-slate-400">{t.leader.characterName ?? "—"}</td>
                 <td className="py-2 text-slate-400">{t._count.members}</td>
                 <td className="py-2 text-slate-400">{t._count.placements}</td>
                 <td className="py-2 text-slate-500">{fmtDate(t.createdAt)}</td>
               </tr>
-            ))}
+              );
+            })}
             {teams.length === 0 && (
               <tr>
-                <td colSpan={5} className="py-4 text-slate-400">
+                <td colSpan={6} className="py-4 text-slate-400">
                   No teams yet.
                 </td>
               </tr>

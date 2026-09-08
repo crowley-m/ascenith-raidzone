@@ -15,6 +15,7 @@ export default async function TeamsPage() {
       orderBy: { createdAt: "asc" },
       include: {
         leader: { select: { characterName: true } },
+        event: { select: { title: true, mode: true } },
         _count: { select: { members: true } },
       },
     });
@@ -43,8 +44,14 @@ export default async function TeamsPage() {
           {teams.map((t) => {
             const tt = t as typeof t & {
               leader: { characterName: string | null };
+              event: { title: string; mode: string | null } | null;
               _count: { members: number };
             };
+            const forEvent = tt.event
+              ? tt.event.mode
+                ? `RAIDZONE ${tt.event.mode}`
+                : tt.event.title
+              : null;
             return (
               <div key={t.id} className="card">
                 <div className="flex items-baseline justify-between gap-2">
@@ -59,6 +66,9 @@ export default async function TeamsPage() {
                 <p className="mt-2 text-xs text-slate-500">
                   Led by {tt.leader.characterName ?? "—"}
                 </p>
+                {forEvent && (
+                  <p className="mt-1 text-xs text-teal">For {forEvent}</p>
+                )}
               </div>
             );
           })}

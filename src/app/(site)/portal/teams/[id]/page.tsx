@@ -20,6 +20,7 @@ export default async function PortalTeamDetail({
   const team = await db.team.findUnique({
     where: { id },
     include: {
+      event: { select: { id: true, title: true, mode: true } },
       members: {
         orderBy: { joinedAt: "asc" },
         include: {
@@ -64,6 +65,14 @@ export default async function PortalTeamDetail({
       <p className="mt-1 text-sm text-slate-500">
         Invite code <code className="font-mono text-teal">{team.inviteCode}</code> · created{" "}
         {fmtDate(team.createdAt)}
+        {team.event && (
+          <>
+            {" · formed for "}
+            <Link href={`/portal/events/${team.event.id}`} className="text-slate-300 hover:text-teal">
+              {team.event.mode ? `RAIDZONE ${team.event.mode}` : team.event.title}
+            </Link>
+          </>
+        )}
       </p>
 
       <div className="card mt-6">
