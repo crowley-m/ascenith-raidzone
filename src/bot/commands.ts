@@ -102,9 +102,9 @@ export async function handleCommand(interaction: ChatInputCommandInteraction) {
         type: ComponentType.ActionRow,
         components: events.slice(0, 5).map((e) => ({
           type: ComponentType.Button,
-          style: ButtonStyle.Primary,
-          custom_id: `signup:${e.id}`,
-          label: `Sign up: ${e.title}`.slice(0, 80),
+          style: ButtonStyle.Link,
+          url: `${APP_URL}/events/${e.id}`,
+          label: `Open: ${e.title}`.slice(0, 80),
         })),
       };
       return interaction.reply({ embeds: [embed], components: [row] });

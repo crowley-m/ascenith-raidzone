@@ -181,7 +181,7 @@ export async function saveEvent(_prev: FormState, formData: FormData): Promise<F
         signupCount: ev._count.signups,
         url: `${APP_URL}/events/${ev.id}`,
       });
-      const components = [signupButtonRow(ev.id, `Sign up: ${ev.title}`)];
+      const components = [signupButtonRow(`${APP_URL}/events/${ev.id}`, "Sign up on the website")];
       if (ev.discordMessageId && ev.discordChannelId) {
         await editAnnouncement(ev.discordChannelId, ev.discordMessageId, embed, undefined, components);
       } else {
@@ -237,7 +237,7 @@ export async function buildEventSpace(eventId: string): Promise<FormState> {
     const embed = eventEmbed({ ...ev, signupCount: 0, url });
     const posted = await postToChannel(space.channels.announcement, {
       embed,
-      components: [signupButtonRow(ev.id, `Sign up: ${ev.title}`)],
+      components: [signupButtonRow(url, "Sign up on the website")],
     });
 
     await postToChannel(space.channels["how-to-join"], {

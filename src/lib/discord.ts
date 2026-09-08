@@ -38,17 +38,17 @@ async function discordFetch(path: string, init: RequestInit, attempt = 0): Promi
   return res.json();
 }
 
-// A single-button action row (Discord message component). Used for "Sign up".
+// A single-button action row (Discord message component).
 type ButtonRow = {
   type: 1;
-  components: { type: 2; style: number; custom_id: string; label: string }[];
+  components: { type: 2; style: number; label: string; url?: string; custom_id?: string }[];
 };
 
-/** A "Sign up" button that the bot's interaction handler picks up (signup:<id>). */
-export function signupButtonRow(eventId: string, label = "Sign up"): ButtonRow {
+/** A link button that opens the event's page on the website (works for solo + team). */
+export function signupButtonRow(url: string, label = "Open the event page"): ButtonRow {
   return {
     type: 1,
-    components: [{ type: 2, style: 1, custom_id: `signup:${eventId}`, label: label.slice(0, 80) }],
+    components: [{ type: 2, style: 5, label: label.slice(0, 80), url }],
   };
 }
 
