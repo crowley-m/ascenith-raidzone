@@ -10,21 +10,29 @@ export const dynamic = "force-dynamic";
 export default async function StaffPage() {
   const me = await requirePermission("staff:manage");
 
-  const staff = await db.staffRole.findMany({
-    orderBy: { role: "asc" },
-    include: { user: { select: { id: true, name: true, email: true, discordUsername: true } } },
-  });
+  const [staff, candidates] = await Promise.all([
+    db.staffRole.findMany({
+      orderBy: { role: "asc" },
+      include: { user: { select: { id: true, name: true, email: true, discordUsername: true } } },
+    }),
+    db.user.findMany({
+      where: { staffRole: null },
+      orderBy: [{ name: "asc" }, { discordUsername: "asc" }],
+      take: 200,
+      select: { id: true, name: true, email: true, discordUsername: true },
+    }),
+  ]);
 
   return (
     <div className="max-w-2xl">
       <h2 className="font-display text-xl font-bold text-white">Staff</h2>
       <p className="mt-1 text-sm text-slate-400">
-        Owner &gt; Admin &gt; Moderator. Users must have logged in at least once before you can
-        assign them.
+        Owner &gt; Admin &gt; Moderator. Pick anyone who has signed in — email or Discord, doesn&apos;t
+        matter.
       </p>
 
       <div className="card mt-6">
-        <StaffRoleForm />
+        <StaffRoleForm candidates={candidates} />
       </div>
 
       <ul className="mt-6 space-y-2">

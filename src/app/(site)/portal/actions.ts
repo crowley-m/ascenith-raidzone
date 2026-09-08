@@ -635,13 +635,23 @@ export async function deleteFaction(id: string) {
 
 export async function setStaffRole(_prev: FormState, formData: FormData): Promise<FormState> {
   const actor = await assertPermission("staff:manage");
-  const email = ((formData.get("email") as string) || "").toLowerCase().trim();
   const role = formData.get("role") as Role;
-  if (!email || !["OWNER", "ADMIN", "MODERATOR"].includes(role)) {
-    return { error: "Enter an email and pick a role." };
+  const userId = ((formData.get("userId") as string) || "").trim();
+  const ident = ((formData.get("ident") as string) || "").trim();
+  if (!["OWNER", "ADMIN", "MODERATOR"].includes(role)) return { error: "Pick a role." };
+
+  // Prefer the picked user; otherwise match an email or a Discord username.
+  let user = userId ? await db.user.findUnique({ where: { id: userId } }) : null;
+  if (!user && ident) {
+    user =
+      (await db.user.findUnique({ where: { email: ident.toLowerCase() } })) ??
+      (await db.user.findFirst({
+        where: { discordUsername: { equals: ident, mode: "insensitive" } },
+      }));
   }
-  const user = await db.user.findUnique({ where: { email } });
-  if (!user) return { error: "No user with that email has signed in yet." };
+  if (!user) {
+    return { error: "Pick someone from the list, or type an email / Discord username they've used to sign in." };
+  }
 
   await db.staffRole.upsert({
     where: { userId: user.id },
