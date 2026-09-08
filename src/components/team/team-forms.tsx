@@ -31,8 +31,10 @@ export function CreateTeamForm({ events = [] }: { events?: TeamEvent[] }) {
         <label className="label" htmlFor="eventId">
           For which event?
         </label>
-        <select id="eventId" name="eventId" className="input" defaultValue="">
-          <option value="">No specific event / general squad</option>
+        <select id="eventId" name="eventId" required className="input" defaultValue="">
+          <option value="" disabled>
+            Pick a team event…
+          </option>
           {events.map((e) => (
             <option key={e.id} value={e.id}>
               {eventLabel(e)}
@@ -80,20 +82,17 @@ type Member = {
 
 export function TeamPanel({
   isLeader,
-  events = [],
   team,
 }: {
   me?: string;
   isLeader: boolean;
-  events?: TeamEvent[];
   team: {
     id: string;
     name: string;
     tag: string | null;
     inviteCode: string;
     leaderId: string;
-    eventId: string | null;
-    eventLabel: string | null;
+    eventLabel: string;
     members: Member[];
   };
 }) {
@@ -111,20 +110,19 @@ export function TeamPanel({
   }
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="card space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="font-display text-2xl font-bold text-white">
+          <p className="font-mono text-[0.62rem] uppercase tracking-[0.2em] text-slate-500">
+            {team.eventLabel}
+          </p>
+          <h3 className="mt-1 font-display text-xl font-bold text-white">
             {team.tag && <span className="text-teal">[{team.tag}] </span>}
             {team.name}
-          </h2>
+          </h3>
           <p className="mt-1 text-sm text-slate-500">
             {team.members.length} member{team.members.length === 1 ? "" : "s"} ·{" "}
             {isLeader ? "you lead this team" : "you're a member"}
-          </p>
-          <p className="mt-1 text-sm">
-            <span className="text-slate-500">For: </span>
-            <span className="text-slate-200">{team.eventLabel ?? "no specific event"}</span>
           </p>
         </div>
         {isLeader && (
@@ -136,16 +134,15 @@ export function TeamPanel({
 
       {editing && isLeader && (
         <RenameForm
+          teamId={team.id}
           name={team.name}
           tag={team.tag}
-          eventId={team.eventId}
-          events={events}
           onDone={() => setEditing(false)}
         />
       )}
 
       {/* invite code */}
-      <div className="card">
+      <div className="border border-edge/60 bg-void/40 p-3">
         <div className="label">Invite code</div>
         <div className="mt-2 flex flex-wrap items-center gap-3">
           <code className="border border-edge bg-void px-3 py-2 font-mono text-lg tracking-[0.35em] text-teal">
@@ -166,21 +163,31 @@ export function TeamPanel({
             <button
               className="btn-ghost text-xs"
               disabled={pending}
-              onClick={() => run(() => regenerateInviteCode(), "Generate a new code? The old one stops working.")}
+              onClick={() =>
+                run(
+                  () => regenerateInviteCode(team.id),
+                  "Generate a new code? The old one stops working.",
+                )
+              }
             >
               New code
             </button>
           )}
         </div>
-        <p className="mt-2 text-xs text-slate-500">Anyone with this code can join the team.</p>
+        <p className="mt-2 text-xs text-slate-500">
+          Anyone with this code joins the team for this event.
+        </p>
       </div>
 
       {/* members */}
-      <div className="card">
+      <div>
         <div className="label">Roster</div>
         <ul className="mt-3 divide-y divide-edge/60">
           {team.members.map((m) => (
-            <li key={m.playerId} className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm">
+            <li
+              key={m.playerId}
+              className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm"
+            >
               <span>
                 <span className="text-slate-100">{m.name}</span>
                 {m.playerId === team.leaderId && (
@@ -195,14 +202,21 @@ export function TeamPanel({
                   <button
                     className="btn-ghost text-xs"
                     disabled={pending}
-                    onClick={() => run(() => transferLeadership(m.playerId), `Make ${m.name} the team leader?`)}
+                    onClick={() =>
+                      run(
+                        () => transferLeadership(team.id, m.playerId),
+                        `Make ${m.name} the team leader?`,
+                      )
+                    }
                   >
                     Make leader
                   </button>
                   <button
                     className="btn-danger text-xs"
                     disabled={pending}
-                    onClick={() => run(() => kickMember(m.playerId), `Remove ${m.name} from the team?`)}
+                    onClick={() =>
+                      run(() => kickMember(team.id, m.playerId), `Remove ${m.name} from the team?`)
+                    }
                   >
                     Remove
                   </button>
@@ -219,7 +233,7 @@ export function TeamPanel({
           <button
             className="btn-danger text-xs"
             disabled={pending}
-            onClick={() => run(() => leaveTeam(), "Leave this team?")}
+            onClick={() => run(() => leaveTeam(team.id), "Leave this team?")}
           >
             Leave team
           </button>
@@ -228,7 +242,12 @@ export function TeamPanel({
           <button
             className="btn-danger text-xs"
             disabled={pending}
-            onClick={() => run(() => disbandTeam(), "Disband the team? This removes every member and can't be undone.")}
+            onClick={() =>
+              run(
+                () => disbandTeam(team.id),
+                "Disband the team? This removes every member and can't be undone.",
+              )
+            }
           >
             Disband team
           </button>
@@ -239,16 +258,14 @@ export function TeamPanel({
 }
 
 function RenameForm({
+  teamId,
   name,
   tag,
-  eventId,
-  events,
   onDone,
 }: {
+  teamId: string;
   name: string;
   tag: string | null;
-  eventId: string | null;
-  events: TeamEvent[];
   onDone: () => void;
 }) {
   const [state, action, pending] = useActionState(renameTeam, {});
@@ -260,19 +277,18 @@ function RenameForm({
     }
   }, [state.ok, onDone, router]);
   return (
-    <form action={action} className="card grid gap-3">
+    <form action={action} className="border border-edge/60 bg-void/40 p-3 grid gap-3">
+      <input type="hidden" name="teamId" value={teamId} />
       <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
         <input name="name" defaultValue={name} required maxLength={40} className="input" />
-        <input name="tag" defaultValue={tag ?? ""} maxLength={6} className="input sm:w-24" placeholder="TAG" />
+        <input
+          name="tag"
+          defaultValue={tag ?? ""}
+          maxLength={6}
+          className="input sm:w-24"
+          placeholder="TAG"
+        />
       </div>
-      <select name="eventId" className="input" defaultValue={eventId ?? ""}>
-        <option value="">No specific event / general squad</option>
-        {events.map((e) => (
-          <option key={e.id} value={e.id}>
-            {eventLabel(e)}
-          </option>
-        ))}
-      </select>
       {state.error && <p className="text-sm text-ember">{state.error}</p>}
       <div>
         <button className="btn-primary text-xs" disabled={pending}>

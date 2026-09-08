@@ -8,7 +8,7 @@ import { SignupButton } from "@/components/signup-button";
 import { TeamSignup } from "@/components/team/team-signup";
 import { Markdown } from "@/components/markdown";
 import { VideoEmbed } from "@/components/video-embed";
-import { teamForPlayer } from "@/lib/team";
+import { teamForEvent } from "@/lib/team";
 import type { RewardTier } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
@@ -67,7 +67,7 @@ export default async function EventDetailPage({
     });
     myPlayerId = p?.id ?? null;
   }
-  const myTeam = isTeamEvent && myPlayerId ? await teamForPlayer(myPlayerId) : null;
+  const myTeam = isTeamEvent && myPlayerId ? await teamForEvent(myPlayerId, id) : null;
 
   const mySignup = myPlayerId
     ? event.signups.find((s) => s.playerId === myPlayerId)

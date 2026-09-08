@@ -18,14 +18,14 @@ export async function syncMemberRoles(userId: string): Promise<void> {
       select: {
         discordId: true,
         player: {
-          select: { id: true, teamLed: { select: { id: true } } },
+          select: { id: true, teamsLed: { select: { id: true }, take: 1 } },
         },
       },
     });
     if (!user?.discordId) return;
 
     const hasPlayer = !!user.player;
-    const leadsTeam = !!user.player?.teamLed;
+    const leadsTeam = (user.player?.teamsLed.length ?? 0) > 0;
 
     if (registeredRoleId) {
       if (hasPlayer) await addGuildRole(user.discordId, registeredRoleId);

@@ -20,27 +20,44 @@ export async function uniqueInviteCode(): Promise<string> {
   return makeInviteCode(8);
 }
 
-/** The team a player leads or belongs to (they can be in at most one). */
-export async function teamForPlayer(playerId: string) {
-  return db.team.findFirst({
-    where: { OR: [{ leaderId: playerId }, { members: { some: { playerId } } }] },
+const teamInclude = {
+  leader: { select: { id: true, characterName: true, gameUid: true, region: true } },
+  event: { select: { id: true, title: true, mode: true } },
+  members: {
     include: {
-      leader: { select: { id: true, characterName: true, gameUid: true, region: true } },
-      event: { select: { id: true, title: true, mode: true } },
-      members: {
-        include: {
-          player: { select: { id: true, characterName: true, gameUid: true, region: true } },
-        },
-        orderBy: { joinedAt: "asc" },
-      },
+      player: { select: { id: true, characterName: true, gameUid: true, region: true } },
     },
+    orderBy: { joinedAt: "asc" as const },
+  },
+} as const;
+
+/** Every team a player leads or belongs to (one per event). */
+export async function teamsForPlayer(playerId: string) {
+  return db.team.findMany({
+    where: { OR: [{ leaderId: playerId }, { members: { some: { playerId } } }] },
+    include: teamInclude,
+    orderBy: { createdAt: "desc" },
   });
 }
 
-/** Published team events that haven't ended — pickable when forming a team. */
-export async function selectableTeamEvents() {
+/** The player's team for one specific event, or null. */
+export async function teamForEvent(playerId: string, eventId: string) {
+  return db.team.findFirst({
+    where: {
+      eventId,
+      OR: [{ leaderId: playerId }, { members: { some: { playerId } } }],
+    },
+    include: teamInclude,
+  });
+}
+
+/**
+ * Published team events that haven't ended and where the player is not already
+ * in a team — pickable when forming a new team.
+ */
+export async function selectableTeamEvents(playerId?: string) {
   try {
-    return await db.event.findMany({
+    const events = await db.event.findMany({
       where: {
         status: "PUBLISHED",
         format: "TEAM",
@@ -49,9 +66,19 @@ export async function selectableTeamEvents() {
       orderBy: { startsAt: "asc" },
       select: { id: true, title: true, mode: true },
     });
+    if (!playerId) return events;
+    const taken = new Set(
+      (
+        await db.team.findMany({
+          where: { OR: [{ leaderId: playerId }, { members: { some: { playerId } } }] },
+          select: { eventId: true },
+        })
+      ).map((t) => t.eventId),
+    );
+    return events.filter((e) => !taken.has(e.id));
   } catch {
     return [];
   }
 }
 
-export type TeamWithMembers = NonNullable<Awaited<ReturnType<typeof teamForPlayer>>>;
+export type TeamWithMembers = Awaited<ReturnType<typeof teamsForPlayer>>[number];

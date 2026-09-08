@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { auth } from "@/auth";
 import { logAudit } from "@/lib/audit";
-import { teamForPlayer } from "@/lib/team";
+import { teamForEvent } from "@/lib/team";
 import { promoteWaitlist } from "@/lib/events";
 
 async function callerPlayerId(eventId: string): Promise<string> {
@@ -80,7 +80,7 @@ export async function withdrawFromEvent(eventId: string) {
  */
 export async function registerTeamForEvent(eventId: string) {
   const playerId = await callerPlayerId(eventId);
-  const team = await teamForPlayer(playerId);
+  const team = await teamForEvent(playerId, eventId);
   if (!team) return { error: "Create or join a team first." };
   if (team.leaderId !== playerId) return { error: "Only your team leader can register the team." };
 
@@ -130,7 +130,7 @@ export async function registerTeamForEvent(eventId: string) {
 
 export async function withdrawTeamFromEvent(eventId: string) {
   const playerId = await callerPlayerId(eventId);
-  const team = await teamForPlayer(playerId);
+  const team = await teamForEvent(playerId, eventId);
   if (!team || team.leaderId !== playerId) {
     return { error: "Only your team leader can withdraw the team." };
   }

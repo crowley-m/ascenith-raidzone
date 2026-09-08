@@ -122,7 +122,7 @@ export async function handleCommand(interaction: ChatInputCommandInteraction) {
           content: `You need a profile first — ${APP_URL}/register`,
         });
       }
-      const team = await db.team.findFirst({
+      const teams = await db.team.findMany({
         where: {
           OR: [
             { leaderId: user.player.id },
@@ -133,36 +133,37 @@ export async function handleCommand(interaction: ChatInputCommandInteraction) {
           event: { select: { title: true, mode: true } },
           members: { include: { player: { select: { characterName: true } } } },
         },
+        orderBy: { createdAt: "desc" },
       });
-      if (!team) {
+      if (teams.length === 0) {
         return interaction.reply({
           ephemeral: true,
           content: `No team yet. Create or join one at ${APP_URL}/me/team`,
         });
       }
-      const isLeader = team.leaderId === user.player.id;
-      const forEvent = team.event
-        ? team.event.mode
+      const embeds = teams.slice(0, 5).map((team) => {
+        const isLeader = team.leaderId === user.player!.id;
+        const forEvent = team.event.mode
           ? `RAIDZONE ${team.event.mode}`
-          : team.event.title
-        : "no specific event";
-      const embed = new EmbedBuilder()
-        .setColor(TEAL)
-        .setTitle(`${team.tag ? `[${team.tag}] ` : ""}${team.name}`)
-        .setDescription(
-          `Formed for **${forEvent}**\n` +
-            team.members
-              .map(
-                (m) =>
-                  `• ${m.player.characterName ?? "Unnamed"}${
-                    m.playerId === team.leaderId ? " (leader)" : ""
-                  }`,
-              )
-              .join("\n") +
-            (isLeader ? `\n\nInvite code: \`${team.inviteCode}\`` : ""),
-        )
-        .setFooter({ text: "ASCENITH RAIDZONE" });
-      return interaction.reply({ ephemeral: true, embeds: [embed] });
+          : team.event.title;
+        return new EmbedBuilder()
+          .setColor(TEAL)
+          .setTitle(`${team.tag ? `[${team.tag}] ` : ""}${team.name}`)
+          .setDescription(
+            `Formed for **${forEvent}**\n` +
+              team.members
+                .map(
+                  (m) =>
+                    `• ${m.player.characterName ?? "Unnamed"}${
+                      m.playerId === team.leaderId ? " (leader)" : ""
+                    }`,
+                )
+                .join("\n") +
+              (isLeader ? `\n\nInvite code: \`${team.inviteCode}\`` : ""),
+          )
+          .setFooter({ text: "ASCENITH RAIDZONE" });
+      });
+      return interaction.reply({ ephemeral: true, embeds });
     }
 
     case "myevents": {

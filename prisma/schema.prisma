@@ -126,43 +126,51 @@ model Player {
   flags       Flag[]
   placements  EventPlacement[]
 
-  teamLed        Team?       @relation("TeamLeader")
-  teamMembership TeamMember?
+  teamsLed        Team[]       @relation("TeamLeader")
+  teamMemberships TeamMember[]
 
   @@index([status])
   @@index([factionId])
 }
 
 // ---------------------------------------------------------------------------
-// Teams — player-made squads for team events (distinct from staff Factions)
+// Teams — player-made squads, one per team event (distinct from staff Factions).
+// A player can lead / be in a different team for every event, but only one per
+// event.
 // ---------------------------------------------------------------------------
 
 model Team {
   id         String   @id @default(cuid())
-  name       String   @unique
+  name       String
   tag        String?
   inviteCode String   @unique
-  leaderId   String   @unique
+  leaderId   String
   leader     Player   @relation("TeamLeader", fields: [leaderId], references: [id], onDelete: Cascade)
-  eventId    String? // the event this squad was formed for (optional)
-  event      Event?   @relation("TeamsForEvent", fields: [eventId], references: [id], onDelete: SetNull)
+  eventId    String // the event this squad is formed for
+  event      Event    @relation("TeamsForEvent", fields: [eventId], references: [id], onDelete: Cascade)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
   members    TeamMember[]
   signups    EventSignup[]
   placements EventPlacement[]
+
+  @@unique([eventId, name])
+  @@index([leaderId])
+  @@index([eventId])
 }
 
 model TeamMember {
   id       String   @id @default(cuid())
   teamId   String
   team     Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  playerId String   @unique
+  playerId String
   player   Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
   joinedAt DateTime @default(now())
 
+  @@unique([teamId, playerId])
   @@index([teamId])
+  @@index([playerId])
 }
 
 model Faction {
