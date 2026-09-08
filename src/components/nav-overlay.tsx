@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
@@ -21,8 +22,10 @@ export function NavOverlay({
   triggerLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
 
+  useEffect(() => setMounted(true), []);
   useEffect(() => setOpen(false), [pathname]);
 
   useEffect(() => {
@@ -38,7 +41,126 @@ export function NavOverlay({
   }, [open]);
 
   const bigLink =
-    "block py-2 font-poster text-3xl uppercase leading-none transition-colors sm:text-4xl";
+    "block py-2 font-poster text-[2rem] uppercase leading-[1.05] transition-colors sm:text-4xl";
+
+  const overlay = (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 2147483000,
+        background: "rgba(9, 7, 6, 0.92)",
+        backdropFilter: "blur(18px)",
+        WebkitBackdropFilter: "blur(18px)",
+        display: "flex",
+        flexDirection: "column",
+        overflowY: "auto",
+      }}
+    >
+      <div className="mx-auto flex h-16 w-full max-w-[1360px] flex-none items-center justify-between border-b border-[rgba(233,225,209,0.18)] px-[max(18px,4.5vw)]">
+        <span className="font-mono text-[0.78rem] font-bold uppercase tracking-[0.16em] text-white">
+          <span className="mr-2 inline-block h-2 w-2 rounded-full bg-teal align-middle" />
+          ASCENITH&middot;RAIDZONE
+        </span>
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          aria-label="Close menu"
+          className="font-mono text-xs uppercase tracking-widest text-slate-400 hover:text-white"
+        >
+          Close &times;
+        </button>
+      </div>
+
+      <div className="mx-auto grid w-full max-w-[1360px] flex-1 content-start gap-10 px-[max(18px,4.5vw)] py-10 md:grid-cols-2 md:gap-16 md:py-16">
+        <nav>
+          <p className="font-mono text-[0.6rem] uppercase tracking-[0.24em] text-slate-500">
+            Pages
+          </p>
+          <ul className="mt-4">
+            {pages.map((p) =>
+              p.external ? (
+                <li key={p.href}>
+                  <a
+                    href={p.href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={`${bigLink} text-slate-200 hover:text-white`}
+                  >
+                    {p.label}
+                  </a>
+                </li>
+              ) : (
+                <li key={p.href}>
+                  <Link href={p.href} className={`${bigLink} text-slate-200 hover:text-white`}>
+                    {p.label}
+                  </Link>
+                </li>
+              ),
+            )}
+          </ul>
+        </nav>
+
+        {sections.length > 0 && (
+          <nav>
+            <p className="font-mono text-[0.6rem] uppercase tracking-[0.24em] text-slate-500">
+              On this page
+            </p>
+            <ul className="mt-4">
+              {sections.map((sc) => (
+                <li key={sc.href}>
+                  <a
+                    href={sc.href}
+                    onClick={() => setOpen(false)}
+                    className={`${bigLink} text-slate-400 hover:text-white`}
+                  >
+                    {sc.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        )}
+      </div>
+
+      <div className="mx-auto flex w-full max-w-[1360px] flex-none flex-wrap items-center gap-3 border-t border-[rgba(233,225,209,0.18)] px-[max(18px,4.5vw)] py-6">
+        {account ? (
+          <>
+            <span className="mr-auto font-mono text-xs uppercase tracking-widest text-slate-500">
+              {account.name}
+            </span>
+            <Link href="/me" className="btn-ghost">
+              My profile
+            </Link>
+            {account.isStaff && (
+              <Link href="/portal" className="btn-ghost">
+                Staff portal
+              </Link>
+            )}
+            <button
+              type="button"
+              onClick={() => signOut({ callbackUrl: "/" })}
+              className="btn-ghost"
+            >
+              Sign out
+            </button>
+          </>
+        ) : (
+          <>
+            <Link
+              href="/login"
+              className="mr-auto font-mono text-xs uppercase tracking-widest text-slate-400 hover:text-white"
+            >
+              Sign in
+            </Link>
+            <Link href="/register" className="btn-primary">
+              Register
+            </Link>
+          </>
+        )}
+      </div>
+    </div>
+  );
 
   return (
     <>
@@ -60,108 +182,7 @@ export function NavOverlay({
         {triggerLabel}
       </button>
 
-      {open && (
-        <div className="fixed inset-0 z-[200] flex flex-col bg-void/95 backdrop-blur-md">
-          <div className="container-x flex h-16 flex-none items-center justify-between border-b border-edge">
-            <span className="font-mono text-[0.78rem] font-bold uppercase tracking-[0.16em] text-white">
-              <span className="mr-2 inline-block h-2 w-2 rounded-full bg-teal align-middle" />
-              ASCENITH&middot;RAIDZONE
-            </span>
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              aria-label="Close menu"
-              className="font-mono text-xs uppercase tracking-widest text-slate-400 hover:text-white"
-            >
-              Close &times;
-            </button>
-          </div>
-
-          <div className="container-x grid flex-1 content-start gap-12 overflow-y-auto py-12 md:grid-cols-2">
-            <nav>
-              <p className="eyebrow">Pages</p>
-              <ul className="mt-4">
-                {pages.map((p) =>
-                  p.external ? (
-                    <li key={p.href}>
-                      <a
-                        href={p.href}
-                        target="_blank"
-                        rel="noreferrer"
-                        className={`${bigLink} text-slate-200 hover:text-white`}
-                      >
-                        {p.label}
-                      </a>
-                    </li>
-                  ) : (
-                    <li key={p.href}>
-                      <Link href={p.href} className={`${bigLink} text-slate-200 hover:text-white`}>
-                        {p.label}
-                      </Link>
-                    </li>
-                  ),
-                )}
-              </ul>
-            </nav>
-
-            {sections.length > 0 && (
-              <nav>
-                <p className="eyebrow">On this page</p>
-                <ul className="mt-4">
-                  {sections.map((sc) => (
-                    <li key={sc.href}>
-                      <a
-                        href={sc.href}
-                        onClick={() => setOpen(false)}
-                        className={`${bigLink} text-slate-400 hover:text-white`}
-                      >
-                        {sc.label}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </nav>
-            )}
-          </div>
-
-          <div className="container-x flex flex-none flex-wrap items-center gap-3 border-t border-edge py-6">
-            {account ? (
-              <>
-                <span className="mr-auto font-mono text-xs uppercase tracking-widest text-slate-500">
-                  {account.name}
-                </span>
-                <Link href="/me" className="btn-ghost">
-                  My profile
-                </Link>
-                {account.isStaff && (
-                  <Link href="/portal" className="btn-ghost">
-                    Staff portal
-                  </Link>
-                )}
-                <button
-                  type="button"
-                  onClick={() => signOut({ callbackUrl: "/" })}
-                  className="btn-ghost"
-                >
-                  Sign out
-                </button>
-              </>
-            ) : (
-              <>
-                <Link
-                  href="/login"
-                  className="mr-auto font-mono text-xs uppercase tracking-widest text-slate-400 hover:text-white"
-                >
-                  Sign in
-                </Link>
-                <Link href="/register" className="btn-primary">
-                  Register
-                </Link>
-              </>
-            )}
-          </div>
-        </div>
-      )}
+      {mounted && open && createPortal(overlay, document.body)}
     </>
   );
 }

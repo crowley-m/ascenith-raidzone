@@ -1486,7 +1486,12 @@
   .navMenu { margin-left: 12px; }
 }
 @media (max-width: 900px) {
+  /* mobile: nav is just brand + the fullscreen menu; auth lives inside it */
   .navMenu { margin-left: auto; }
+  .nav .navSignin,
+  .nav .box {
+    display: none;
+  }
 }
 
 /* ---- about / who we are ---- */
