@@ -702,6 +702,44 @@
   padding-block: clamp(46px, 9vh, 104px);
   scroll-margin-top: 90px;
 }
+
+/* pre-register strip — sits above the current-event card */
+.prereg {
+  position: relative;
+  z-index: 10;
+  padding-top: clamp(40px, 8vh, 88px);
+  scroll-margin-top: 90px;
+}
+.preregInner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: clamp(16px, 3vw, 32px);
+  border: 1px solid var(--rule);
+  background: rgba(0, 0, 0, 0.3);
+  padding: clamp(16px, 2.6vw, 26px) clamp(18px, 3vw, 32px);
+}
+.preregLead {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.preregTitle {
+  font-family: var(--f-poster);
+  font-size: clamp(1.5rem, 1rem + 2.4vw, 2.6rem);
+  line-height: 1;
+  text-transform: uppercase;
+  color: var(--cream);
+}
+.preregWhen {
+  font-family: var(--f-mono);
+  font-weight: 700;
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cream-dim);
+}
 .briefFrame {
   border: 1px solid rgba(213, 48, 63, 0.5);
   box-shadow:
@@ -820,6 +858,12 @@
   display: flex;
   justify-content: center;
   margin-block: clamp(6px, 2vw, 16px) clamp(20px, 3.5vw, 32px);
+}
+.clockWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
 }
 
 /* current-event card body */
@@ -1418,38 +1462,10 @@
   max-width: 54ch;
 }
 
-/* ---- shared section background image (about, close) ---- */
-.sectionBg {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  background-position: center;
-  background-size: cover;
-  background-repeat: no-repeat;
-  opacity: 0.5;
-}
-.sectionBg::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    180deg,
-    rgba(5, 4, 4, 0.9) 0%,
-    rgba(6, 4, 4, 0.74) 45%,
-    rgba(5, 4, 4, 0.93) 100%
-  );
-}
-.aboutInner,
-.closeInner {
-  position: relative;
-  z-index: 1;
-}
-
 /* ---- close / enlist ---- */
 .close {
   position: relative;
   z-index: 10;
-  overflow: hidden;
   border-top: 1px solid var(--rule);
   text-align: center;
   padding: clamp(80px, 16vh, 190px) var(--pad);
@@ -1562,7 +1578,6 @@
 .about {
   position: relative;
   z-index: 10;
-  overflow: hidden;
   padding-block: clamp(56px, 11vh, 128px);
   scroll-margin-top: 90px;
 }

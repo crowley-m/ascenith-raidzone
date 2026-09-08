@@ -30,6 +30,8 @@ export type OpEvent = {
   rewardTiers: RewardTier[];
   bonusText: string | null;
   howToJoinVideoUrl: string | null;
+  seasonNumber: number | null;
+  seasonName: string | null;
 };
 
 const DISCORD =
@@ -108,6 +110,12 @@ export function EventBrief({
 
   const pill =
     phase === "standby" ? "Standby" : phase === "live" ? "Live" : "Upcoming";
+  const clockCap =
+    phase === "upcoming"
+      ? "Wipe starts in"
+      : end && target === end
+        ? "Wipe ends in"
+        : "Wipe live";
 
   const tiers = event ? event.rewardTiers.slice(0, 3) : [];
   const podClass = [s.pod2, s.pod1, s.pod3];
@@ -119,7 +127,7 @@ export function EventBrief({
         <div className={s.briefTop}>
           <span className={s.briefBadge}>Current event</span>
           <h2 className={s.briefTitle} data-split>
-            RAIDZONE{" "}
+            {event?.seasonNumber ? `Season ${event.seasonNumber} ` : ""}RAIDZONE{" "}
             <span className={s.briefMode}>
               {event?.mode ? event.mode : "— standby"}
             </span>
@@ -135,13 +143,16 @@ export function EventBrief({
         {event ? (
           <>
             <div className={s.clockRow}>
-              <div className={s.clockGrid} data-tl>
-                {cells.map(([v, k]) => (
-                  <span className={s.clockCell} key={k}>
-                    <span className={s.clockNum}>{v}</span>
-                    <span className={s.clockLbl}>{k}</span>
-                  </span>
-                ))}
+              <div className={s.clockWrap}>
+                <span className={s.clockCap}>{clockCap}</span>
+                <div className={s.clockGrid} data-tl>
+                  {cells.map(([v, k]) => (
+                    <span className={s.clockCell} key={k}>
+                      <span className={s.clockNum}>{v}</span>
+                      <span className={s.clockLbl}>{k}</span>
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
 

@@ -20,6 +20,13 @@ const DISCORD = process.env.NEXT_PUBLIC_DISCORD_INVITE ?? "https://discord.gg/a4
 const REGISTER = "/register";
 const LOGIN = "/login";
 
+const SOCIALS = [
+  { label: "TikTok", href: "https://www.tiktok.com/@potatoziee1" },
+  { label: "Twitch", href: "https://www.twitch.tv/potatozie1" },
+  { label: "X", href: "https://x.com/potatoziee" },
+  { label: "Facebook", href: "https://www.facebook.com/people/Potatozie-Gaming/100063656476567/" },
+];
+
 const NAV_PAGES = [
   { href: "/events", label: "Events" },
   { href: "/teams", label: "Teams" },
@@ -60,14 +67,46 @@ function Box({
   );
 }
 
+function fmtWhen(iso: string) {
+  try {
+    return new Date(iso)
+      .toLocaleString("en-US", {
+        timeZone: "Asia/Manila",
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      })
+      .toUpperCase();
+  } catch {
+    return "";
+  }
+}
+
+function PreRegister({ next }: { next: UpcomingOp }) {
+  return (
+    <section className={`${s.prereg} ${s.wrap}`} id="prereg">
+      <div className={s.preregInner} data-reveal>
+        <div className={s.preregLead}>
+          <span className={s.mark}>Pre-register — next event</span>
+          <h3 className={s.preregTitle}>
+            {next.mode ? `RAIDZONE ${next.mode}` : next.title}
+          </h3>
+          <p className={s.preregWhen}>{fmtWhen(next.startsAt)} GMT+8</p>
+        </div>
+        <a className={`${s.box} ${s.solid}`} href={`/events/${next.id}`}>
+          <span className={s.t}>Pre-register</span>
+          <span className={s.arw}>{"→"}</span>
+        </a>
+      </div>
+    </section>
+  );
+}
+
 function About() {
   return (
     <section className={s.about} id="about">
-      <div
-        className={s.sectionBg}
-        aria-hidden
-        style={{ backgroundImage: "url(/media/bg-redroot.webp)" }}
-      />
       <div className={`${s.aboutInner} ${s.wrap}`}>
         <div className={s.aboutHead}>
           <span className={s.mark} data-reveal>
@@ -77,7 +116,7 @@ function About() {
         </div>
         <div className={s.aboutBody} data-reveal>
           <p>
-            A community server that treats <em>Once Human</em> like a competitive sport &mdash;
+            A community server built for serious competitive play in <em>Once Human</em> &mdash;
             custom RaidZone scenarios where skill decides the outcome.
           </p>
           <p>Fair play, real stakes. Seasoned raider or first drop, there&apos;s a spot on the roster.</p>
@@ -255,7 +294,10 @@ export function Landing({
             <span className={s.x}>Sponsored prizes for the squads that take it.</span>
           </p>
           <p className={s.heroSub} data-reveal>
-            Run by POTATOZIE &mdash; Season {season.replace(/^S/, "")} roster open
+            Run by POTATOZIE &mdash;{" "}
+            {event?.mode
+              ? `${event.seasonNumber ? `Season ${event.seasonNumber} · ` : ""}RAIDZONE ${event.mode}`
+              : `Season ${season.replace(/^S/, "")} roster open`}
           </p>
           <div className={s.heroActs} data-reveal>
             {user ? (
@@ -279,6 +321,8 @@ export function Landing({
       </section>
 
       <div className={s.after}>
+        {upcoming.length > 0 && <PreRegister next={upcoming[0]} />}
+
         <EventBrief event={event} upcoming={upcoming} />
 
         {howToJoinVideo ? <HowToJoinVideo url={howToJoinVideo} /> : null}
@@ -315,11 +359,6 @@ export function Landing({
 
         {/* CLOSE */}
         <section className={s.close} id="register">
-          <div
-            className={s.sectionBg}
-            aria-hidden
-            style={{ backgroundImage: "url(/media/bg-raidzone.webp)" }}
-          />
           <div className={s.closeInner}>
             {user ? (
               <>
@@ -380,6 +419,13 @@ export function Landing({
               </>
             )}
             <a href={DISCORD}>Discord</a>
+          </nav>
+          <nav>
+            {SOCIALS.map((sm) => (
+              <a key={sm.href} href={sm.href} target="_blank" rel="noreferrer">
+                {sm.label}
+              </a>
+            ))}
           </nav>
           <span>Made by Crowley</span>
         </footer>

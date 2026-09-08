@@ -92,18 +92,7 @@ export default async function WinnersPage() {
   }
 
   return (
-    <div className="relative">
-      {/* full-bleed page background */}
-      <div
-        aria-hidden
-        className="pointer-events-none fixed inset-0 -z-10 bg-cover bg-center bg-no-repeat opacity-[0.16]"
-        style={{ backgroundImage: "url(/media/bg-raidzone.webp)" }}
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none fixed inset-0 -z-10 bg-gradient-to-b from-void/85 via-void/70 to-void/95"
-      />
-
+    <div className="bg-black">
       <div className="container-x py-16">
         <h1 className="font-poster text-5xl uppercase leading-[0.95] text-white sm:text-6xl">
           Hall of winners

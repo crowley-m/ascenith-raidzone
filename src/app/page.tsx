@@ -27,6 +27,8 @@ const FALLBACK_EVENT: OpEvent = {
   ],
   bonusText: "20K Crystgin · hidden across airdrops, cards & alpha boss",
   howToJoinVideoUrl: null,
+  seasonNumber: 1,
+  seasonName: null,
 };
 
 // re-fetch the current op at most once a minute; the client ticker handles seconds
@@ -39,14 +41,20 @@ async function eventData(): Promise<{ current: OpEvent | null; upcoming: Upcomin
     events = await db.event.findMany({
       where: { status: "PUBLISHED" },
       orderBy: { startsAt: "asc" },
-      include: { _count: { select: { signups: true } } },
+      include: {
+        _count: { select: { signups: true } },
+        season: { select: { number: true, name: true } },
+      },
     });
   } catch {
     return { current: null, upcoming: [] };
   }
 
   const withCount = events as Array<
-    (typeof events)[number] & { _count: { signups: number } }
+    (typeof events)[number] & {
+      _count: { signups: number };
+      season: { number: number; name: string | null } | null;
+    }
   >;
   const ongoing = withCount.find(
     (e) => e.startsAt <= now && (!e.endsAt || e.endsAt >= now),
@@ -86,6 +94,8 @@ async function eventData(): Promise<{ current: OpEvent | null; upcoming: Upcomin
         : [],
       bonusText: current.bonusText,
       howToJoinVideoUrl: current.howToJoinVideoUrl,
+      seasonNumber: current.season?.number ?? null,
+      seasonName: current.season?.name ?? null,
     },
     upcoming,
   };

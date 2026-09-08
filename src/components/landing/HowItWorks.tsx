@@ -1,10 +1,10 @@
 import s from "./landing.module.css";
 
 const IS: { text: string; hot?: boolean }[] = [
-  { text: "A custom server, run like a competitive sport" },
+  { text: "A custom server, built for serious competitive play" },
   { text: "Weekly RaidZone tournaments — purge nights, prime raids, sweeps" },
   { text: "Real sponsored prizes for the squads that win", hot: true },
-  { text: "Slot-limited, roster-tracked, called in Discord" },
+  { text: "Roster-tracked slots managed via Discord" },
   { text: "Fair play — admins actively ban cheats and exploiters" },
 ];
 
@@ -12,7 +12,7 @@ const ISNT = [
   "An official Once Human world",
   "Casual co-op PvE",
   "Pay-to-win",
-  "Forgiving to cheats or bug abusers",
+  "Tolerant of cheaters or bug exploiters",
 ];
 
 /** Permanent "how RAIDZONE works" — an is / isn't face-off. */

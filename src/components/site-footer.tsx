@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { site } from "@/lib/site";
+import { site, socials } from "@/lib/site";
 
 export function SiteFooter() {
   return (
@@ -13,6 +13,15 @@ export function SiteFooter() {
             A {site.game} community running a custom server, weekly RaidZone tournaments, and
             sponsored prizes. Run by {site.owner}.
           </p>
+          <ul className="mt-4 flex flex-wrap gap-x-4 gap-y-1.5 font-mono text-[0.66rem] uppercase tracking-[0.14em] text-slate-400">
+            {socials.map((sm) => (
+              <li key={sm.href}>
+                <a href={sm.href} target="_blank" rel="noreferrer" className="hover:text-white">
+                  {sm.label}
+                </a>
+              </li>
+            ))}
+          </ul>
         </div>
         <div>
           <div className="eyebrow">Community</div>
