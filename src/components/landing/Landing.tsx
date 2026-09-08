@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useSession } from "next-auth/react";
+import { isStaff } from "@/lib/rbac";
 import s from "./landing.module.css";
 import { useImmersive } from "./useImmersive";
 import { SparkleField } from "./SparkleField";
@@ -89,6 +91,11 @@ export function Landing({
   videos?: YtVideo[];
   discordOnline?: number | null;
 }) {
+  const { data: session } = useSession();
+  const user = session?.user ?? null;
+  const staff = isStaff(user?.role);
+  const dashHref = staff ? "/portal" : "/me";
+
   const rootRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
   const [heroVideo, setHeroVideo] = useState(false);
@@ -172,12 +179,25 @@ export function Landing({
             : "Server live"}{" "}
           &mdash; S1 2026
         </span>
-        <a className={s.navSignin} href={LOGIN}>
-          Sign in
-        </a>
-        <Box href={REGISTER} variant="solid">
-          Register
-        </Box>
+        {user ? (
+          <>
+            <a className={s.navSignin} href="/me">
+              My profile
+            </a>
+            <Box href={dashHref} variant="solid">
+              {staff ? "Portal" : "My raider"}
+            </Box>
+          </>
+        ) : (
+          <>
+            <a className={s.navSignin} href={LOGIN}>
+              Sign in
+            </a>
+            <Box href={REGISTER} variant="solid">
+              Register
+            </Box>
+          </>
+        )}
       </nav>
 
       {/* HERO */}
@@ -225,9 +245,15 @@ export function Landing({
             </p>
           )}
           <div className={s.heroActs} data-reveal>
-            <Box href={REGISTER} k="New here?">
-              Register your raider
-            </Box>
+            {user ? (
+              <Box href={dashHref} k={staff ? "Staff" : "Roster"}>
+                {staff ? "Open the portal" : "My raider"}
+              </Box>
+            ) : (
+              <Box href={REGISTER} k="New here?">
+                Register your raider
+              </Box>
+            )}
             <Box href={DISCORD} k="·" variant="plain">
               Join Discord
             </Box>
@@ -288,28 +314,59 @@ export function Landing({
 
         {/* CLOSE */}
         <section className={s.close} id="register">
-          <h2 data-split>
-            Register<span className={s.x}>.</span>
-          </h2>
-          <p className={s.sub} data-reveal>
-            New here &mdash; register your raider. Already on the roster &mdash; sign in. Either way,
-            you&apos;re in for the next one.
-          </p>
-          <div className={s.acts} data-reveal>
-            <Box href={REGISTER} k="New" variant="solid">
-              Register your raider
-            </Box>
-            <Box href={LOGIN} k="·" variant="plain">
-              Sign in
-            </Box>
-          </div>
+          {user ? (
+            <>
+              <h2 data-reveal>
+                You&apos;re in<span className={s.x}>.</span>
+              </h2>
+              <p className={s.sub} data-reveal>
+                Roster&apos;s set. Keep your raider details current and watch the current op for
+                the next drop.
+              </p>
+              <div className={s.acts} data-reveal>
+                <Box href={dashHref} k="Go" variant="solid">
+                  {staff ? "Open the portal" : "My raider"}
+                </Box>
+                <Box href="#event" k="·" variant="plain">
+                  Current op
+                </Box>
+              </div>
+            </>
+          ) : (
+            <>
+              <h2 data-split>
+                Register<span className={s.x}>.</span>
+              </h2>
+              <p className={s.sub} data-reveal>
+                New here &mdash; register your raider. Already on the roster &mdash; sign in. Either
+                way, you&apos;re in for the next one.
+              </p>
+              <div className={s.acts} data-reveal>
+                <Box href={REGISTER} k="New" variant="solid">
+                  Register your raider
+                </Box>
+                <Box href={LOGIN} k="·" variant="plain">
+                  Sign in
+                </Box>
+              </div>
+            </>
+          )}
         </section>
 
         <footer className={s.footer}>
           <span>ASCENITH&middot;RAIDZONE</span>
           <nav>
-            <a href={REGISTER}>Register</a>
-            <a href={LOGIN}>Sign in</a>
+            {user ? (
+              <>
+                <a href="/me">My profile</a>
+                {staff && <a href="/portal">Portal</a>}
+              </>
+            ) : (
+              <>
+                <a href={REGISTER}>Register</a>
+                <a href={LOGIN}>Sign in</a>
+              </>
+            )}
             <a href={DISCORD}>Discord</a>
             <a href="/rules">Rules</a>
           </nav>
