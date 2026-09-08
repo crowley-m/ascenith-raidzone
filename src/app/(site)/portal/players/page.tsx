@@ -53,6 +53,7 @@ export default async function PlayersPage({
         {[
           { k: "", label: `All ${total}` },
           { k: "ACTIVE", label: `Active ${countFor("ACTIVE")}` },
+          { k: "PENDING", label: `Pending ${countFor("PENDING")}` },
           { k: "INACTIVE", label: `Inactive ${countFor("INACTIVE")}` },
           { k: "BANNED", label: `Banned ${countFor("BANNED")}` },
         ].map((t) => (

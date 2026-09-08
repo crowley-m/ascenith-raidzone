@@ -99,7 +99,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   providers,
   events: {
     async signIn({ user, account, profile }) {
-      if (account?.provider === "discord" && profile && user.id) {
+      if (!user.id) return;
+
+      if (account?.provider === "discord" && profile) {
         const p = profile as {
           id?: string;
           username?: string;
@@ -117,8 +119,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             image: user.image ?? p.image_url ?? null,
           },
         });
-        void syncMemberRoles(user.id);
       }
+
+      // Every signed-in account gets a Player row so staff can see them in the
+      // portal from the start. It stays PENDING (no character name) until they
+      // finish their profile at /me/profile, which flips it to ACTIVE.
+      await db.player.upsert({
+        where: { userId: user.id },
+        create: { userId: user.id, status: "PENDING" },
+        update: {},
+      });
+
+      void syncMemberRoles(user.id);
     },
   },
   callbacks: {
