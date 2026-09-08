@@ -13,7 +13,15 @@ import {
   parseRewardTiers,
   rewardSchema,
 } from "@/lib/validation";
-import { postAnnouncement, editAnnouncement, eventEmbed, signupButtonRow } from "@/lib/discord";
+import {
+  postAnnouncement,
+  editAnnouncement,
+  eventEmbed,
+  signupButtonRow,
+  createEventSpace,
+  postToChannel,
+  eventEmoji,
+} from "@/lib/discord";
 import { createMediaAsset } from "@/lib/media";
 import { Prisma } from "@prisma/client";
 import type { PlayerStatus, Role } from "@prisma/client";
@@ -196,6 +204,90 @@ export async function saveEvent(_prev: FormState, formData: FormData): Promise<F
   revalidatePath(`/events/${eventId}`);
   revalidatePath("/"); // landing shows the current / next published event
   redirect(`/portal/events/${eventId}`);
+}
+
+/**
+ * Bot builds the event's Discord space: a themed category + the standard
+ * channel set, then seeds announcement / how-to-join / rewards. Idempotent —
+ * refuses if the event already has a category.
+ */
+export async function buildEventSpace(eventId: string): Promise<FormState> {
+  const actor = await assertPermission("event:manage");
+  const ev = await db.event.findUnique({ where: { id: eventId } });
+  if (!ev) return { error: "Event not found." };
+  if (ev.discordCategoryId) return { error: "This event already has a Discord space." };
+
+  const spaceName = ev.mode ? `RAIDZONE ${ev.mode}` : ev.title;
+  let space;
+  try {
+    space = await createEventSpace({ name: spaceName, emoji: eventEmoji(ev.mode) });
+  } catch (err) {
+    console.error("createEventSpace failed", err);
+    return { error: `Discord: ${err instanceof Error ? err.message : "channel creation failed"}` };
+  }
+  if (!space) return { error: "Discord isn't configured (bot token / guild id)." };
+
+  const url = `${APP_URL}/events/${ev.id}`;
+  const tiers = Array.isArray(ev.rewardTiers)
+    ? (ev.rewardTiers as Array<{ place: string; reward: string }>)
+    : [];
+
+  // seed the key channels — best-effort, don't fail the action on a post error
+  try {
+    const embed = eventEmbed({ ...ev, signupCount: 0, url });
+    const posted = await postToChannel(space.channels.announcement, {
+      embed,
+      components: [signupButtonRow(ev.id, `Sign up: ${ev.title}`)],
+    });
+
+    await postToChannel(space.channels["how-to-join"], {
+      content:
+        `**How to join**\n` +
+        `1. Register once at ${APP_URL}/register (Discord login links automatically)\n` +
+        `2. Fill your in-game UID on your profile — that's where rewards go\n` +
+        (ev.format === "TEAM"
+          ? `3. Team event: your team leader registers the whole team at ${url}\n`
+          : `3. Sign up at ${url}\n`),
+    });
+
+    if (tiers.length || ev.bonusText || ev.rewardPoolText) {
+      const lines = ["**Rewards**"];
+      for (const t of tiers) lines.push(`${t.place} — ${t.reward}`);
+      if (!tiers.length && ev.rewardPoolText) lines.push(ev.rewardPoolText);
+      if (ev.bonusText) lines.push(`\n**Bonus:** ${ev.bonusText}`);
+      await postToChannel(space.channels.rewards, { content: lines.join("\n") });
+    }
+
+    await db.event.update({
+      where: { id: ev.id },
+      data: {
+        discordCategoryId: space.categoryId,
+        discordChannels: space.channels as Prisma.InputJsonValue,
+        discordChannelId: space.channels.announcement,
+        discordMessageId: posted?.id ?? ev.discordMessageId,
+      },
+    });
+  } catch (err) {
+    console.error("event space seed failed", err);
+    // still record the category/channels so we don't orphan them
+    await db.event.update({
+      where: { id: ev.id },
+      data: {
+        discordCategoryId: space.categoryId,
+        discordChannels: space.channels as Prisma.InputJsonValue,
+      },
+    });
+  }
+
+  await logAudit({
+    actorId: actor.id,
+    action: "event.discord_space",
+    targetType: "Event",
+    targetId: ev.id,
+    meta: { categoryId: space.categoryId, channels: Object.keys(space.channels).length },
+  });
+  revalidatePath(`/portal/events/${ev.id}`);
+  return { ok: true };
 }
 
 export async function markAttendance(eventId: string, playerId: string, attended: boolean) {

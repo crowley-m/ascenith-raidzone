@@ -262,8 +262,10 @@ model Event {
   bonusText   String? // e.g. "20K Crystgen · hidden across airdrops, cards, alpha boss"
   detailsMd   String? // full markdown brief shown on /events/[id]
 
-  discordMessageId String?
-  discordChannelId String?
+  discordMessageId  String?
+  discordChannelId  String?
+  discordCategoryId String? // event's Discord category, once the bot builds it
+  discordChannels   Json? // { announcement: "id", rules: "id", ... }
 
   createdById String
   createdBy   User   @relation("EventCreator", fields: [createdById], references: [id])

@@ -9,6 +9,7 @@ import { EventForm } from "@/components/portal/event-form";
 import { AttendanceToggle } from "@/components/portal/attendance-toggle";
 import { RewardForm } from "@/components/portal/reward-form";
 import { RosterCopy } from "@/components/portal/roster-copy";
+import { BuildSpaceButton } from "@/components/portal/build-space-button";
 
 export const dynamic = "force-dynamic";
 
@@ -104,11 +105,20 @@ export default async function PortalEventDetail({
       <Link href="/portal/events" className="text-sm text-slate-500 hover:text-white">← Events</Link>
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
         <h2 className="font-display text-2xl font-bold text-white">{event.title}</h2>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <span className="badge">{event.status}</span>
           <Link href={`/events/${event.id}`} className="btn-ghost text-xs" target="_blank">
             Public page ↗
           </Link>
+          {canManage &&
+            (event.discordCategoryId ? (
+              <span className="badge border-teal/40 text-teal">
+                Discord:{" "}
+                {Object.keys((event.discordChannels as Record<string, string>) ?? {}).length} channels
+              </span>
+            ) : (
+              <BuildSpaceButton eventId={event.id} />
+            ))}
         </div>
       </div>
       <p className="mt-1 text-sm text-slate-500">

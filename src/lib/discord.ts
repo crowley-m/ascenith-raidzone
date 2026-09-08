@@ -15,7 +15,7 @@ type Embed = {
   footer?: { text: string };
 };
 
-async function discordFetch(path: string, init: RequestInit) {
+async function discordFetch(path: string, init: RequestInit, attempt = 0): Promise<unknown> {
   const token = process.env.DISCORD_BOT_TOKEN;
   if (!token) throw new Error("DISCORD_BOT_TOKEN not set");
   const res = await fetch(`${API}${path}`, {
@@ -26,6 +26,11 @@ async function discordFetch(path: string, init: RequestInit) {
       ...(init.headers ?? {}),
     },
   });
+  if (res.status === 429 && attempt < 4) {
+    const body = (await res.json().catch(() => ({}))) as { retry_after?: number };
+    await new Promise((r) => setTimeout(r, Math.ceil((body.retry_after ?? 1) * 1000) + 250));
+    return discordFetch(path, init, attempt + 1);
+  }
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`Discord ${init.method} ${path} -> ${res.status}: ${text}`);
@@ -167,4 +172,110 @@ export async function guildPresence(): Promise<{
   } catch {
     return null;
   }
+}
+
+// ---------------------------------------------------------------------------
+// Event Discord space — one category + a set of channels per event.
+// Needs the bot to have Manage Channels in the guild.
+// ---------------------------------------------------------------------------
+
+const MODE_EMOJI: Record<string, string> = {
+  PURGE: "\u2620\uFE0F", // ☠️
+  PRESIDENT: "\uD83D\uDEE1\uFE0F", // 🛡️
+  FACTION: "\u2622\uFE0F", // ☢️
+  SQUAD: "\u2622\uFE0F",
+  SOLO: "\uD83D\uDFE9", // 🟩
+  BOXING: "\uD83E\uDD4A", // 🥊
+};
+
+/** Pick a themed emoji from the event's mode text (falls back to ⚔️). */
+export function eventEmoji(mode?: string | null): string {
+  const key = (mode ?? "").toUpperCase();
+  for (const k of Object.keys(MODE_EMOJI)) if (key.includes(k)) return MODE_EMOJI[k];
+  return "\u2694\uFE0F"; // ⚔️
+}
+
+/** ASCII → unicode bold — matches the server's category-name style. */
+function boldName(s: string): string {
+  const A = 0x1d5d4;
+  const a = 0x1d5ee;
+  const zero = 0x1d7ec;
+  return [...s]
+    .map((ch) => {
+      const c = ch.codePointAt(0)!;
+      if (c >= 65 && c <= 90) return String.fromCodePoint(A + (c - 65));
+      if (c >= 97 && c <= 122) return String.fromCodePoint(a + (c - 97));
+      if (c >= 48 && c <= 57) return String.fromCodePoint(zero + (c - 48));
+      return ch;
+    })
+    .join("");
+}
+
+export const EVENT_CHANNELS = [
+  "announcement",
+  "how-to-join",
+  "rules",
+  "gameplay",
+  "rewards",
+  "registration",
+  "looking-for-team",
+  "questions",
+  "chat",
+] as const;
+
+export type EventSpace = {
+  categoryId: string;
+  channels: Record<string, string>; // name -> channel id
+};
+
+/**
+ * Create `<emoji> BOLD NAME <emoji>` category + the channel set under it.
+ * Returns the ids; caller stores them on the event. No-op-safe: caller must
+ * check the event doesn't already have a category.
+ */
+export async function createEventSpace(opts: {
+  name: string;
+  emoji: string;
+  channels?: readonly string[];
+}): Promise<EventSpace | null> {
+  const gid = process.env.DISCORD_GUILD_ID;
+  if (!gid || !process.env.DISCORD_BOT_TOKEN) return null;
+
+  const catName = `${opts.emoji} ${boldName(opts.name.slice(0, 60))} ${opts.emoji}`.trim();
+  const category = (await discordFetch(`/guilds/${gid}/channels`, {
+    method: "POST",
+    body: JSON.stringify({ name: catName, type: 4 }),
+  })) as { id: string };
+
+  const channels: Record<string, string> = {};
+  for (const name of opts.channels ?? EVENT_CHANNELS) {
+    const ch = (await discordFetch(`/guilds/${gid}/channels`, {
+      method: "POST",
+      body: JSON.stringify({
+        name: `${opts.emoji}\u30FB${name}`, // emoji・name
+        type: 0,
+        parent_id: category.id,
+      }),
+    })) as { id: string };
+    channels[name] = ch.id;
+  }
+
+  return { categoryId: category.id, channels };
+}
+
+/** Plain message (optionally with an embed / components) to a channel. */
+export async function postToChannel(
+  channelId: string,
+  payload: { content?: string; embed?: Embed; components?: ButtonRow[] },
+): Promise<{ id: string } | null> {
+  if (!process.env.DISCORD_BOT_TOKEN) return null;
+  return (await discordFetch(`/channels/${channelId}/messages`, {
+    method: "POST",
+    body: JSON.stringify({
+      content: payload.content,
+      embeds: payload.embed ? [{ color: 0x2fd4c7, ...payload.embed }] : [],
+      components: payload.components ?? [],
+      allowed_mentions: { parse: ["roles"] },
+    }),
+  })) as { id: string };
 }
