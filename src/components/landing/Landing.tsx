@@ -22,7 +22,7 @@ const LOGIN = "/login";
 const NAV_PAGES = [
   { href: "/events", label: "Events" },
   { href: "/teams", label: "Teams" },
-  { href: "/proof", label: "Results" },
+  { href: "/winners", label: "Winners" },
   { href: "/rules", label: "Rules" },
   { href: "/about", label: "About" },
   { href: DISCORD, label: "Discord", external: true },
@@ -191,7 +191,7 @@ export function Landing({
         </span>
         <div className={s.navMid}>
           <Link href="/events">Events</Link>
-          <Link href="/proof">Results</Link>
+          <Link href="/winners">Winners</Link>
           <Link href="/rules">Rules</Link>
           <Link href="/about">About</Link>
         </div>
@@ -393,7 +393,7 @@ export function Landing({
           <nav>
             <Link href="/about">About</Link>
             <Link href="/events">Events</Link>
-            <Link href="/proof">Results</Link>
+            <Link href="/winners">Winners</Link>
             <Link href="/rules">Rules</Link>
             {user ? (
               <>

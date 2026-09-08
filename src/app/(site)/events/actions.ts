@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { auth } from "@/auth";
 import { logAudit } from "@/lib/audit";
 import { teamForPlayer } from "@/lib/team";
+import { promoteWaitlist } from "@/lib/events";
 
 async function callerPlayerId(eventId: string): Promise<string> {
   const session = await auth();
@@ -66,6 +67,7 @@ export async function withdrawFromEvent(eventId: string) {
     where: { eventId, playerId },
     data: { state: "WITHDRAWN" },
   });
+  await promoteWaitlist(eventId);
   await logAudit({ action: "event.withdraw", targetType: "Event", targetId: eventId });
   revalidatePath(`/events/${eventId}`);
   revalidatePath("/me/events");
@@ -129,6 +131,7 @@ export async function withdrawTeamFromEvent(eventId: string) {
     where: { eventId, teamId: team.id },
     data: { state: "WITHDRAWN" },
   });
+  await promoteWaitlist(eventId);
   await logAudit({
     action: "event.team_withdraw",
     targetType: "Event",

@@ -28,8 +28,13 @@ export function SiteFooter() {
               </Link>
             </li>
             <li>
-              <Link href="/proof" className="hover:text-white">
-                Results wall
+              <Link href="/teams" className="hover:text-white">
+                Teams
+              </Link>
+            </li>
+            <li>
+              <Link href="/winners" className="hover:text-white">
+                Winners
               </Link>
             </li>
             <li>

@@ -10,6 +10,8 @@ import { AttendanceToggle } from "@/components/portal/attendance-toggle";
 import { RewardForm } from "@/components/portal/reward-form";
 import { RosterCopy } from "@/components/portal/roster-copy";
 import { BuildSpaceButton, ArchiveSpaceButton } from "@/components/portal/build-space-button";
+import { ResultsForm, AttendeeRewardForm } from "@/components/portal/results-form";
+import type { RewardTier } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +35,13 @@ export default async function PortalEventDetail({
         orderBy: { createdAt: "asc" },
       },
       attendance: true,
+      placements: {
+        orderBy: { rank: "asc" },
+        include: {
+          team: { select: { name: true, tag: true } },
+          player: { select: { characterName: true } },
+        },
+      },
     },
   });
   if (!event) notFound();
@@ -98,6 +107,22 @@ export default async function PortalEventDetail({
       }
       teamGroups.get(key)!.members.push(s);
     }
+  }
+
+  // results / placements
+  const tiers = (Array.isArray(event.rewardTiers) ? event.rewardTiers : []) as RewardTier[];
+  const entrants: { value: string; label: string }[] = isTeamEvent
+    ? [...new Map(confirmed.filter((s) => s.teamId).map((s) => [s.teamId!, s])).values()].map((s) => ({
+        value: `team:${s.teamId}`,
+        label: s.team?.name ?? "—",
+      }))
+    : confirmed.map((s) => ({
+        value: `player:${s.player.id}`,
+        label: s.player.characterName ?? "Unnamed",
+      }));
+  const currentPlacements: Record<number, string> = {};
+  for (const p of event.placements) {
+    currentPlacements[p.rank] = p.teamId ? `team:${p.teamId}` : `player:${p.playerId}`;
   }
 
   return (
@@ -270,9 +295,47 @@ export default async function PortalEventDetail({
             </p>
           )}
 
+          {canManage && confirmed.length > 0 && (
+            <div className="mt-8">
+              <ResultsForm
+                eventId={event.id}
+                entrants={entrants}
+                current={currentPlacements}
+                tiers={tiers}
+                canReward={canReward}
+              />
+            </div>
+          )}
+
+          {event.placements.length > 0 && (
+            <div className="card mt-4">
+              <h3 className="font-display font-bold text-white">Placed</h3>
+              <ol className="mt-2 space-y-1 text-sm">
+                {event.placements.map((p) => (
+                  <li key={p.id} className="flex gap-3">
+                    <span className="font-mono text-xs uppercase text-teal">
+                      {tiers[p.rank - 1]?.place ?? `#${p.rank}`}
+                    </span>
+                    <span className="text-slate-200">
+                      {p.team
+                        ? `${p.team.tag ? `[${p.team.tag}] ` : ""}${p.team.name}`
+                        : (p.player?.characterName ?? "—")}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
+
+          {canReward && (
+            <div className="mt-4">
+              <AttendeeRewardForm eventId={event.id} />
+            </div>
+          )}
+
           {canReward && rosterPlayers.length > 0 && (
-            <div className="card mt-8">
-              <h3 className="font-display font-bold text-white">Log a reward for this event</h3>
+            <div className="card mt-4">
+              <h3 className="font-display font-bold text-white">Log a single reward</h3>
               <div className="mt-3">
                 <RewardForm players={rosterPlayers} fixedEventId={event.id} />
               </div>

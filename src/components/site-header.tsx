@@ -8,7 +8,7 @@ import { NavOverlay } from "@/components/nav-overlay";
 const NAV = [
   { href: "/events", label: "Events" },
   { href: "/teams", label: "Teams" },
-  { href: "/proof", label: "Results" },
+  { href: "/winners", label: "Winners" },
   { href: "/rules", label: "Rules" },
   { href: "/about", label: "About" },
 ];

@@ -27,7 +27,7 @@ import { createMediaAsset } from "@/lib/media";
 import { Prisma } from "@prisma/client";
 import type { PlayerStatus, Role } from "@prisma/client";
 
-type FormState = { ok?: boolean; error?: string };
+type FormState = { ok?: boolean; error?: string; count?: number };
 
 const APP_URL = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
 
@@ -377,7 +377,7 @@ export async function grantReward(_prev: FormState, formData: FormData): Promise
   });
   revalidatePath("/portal/rewards");
   revalidatePath(`/portal/players/${parsed.data.playerId}`);
-  revalidatePath("/proof");
+  revalidatePath("/winners");
   return { ok: true };
 }
 
@@ -394,7 +394,123 @@ export async function deleteReward(rewardId: string, playerId: string) {
   await logAudit({ actorId: actor.id, action: "reward.delete", targetType: "Reward", targetId: rewardId });
   revalidatePath("/portal/rewards");
   revalidatePath(`/portal/players/${playerId}`);
-  revalidatePath("/proof");
+  revalidatePath("/winners");
+}
+
+// --------------------------------------------------------------------------
+// Results / placements + bulk rewards
+// --------------------------------------------------------------------------
+
+/** formData: rank1, rank2, rank3 … each "team:<id>" | "player:<id>" | "". */
+export async function savePlacements(_prev: FormState, formData: FormData): Promise<FormState> {
+  const actor = await assertPermission("event:manage");
+  const eventId = formData.get("eventId") as string;
+  if (!eventId) return { error: "Missing event." };
+
+  const rows: { rank: number; teamId: string | null; playerId: string | null }[] = [];
+  for (let rank = 1; rank <= 5; rank++) {
+    const raw = (formData.get(`rank${rank}`) as string) || "";
+    if (!raw) continue;
+    const [kind, id] = raw.split(":");
+    if (!id) continue;
+    rows.push({
+      rank,
+      teamId: kind === "team" ? id : null,
+      playerId: kind === "player" ? id : null,
+    });
+  }
+
+  await db.$transaction([
+    db.eventPlacement.deleteMany({ where: { eventId } }),
+    ...rows.map((r) => db.eventPlacement.create({ data: { eventId, ...r } })),
+  ]);
+  await logAudit({ actorId: actor.id, action: "event.placements", targetType: "Event", targetId: eventId, meta: { count: rows.length } });
+  revalidatePath(`/portal/events/${eventId}`);
+  revalidatePath("/winners");
+  revalidatePath("/winners");
+  return { ok: true };
+}
+
+/** One reward per attendee (attended = true). */
+export async function grantAttendeeRewards(_prev: FormState, formData: FormData): Promise<FormState> {
+  const actor = await assertPermission("reward:grant");
+  const eventId = formData.get("eventId") as string;
+  const item = ((formData.get("item") as string) || "").trim();
+  const amount = ((formData.get("amount") as string) || "").trim() || null;
+  const reason = ((formData.get("reason") as string) || "").trim() || "Attendance";
+  const isPublic = formData.get("isPublic") === "on";
+  if (!eventId || !item) return { error: "Item is required." };
+
+  const attended = await db.eventAttendance.findMany({
+    where: { eventId, attended: true },
+    select: { playerId: true },
+  });
+  if (attended.length === 0) return { error: "No one is marked as attended yet." };
+
+  await db.reward.createMany({
+    data: attended.map((a) => ({
+      playerId: a.playerId,
+      eventId,
+      item,
+      amount,
+      reason,
+      isPublic,
+      grantedById: actor.id,
+    })),
+  });
+  await logAudit({ actorId: actor.id, action: "reward.bulk_attendees", targetType: "Event", targetId: eventId, meta: { count: attended.length } });
+  revalidatePath("/portal/rewards");
+  revalidatePath(`/portal/events/${eventId}`);
+  revalidatePath("/winners");
+  return { ok: true, count: attended.length };
+}
+
+/** Reward each placement from the event's reward tiers (1st tier → rank 1, …). */
+export async function grantPlacementRewards(_prev: FormState, formData: FormData): Promise<FormState> {
+  const actor = await assertPermission("reward:grant");
+  const eventId = formData.get("eventId") as string;
+  const isPublic = formData.get("isPublic") === "on";
+  if (!eventId) return { error: "Missing event." };
+
+  const event = await db.event.findUnique({
+    where: { id: eventId },
+    include: {
+      placements: {
+        orderBy: { rank: "asc" },
+        include: {
+          team: { include: { members: { select: { playerId: true } } } },
+        },
+      },
+    },
+  });
+  if (!event) return { error: "Event not found." };
+  if (event.placements.length === 0) return { error: "Set the results first." };
+
+  const tiers = Array.isArray(event.rewardTiers)
+    ? (event.rewardTiers as Array<{ place: string; reward: string }>)
+    : [];
+
+  const rewards: Prisma.RewardCreateManyInput[] = [];
+  for (const p of event.placements) {
+    const tier = tiers[p.rank - 1];
+    const item = tier?.reward ?? `Rank ${p.rank}`;
+    const reason = `${tier?.place ?? `#${p.rank}`} — ${event.title}`;
+    const playerIds = p.playerId
+      ? [p.playerId]
+      : (p.team?.members.map((m) => m.playerId) ?? []);
+    for (const playerId of playerIds) {
+      rewards.push({ playerId, eventId, item, reason, isPublic, grantedById: actor.id });
+    }
+  }
+  if (rewards.length === 0) return { error: "Placements have no players." };
+
+  await db.reward.createMany({ data: rewards });
+  await logAudit({ actorId: actor.id, action: "reward.placements", targetType: "Event", targetId: eventId, meta: { count: rewards.length } });
+  revalidatePath("/portal/rewards");
+  revalidatePath(`/portal/events/${eventId}`);
+  revalidatePath("/winners");
+  revalidatePath("/winners");
+  return { ok: true, count: rewards.length };
 }
 
 // --------------------------------------------------------------------------

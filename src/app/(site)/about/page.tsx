@@ -55,7 +55,7 @@ const STEPS = [
       <>
         Claim a slot on the <Link href="/events" className="link">current event</Link>, show up in
         the raid window, and climb the leaderboard. Winners are logged to{" "}
-        <Link href="/proof" className="link">Results</Link>.
+        <Link href="/winners" className="link">Winners</Link>.
       </>
     ),
   },

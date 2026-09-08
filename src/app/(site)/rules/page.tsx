@@ -2,15 +2,26 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { site } from "@/lib/site";
 
-export const metadata: Metadata = { title: "Rules & how to join" };
+export const metadata: Metadata = {
+  title: "Rules & how to join",
+  description:
+    "ASCENITH RAIDZONE community rules, Glory Points scoring, anti-cheat policy, and how to get on the roster.",
+};
 
 const RULES = [
   "Be respectful. No harassment, hate speech, slurs, or targeted toxicity — in Discord or in game.",
   "No cheating, exploiting, or third-party tools that give an unfair advantage on our servers.",
-  "Don't grief other members' bases or steal from teammates during community events.",
+  "No bug abuse. If you find a bug, report it in a ticket — don't use it.",
+  "Don't grief other members' bases or steal from teammates outside sanctioned event objectives.",
   "Use the right channels. Keep event talk in event channels and support requests in tickets.",
-  "One account per person for events and rewards. Alt accounts used to farm rewards will be removed.",
+  "One account per person for events and rewards. Alt accounts used to farm rewards are removed.",
   "Staff decisions on rewards and disputes are final, but you can always appeal politely in a ticket.",
+];
+
+const GLORY = [
+  { where: "Red Room", pts: "2 pts" },
+  { where: "Blue Room", pts: "1 pt" },
+  { where: "Alpha Boss", pts: "1 pt" },
 ];
 
 const STEPS = [
@@ -19,8 +30,8 @@ const STEPS = [
     body: (
       <>
         Create your profile with <Link href="/register" className="link">Register</Link> — Discord or
-        email works. Fill in your Once Human character name, platform, and region so staff can find
-        you in game.
+        email works. Add your Once Human character name, platform, region, and{" "}
+        <b>in-game UID</b> so staff can find you and send rewards.
       </>
     ),
   },
@@ -37,31 +48,48 @@ const STEPS = [
     ),
   },
   {
-    title: "3. Get on a custom server",
-    body: "Server addresses and passwords are posted in the Discord for active members. Follow the join steps in the how-to-join channel.",
+    title: "3. Make or join a team (team events)",
+    body: (
+      <>
+        Solo events you sign up for yourself. Team events are entered by a team leader — create a
+        team or join one with an invite code on your <Link href="/me/team" className="link">Team</Link>{" "}
+        page.
+      </>
+    ),
   },
   {
     title: "4. Sign up for an event",
     body: (
       <>
-        Browse <Link href="/events" className="link">Events</Link>, claim a slot, and show up on time.
-        Attendance is tracked and rewards are logged to your profile afterwards.
+        Browse <Link href="/events" className="link">Events</Link>, claim a slot, and show up in the
+        raid window. Attendance is tracked and rewards are logged to your profile afterwards.
       </>
     ),
   },
 ];
 
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="mt-14">
+      <h2 className="font-display text-xl font-bold text-white">{title}</h2>
+      {children}
+    </section>
+  );
+}
+
 export default function RulesPage() {
   return (
     <div className="container-x py-16">
-      <h1 className="font-display text-3xl font-extrabold text-white">Rules &amp; how to join</h1>
-      <p className="mt-3 max-w-2xl text-slate-300">
-        ASCENITH RAIDZONE is run by {site.owner}. Keep it fair, keep it friendly, and everyone gets
-        to enjoy the raids.
+      <p className="eyebrow">{"// rules"}</p>
+      <h1 className="mt-2 font-poster text-5xl uppercase leading-[0.95] text-white sm:text-6xl">
+        Rules &amp; how to join
+      </h1>
+      <p className="mt-4 max-w-2xl text-slate-300">
+        {site.name} is run by {site.owner}. Keep it fair, keep it friendly, and everyone gets to
+        enjoy the raids. These apply per event unless an event brief says otherwise.
       </p>
 
-      <section className="mt-12">
-        <h2 className="font-display text-xl font-bold text-white">Community rules</h2>
+      <Section title="Community rules">
         <ol className="mt-5 space-y-3">
           {RULES.map((r, i) => (
             <li key={i} className="card flex gap-3 text-sm text-slate-300">
@@ -70,10 +98,63 @@ export default function RulesPage() {
             </li>
           ))}
         </ol>
-      </section>
+      </Section>
 
-      <section className="mt-14">
-        <h2 className="font-display text-xl font-bold text-white">How to join</h2>
+      <Section title="Glory Points">
+        <p className="mt-3 max-w-2xl text-sm text-slate-400">
+          Placement in most events is decided by Glory Points. You earn them by holding objectives
+          and taking targets during the raid window:
+        </p>
+        <ul className="mt-5 grid gap-3 sm:grid-cols-3">
+          {GLORY.map((g) => (
+            <li key={g.where} className="card text-center">
+              <div className="font-display text-2xl font-bold text-teal">{g.pts}</div>
+              <div className="mt-1 text-xs uppercase tracking-wide text-slate-500">{g.where}</div>
+            </li>
+          ))}
+        </ul>
+        <p className="mt-4 max-w-2xl text-xs text-slate-500">
+          Points contested or earned through cheating, bug abuse, or account sharing are removed and
+          may cost you the event. The exact objectives and window for a given event are in its brief.
+        </p>
+      </Section>
+
+      <Section title="Anti-cheat & fair play">
+        <ul className="mt-5 space-y-2 text-sm text-slate-300">
+          <li className="card">
+            <b className="text-white">Zero tolerance for cheats.</b> Aimbots, wallhacks, macros,
+            speed/teleport tools, or any third-party program that alters the game — instant
+            permanent ban, no appeal, rewards clawed back.
+          </li>
+          <li className="card">
+            <b className="text-white">No bug exploiting.</b> Duping, clipping into bases, out-of-map
+            spots, or any unintended mechanic used for an advantage voids your placement.
+          </li>
+          <li className="card">
+            <b className="text-white">No account sharing or boosting.</b> The person on comms is the
+            person who plays. Reward UIDs must match the registered player.
+          </li>
+          <li className="card">
+            <b className="text-white">Clips on request.</b> If staff ask for proof of a run or a
+            call, you provide it. No clip, no points.
+          </li>
+        </ul>
+      </Section>
+
+      <Section title="Disputes & appeals">
+        <div className="mt-5 space-y-2 text-sm text-slate-400">
+          <p>
+            Think a call went wrong, points were miscounted, or a reward is missing? Open a ticket
+            in Discord with the event name, what you expected, and any clips or screenshots.
+          </p>
+          <p>
+            Staff review and respond. Decisions on placements and rewards are final once reviewed,
+            but every appeal is read — be specific and stay civil and it gets sorted.
+          </p>
+        </div>
+      </Section>
+
+      <Section title="How to join">
         <div className="mt-5 grid gap-4 md:grid-cols-2">
           {STEPS.map((s) => (
             <div key={s.title} className="card">
@@ -82,10 +163,9 @@ export default function RulesPage() {
             </div>
           ))}
         </div>
-      </section>
+      </Section>
 
-      <section className="mt-14">
-        <h2 className="font-display text-xl font-bold text-white">FAQ</h2>
+      <Section title="FAQ">
         <dl className="mt-5 space-y-4">
           <div className="card">
             <dt className="font-semibold text-white">Do I need to pay anything?</dt>
@@ -96,20 +176,28 @@ export default function RulesPage() {
           <div className="card">
             <dt className="font-semibold text-white">How do rewards get to me?</dt>
             <dd className="mt-1 text-sm text-slate-400">
-              Staff log rewards to your profile after an event. You&apos;ll see them under{" "}
-              <Link href="/me/rewards" className="link">My rewards</Link>. In-game delivery details
-              are coordinated in Discord.
+              Staff log rewards to your profile after an event and send them in game to the UID on
+              your profile. You&apos;ll see them under{" "}
+              <Link href="/me/rewards" className="link">My rewards</Link>.
+            </dd>
+          </div>
+          <div className="card">
+            <dt className="font-semibold text-white">Solo vs team events?</dt>
+            <dd className="mt-1 text-sm text-slate-400">
+              Solo events: you sign up individually. Team events: your{" "}
+              <Link href="/me/team" className="link">team</Link> leader registers the whole squad in
+              one go. The event page says which it is.
             </dd>
           </div>
           <div className="card">
             <dt className="font-semibold text-white">Do I need approval before I can sign up?</dt>
             <dd className="mt-1 text-sm text-slate-400">
               No — you&apos;re on the roster the moment you register. Fill in your in-game details
-              on your profile and you can sign up for the next event straight away.
+              and you can sign up straight away.
             </dd>
           </div>
         </dl>
-      </section>
+      </Section>
     </div>
   );
 }

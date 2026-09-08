@@ -124,6 +124,7 @@ model Player {
   rewards     Reward[]
   notes       StaffNote[]
   flags       Flag[]
+  placements  EventPlacement[]
 
   teamLed        Team?       @relation("TeamLeader")
   teamMembership TeamMember?
@@ -146,8 +147,9 @@ model Team {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  members TeamMember[]
-  signups EventSignup[]
+  members    TeamMember[]
+  signups    EventSignup[]
+  placements EventPlacement[]
 }
 
 model TeamMember {
@@ -277,8 +279,24 @@ model Event {
   signups    EventSignup[]
   attendance EventAttendance[]
   rewards    Reward[]
+  placements EventPlacement[]
 
   @@index([status, startsAt])
+}
+
+model EventPlacement {
+  id        String   @id @default(cuid())
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  rank      Int // 1 = 1st, 2 = 2nd, ...
+  teamId    String? // set for TEAM events
+  team      Team?    @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  playerId  String? // set for SOLO events
+  player    Player?  @relation(fields: [playerId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+
+  @@unique([eventId, rank])
+  @@index([eventId])
 }
 
 model EventSignup {
