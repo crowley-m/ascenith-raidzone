@@ -32,7 +32,7 @@
   margin: 0;
   font-family: var(--f-poster);
   font-weight: 400;
-  line-height: 0.9;
+  line-height: 0.94;
   text-transform: uppercase;
   letter-spacing: 0.005em;
 }
@@ -1482,6 +1482,7 @@
 .aboutHead h2 {
   margin-top: 16px;
   font-size: clamp(2.1rem, 1.4rem + 3.6vw, 4.6rem);
+  line-height: 1.06;
   color: var(--cream);
   max-width: 14ch;
 }
