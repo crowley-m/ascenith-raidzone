@@ -38,30 +38,32 @@ export function Gallery() {
 
       <div className={s.galleryField} data-parallax aria-hidden>
         {SHOTS.map((sh, i) => (
-          <figure
+          <div
             key={sh.id}
-            className={s.shot}
-            data-float
-            style={
-              {
-                left: sh.left,
-                top: sh.top,
-                width: sh.width,
-                "--d": sh.dur,
-                "--r": `${sh.rot}deg`,
-                animationDelay: `${i * -1.4}s`,
-              } as React.CSSProperties
-            }
+            className={s.shotPop}
+            data-pop
+            style={{ left: sh.left, top: sh.top, width: sh.width }}
           >
-            <div className={s.shotImg}>
-              <span className={s.shotCorner} />
-              <span className={s.shotSig}>{"// signal pending"}</span>
-            </div>
-            <figcaption>
-              <span className={s.shotId}>{sh.id}</span>
-              <span className={s.shotTag}>{sh.tag}</span>
-            </figcaption>
-          </figure>
+            <figure
+              className={s.shot}
+              style={
+                {
+                  "--d": sh.dur,
+                  "--r": `${sh.rot}deg`,
+                  animationDelay: `${i * -1.4}s`,
+                } as React.CSSProperties
+              }
+            >
+              <div className={s.shotImg}>
+                <span className={s.shotCorner} />
+                <span className={s.shotSig}>{"// signal pending"}</span>
+              </div>
+              <figcaption>
+                <span className={s.shotId}>{sh.id}</span>
+                <span className={s.shotTag}>{sh.tag}</span>
+              </figcaption>
+            </figure>
+          </div>
         ))}
       </div>
     </section>

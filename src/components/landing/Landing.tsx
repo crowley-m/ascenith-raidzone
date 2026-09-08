@@ -165,7 +165,13 @@ export function Landing({
           <a href="#watch">Watch</a>
           <a href="#run">Field manual</a>
         </div>
-        <span className={s.navStatus}>&bull; Server live &mdash; S1 2026</span>
+        <span className={s.navStatus}>
+          <span className={s.liveDot} />
+          {typeof discordOnline === "number"
+            ? `${discordOnline.toLocaleString()} online`
+            : "Server live"}{" "}
+          &mdash; S1 2026
+        </span>
         <a className={s.navSignin} href={LOGIN}>
           Sign in
         </a>
@@ -212,6 +218,12 @@ export function Landing({
           <p className={s.heroSub} data-reveal>
             Run by NOT POTATOZIE &mdash; Season 1 roster open
           </p>
+          {typeof discordOnline === "number" && (
+            <p className={s.heroLive} data-reveal>
+              <span className={s.liveDot} />
+              {discordOnline.toLocaleString()} raiders online right now
+            </p>
+          )}
           <div className={s.heroActs} data-reveal>
             <Box href={REGISTER} k="New here?">
               Register your raider

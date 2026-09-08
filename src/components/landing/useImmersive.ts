@@ -129,6 +129,33 @@ export function useImmersive(rootRef: RefObject<HTMLDivElement | null>, ready: b
             );
           });
 
+          // gallery frames — pop in on scroll, staggered; reverse on scroll back
+          const galleryField = root.querySelector<HTMLElement>("#gallery [data-parallax]");
+          if (galleryField) {
+            const pops = Array.from(
+              galleryField.querySelectorAll<HTMLElement>("[data-pop]"),
+            );
+            if (pops.length) {
+              gsap.fromTo(
+                pops,
+                { autoAlpha: 0, scale: 0.5, yPercent: 14 },
+                {
+                  autoAlpha: 1,
+                  scale: 1,
+                  yPercent: 0,
+                  duration: 0.55,
+                  ease: "back.out(1.5)",
+                  stagger: 0.09,
+                  scrollTrigger: {
+                    trigger: galleryField,
+                    start: "top 80%",
+                    toggleActions: TA,
+                  },
+                },
+              );
+            }
+          }
+
           // parallax — layers drift at different rates as you scroll
           qa("[data-parallax]").forEach((el) => {
             gsap.fromTo(

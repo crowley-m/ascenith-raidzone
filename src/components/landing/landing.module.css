@@ -186,6 +186,9 @@
 }
 .navMid a:hover { color: var(--cream); }
 .navStatus {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   font-family: var(--f-mono);
   font-weight: 700;
   font-size: 0.64rem;
@@ -386,6 +389,34 @@
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--cream-dim);
+}
+.heroLive {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--f-mono);
+  font-weight: 700;
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cream-2);
+}
+.liveDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #3ba55d;
+  box-shadow: 0 0 0 0 rgba(59, 165, 93, 0.6);
+  flex: none;
+  animation: livepulse 2.4s ease-out infinite;
+}
+@keyframes livepulse {
+  0% { box-shadow: 0 0 0 0 rgba(59, 165, 93, 0.55); }
+  70% { box-shadow: 0 0 0 6px rgba(59, 165, 93, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(59, 165, 93, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .liveDot { animation: none; }
 }
 .heroActs {
   display: flex;
@@ -1682,8 +1713,12 @@
   height: clamp(440px, 64vh, 720px);
   padding-inline: var(--pad);
 }
-.shot {
+.shotPop {
   position: absolute;
+  will-change: transform, opacity;
+}
+.shot {
+  position: static;
   margin: 0;
   animation: shotFloat var(--d, 8s) ease-in-out infinite;
   will-change: transform;
@@ -1743,15 +1778,16 @@
 .shotTag { color: var(--cream-dim); }
 @media (max-width: 700px) {
   .galleryField { height: auto; padding-block: 6px; }
-  .shot {
+  .shotPop {
     position: relative;
     left: auto !important;
     top: auto !important;
     width: 100% !important;
-    animation: none;
     margin-bottom: 20px;
   }
+  .shot { animation: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .shot { animation: none; }
+  .shotPop { opacity: 1 !important; transform: none !important; }
 }
