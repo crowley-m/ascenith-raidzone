@@ -28,7 +28,7 @@ export async function SiteHeader() {
           ASCENITH&middot;RAIDZONE
         </Link>
 
-        <nav className="hidden items-center gap-6 font-mono text-[0.68rem] uppercase tracking-[0.14em] text-slate-300 md:flex">
+        <nav className="hidden items-center gap-6 font-mono text-[0.66rem] uppercase tracking-[0.14em] text-slate-300 md:flex">
           {NAV.map((n) => (
             <Link key={n.href} href={n.href} className="hover:text-white">
               {n.label}

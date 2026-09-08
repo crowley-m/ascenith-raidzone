@@ -6,17 +6,17 @@ export function SiteFooter() {
     <footer className="mt-24 border-t border-edge bg-void/60">
       <div className="container-x grid gap-8 py-12 md:grid-cols-3">
         <div>
-          <div className="font-mono text-[0.8rem] font-bold uppercase tracking-[0.16em] text-white">
+          <div className="font-mono text-[0.78rem] font-bold uppercase tracking-[0.16em] text-white">
             ASCENITH&middot;RAIDZONE
           </div>
-          <p className="mt-3 max-w-xs font-mono text-[0.72rem] uppercase leading-relaxed tracking-wide text-slate-400">
+          <p className="mt-3 max-w-xs font-mono text-[0.7rem] uppercase leading-relaxed tracking-wide text-slate-400">
             A {site.game} community running a custom server, weekly RaidZone tournaments, and
             sponsored prizes. Run by {site.owner}.
           </p>
         </div>
         <div>
           <div className="eyebrow">Community</div>
-          <ul className="mt-2 space-y-1.5 font-mono text-[0.72rem] uppercase tracking-wide text-slate-400">
+          <ul className="mt-2 space-y-1.5 font-mono text-[0.7rem] uppercase tracking-wide text-slate-400">
             <li>
               <Link href="/about" className="hover:text-white">
                 About
@@ -46,7 +46,7 @@ export function SiteFooter() {
         </div>
         <div>
           <div className="eyebrow">Account</div>
-          <ul className="mt-2 space-y-1.5 font-mono text-[0.72rem] uppercase tracking-wide text-slate-400">
+          <ul className="mt-2 space-y-1.5 font-mono text-[0.7rem] uppercase tracking-wide text-slate-400">
             <li>
               <Link href="/register" className="hover:text-white">
                 Register
@@ -70,7 +70,7 @@ export function SiteFooter() {
           </ul>
         </div>
       </div>
-      <div className="container-x flex flex-wrap items-center justify-between gap-3 border-t border-edge py-5 font-mono text-[0.62rem] uppercase tracking-[0.14em] text-slate-500">
+      <div className="container-x flex flex-wrap items-center justify-between gap-3 border-t border-edge py-5 font-mono text-[0.66rem] uppercase tracking-[0.14em] text-slate-500">
         <span>&copy; {new Date().getFullYear()} ASCENITH RAIDZONE</span>
         <span>Made by Crowley</span>
       </div>

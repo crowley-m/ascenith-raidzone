@@ -28,7 +28,7 @@ export function SyncChannelsButton({ eventId }: { eventId: string }) {
       >
         {pending ? "Syncing…" : "Sync channels"}
       </button>
-      {msg && <span className="text-[0.65rem] text-slate-400">{msg}</span>}
+      {msg && <span className="text-[0.66rem] text-slate-400">{msg}</span>}
     </span>
   );
 }
@@ -56,7 +56,7 @@ export function ArchiveSpaceButton({ eventId }: { eventId: string }) {
       >
         {pending ? "Archiving…" : "Archive Discord space"}
       </button>
-      {err && <span className="text-[0.65rem] text-ember">{err}</span>}
+      {err && <span className="text-[0.66rem] text-ember">{err}</span>}
     </span>
   );
 }
@@ -84,7 +84,7 @@ export function BuildSpaceButton({ eventId }: { eventId: string }) {
       >
         {pending ? "Building…" : "Build Discord space"}
       </button>
-      {err && <span className="text-[0.65rem] text-ember">{err}</span>}
+      {err && <span className="text-[0.66rem] text-ember">{err}</span>}
     </span>
   );
 }

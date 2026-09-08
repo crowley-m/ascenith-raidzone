@@ -96,7 +96,7 @@ export function EventForm({ event }: { event?: EventInit }) {
       </div>
 
       <hr className="border-edge" />
-      <p className="font-mono text-[0.68rem] font-bold uppercase tracking-[0.18em] text-teal">
+      <p className="font-mono text-[0.66rem] font-bold uppercase tracking-[0.18em] text-teal">
         Public brief — shown on the landing page + /events/{event ? event.id : "…"}
       </p>
 
@@ -168,7 +168,7 @@ export function EventForm({ event }: { event?: EventInit }) {
       </div>
 
       <hr className="border-edge" />
-      <p className="font-mono text-[0.68rem] font-bold uppercase tracking-[0.18em] text-teal">
+      <p className="font-mono text-[0.66rem] font-bold uppercase tracking-[0.18em] text-teal">
         Discord channels — posted into the event&apos;s space (build it, then &ldquo;Sync
         channels&rdquo; after edits)
       </p>

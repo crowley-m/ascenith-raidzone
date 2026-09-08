@@ -102,7 +102,7 @@ export default function RegisterPage() {
           </div>
         </div>
 
-        <p className="mt-4 text-center font-mono text-[0.72rem] uppercase tracking-wide text-slate-400">
+        <p className="mt-4 text-center font-mono text-[0.7rem] uppercase tracking-wide text-slate-400">
           Already on the roster?{" "}
           <Link href="/login" className="link">
             Sign in
