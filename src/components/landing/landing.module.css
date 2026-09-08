@@ -62,7 +62,7 @@
   font-size: 0.72rem;
   letter-spacing: 0.24em;
   text-transform: uppercase;
-  color: var(--crimson);
+  color: var(--cream-dim);
 }
 
 /* ---- fixed texture ---- */
@@ -320,10 +320,6 @@
   display: block;
   filter: drop-shadow(0 6px 34px rgba(0, 0, 0, 0.55));
   transition: filter 0.3s ease;
-}
-.wm:hover .wmSvg {
-  filter: drop-shadow(0 6px 34px rgba(0, 0, 0, 0.55))
-    drop-shadow(0 0 30px rgba(213, 48, 63, 0.22));
 }
 @keyframes wmReveal {
   from { clip-path: inset(0 100% 0 0); opacity: 0.2; }
@@ -741,13 +737,8 @@
   color: var(--cream-dim);
 }
 .briefFrame {
-  border: 1px solid rgba(213, 48, 63, 0.5);
-  box-shadow:
-    0 0 42px -10px rgba(213, 48, 63, 0.4),
-    inset 0 0 70px rgba(0, 0, 0, 0.55);
-  background:
-    linear-gradient(180deg, rgba(213, 48, 63, 0.06), transparent 220px),
-    rgba(14, 11, 12, 0.92);
+  border: 1px solid var(--rule);
+  background: rgba(10, 9, 9, 0.94);
   padding: clamp(18px, 3vw, 36px);
 }
 .briefTop {
@@ -757,14 +748,11 @@
   flex-wrap: wrap;
   padding-bottom: clamp(14px, 2.5vw, 20px);
   margin-bottom: clamp(16px, 3vw, 26px);
-  border-bottom: 1px solid rgba(213, 48, 63, 0.4);
+  border-bottom: 1px solid var(--rule);
 }
 .briefBadge {
   flex: none;
   border: 1px solid var(--crimson);
-  box-shadow:
-    0 0 16px -3px rgba(213, 48, 63, 0.65),
-    inset 0 0 12px rgba(213, 48, 63, 0.15);
   padding: 8px 13px;
   font-family: var(--f-mono);
   font-weight: 700;
@@ -772,7 +760,6 @@
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--crimson);
-  text-shadow: 0 0 12px rgba(213, 48, 63, 0.7);
 }
 .briefTitle {
   font-family: var(--f-poster);
@@ -808,10 +795,7 @@
   }
 }
 .briefFrameHot {
-  border-color: rgba(213, 48, 63, 0.6);
-  box-shadow:
-    0 0 54px -8px rgba(213, 48, 63, 0.5),
-    inset 0 0 80px rgba(0, 0, 0, 0.55);
+  border-color: var(--rule);
 }
 
 /* status pill in the brief header */
@@ -1020,10 +1004,7 @@
   padding: clamp(15px, 2.2vw, 22px);
 }
 .card2Hot {
-  border-color: rgba(213, 48, 63, 0.55);
-  box-shadow:
-    0 0 34px -12px rgba(213, 48, 63, 0.45),
-    inset 0 0 44px rgba(0, 0, 0, 0.45);
+  border-color: var(--rule);
 }
 .rewardsCard {
   display: flex;
@@ -1037,7 +1018,6 @@
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--crimson);
-  text-shadow: 0 0 10px rgba(213, 48, 63, 0.5);
   padding-bottom: 9px;
   margin-bottom: 13px;
   border-bottom: 1px solid var(--rule);
@@ -1064,7 +1044,6 @@
   line-height: 1;
   text-transform: uppercase;
   color: var(--cream);
-  text-shadow: 0 0 22px rgba(213, 48, 63, 0.4);
 }
 
 .card2 ul {
@@ -1308,7 +1287,7 @@
 .vsMark {
   flex: none;
   font-weight: 700;
-  color: var(--crimson);
+  color: var(--cream-dim);
 }
 .vsIsnt .vsList li {
   color: var(--cream-dim);
@@ -1325,11 +1304,9 @@
   letter-spacing: 0.03em;
   padding-left: 12px;
   border-left: 2px solid var(--crimson);
-  background: linear-gradient(90deg, rgba(213, 48, 63, 0.14), transparent 70%);
 }
 .vsHot .vsMark {
   color: var(--crimson);
-  text-shadow: 0 0 10px rgba(213, 48, 63, 0.6);
 }
 
 /* ---- marquee band ---- */

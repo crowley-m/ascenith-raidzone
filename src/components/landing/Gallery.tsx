@@ -44,7 +44,7 @@ export function Gallery({ images = [] }: { images?: GalleryImage[] }) {
     <section className={s.gallery} id="gallery">
       <div className={`${s.galleryHead} ${s.wrap}`}>
         <span className={s.mark} data-reveal>
-          The field
+          05 &middot; The field
         </span>
         <h2 data-split>Where it goes down.</h2>
         <p className={s.galleryNote} data-reveal>

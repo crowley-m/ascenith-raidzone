@@ -20,7 +20,7 @@ export function Watch({ videos = [] }: { videos?: YtVideo[] }) {
     <section className={`${s.watch} ${s.wrap}`} id="watch">
       <div className={s.watchHead}>
         <span className={s.mark} data-reveal>
-          On the channel
+          04 &middot; On the channel
         </span>
         <h2 data-split>Watch the ops.</h2>
         <p className={s.watchNote} data-reveal>

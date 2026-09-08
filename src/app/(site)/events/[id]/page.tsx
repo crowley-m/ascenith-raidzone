@@ -184,7 +184,7 @@ export default async function EventDetailPage({
           </dl>
 
           {(tiers.length > 0 || event.bonusText || event.rewardPoolText) && (
-            <div className="mt-8 border border-teal/40 bg-panel/70 p-5 shadow-[0_0_30px_-12px_rgba(213,48,63,0.4)]">
+            <div className="mt-8 border border-edge bg-panel/70 p-5">
               <div className="eyebrow">Rewards</div>
               {tiers.length > 0 && (
                 <ul className="mt-3 divide-y divide-edge">

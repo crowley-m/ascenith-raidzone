@@ -20,7 +20,7 @@ export function HowItWorks() {
   return (
     <section className={`${s.vs} ${s.wrap}`} id="how">
       <span className={s.mark} data-reveal>
-        How it works
+        01 &middot; How it works
       </span>
 
       <div className={s.vsGrid}>

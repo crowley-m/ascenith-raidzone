@@ -116,7 +116,7 @@ function SeasonHistory({
     <section className={`${s.seasons} ${s.wrap}`} id="seasons">
       <div className={s.seasonsHead}>
         <span className={s.mark} data-reveal>
-          The record
+          02 &middot; The record
         </span>
         <h2 data-split>Every season.</h2>
       </div>
@@ -152,7 +152,7 @@ function About() {
       <div className={`${s.aboutInner} ${s.wrap}`}>
         <div className={s.aboutHead}>
           <span className={s.mark} data-reveal>
-            Who we are
+            03 &middot; Who we are
           </span>
           <h2 data-split>Competitive survival, run properly.</h2>
         </div>
@@ -385,7 +385,7 @@ export function Landing({
         <section className={`${s.runbook} ${s.wrap}`} id="run">
           <div className={s.runbookHead}>
             <span className={s.mark} data-reveal>
-              Field manual
+              06 &middot; Field manual
             </span>
             <h2 data-split>How a night runs.</h2>
           </div>

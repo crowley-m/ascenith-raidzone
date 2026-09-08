@@ -25,9 +25,9 @@ body {
     @apply mx-auto w-full max-w-5xl px-5;
   }
 
-  /* section eyebrow — mono, crimson, uppercase */
+  /* section eyebrow — mono, muted, uppercase */
   .eyebrow {
-    @apply font-mono text-[0.7rem] font-bold uppercase tracking-[0.22em] text-teal;
+    @apply font-mono text-[0.7rem] font-bold uppercase tracking-[0.22em] text-slate-500;
   }
 
   .btn {
