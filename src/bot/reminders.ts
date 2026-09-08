@@ -42,15 +42,35 @@ async function tick(client: Client) {
     const channels = (ev.discordChannels ?? {}) as Record<string, string>;
     const channelId = channels.announcement || fallbackChannel;
     if (!channelId) continue;
+    const mins = Math.round((ev.startsAt.getTime() - now.getTime()) / 60000);
     try {
       const ch = await client.channels.fetch(channelId);
       if (ch && "send" in ch && typeof ch.send === "function") {
-        const mins = Math.round((ev.startsAt.getTime() - now.getTime()) / 60000);
         await ch.send(
           `⏰ **${ev.title}** starts <t:${Math.floor(ev.startsAt.getTime() / 1000)}:R>` +
             ` (in ~${mins} min).\nLast call to sign up: ${APP_URL}/events/${ev.id}`,
         );
       }
+      // DM everyone on the roster who opted in
+      const roster = await db.eventSignup.findMany({
+        where: { eventId: ev.id, state: "SIGNED_UP" },
+        select: {
+          player: { select: { dmNotifications: true, user: { select: { discordId: true } } } },
+        },
+      });
+      for (const s of roster) {
+        if (!s.player.dmNotifications || !s.player.user.discordId) continue;
+        try {
+          const u = await client.users.fetch(s.player.user.discordId);
+          await u.send(
+            `⏰ **${ev.title}** starts <t:${Math.floor(ev.startsAt.getTime() / 1000)}:R>` +
+              ` (in ~${mins} min) — you're on the roster.\n${APP_URL}/events/${ev.id}`,
+          );
+        } catch {
+          /* DMs closed — skip */
+        }
+      }
+
       await db.event.update({ where: { id: ev.id }, data: { reminderSentAt: now } });
     } catch (err) {
       console.error(`reminder failed for ${ev.id}`, err);

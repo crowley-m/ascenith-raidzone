@@ -6,8 +6,19 @@ import {
   type APIActionRowComponent,
   type APIButtonComponent,
   type ChatInputCommandInteraction,
+  type AutocompleteInteraction,
 } from "discord.js";
 import { db, APP_URL, TEAL, playerForDiscordUser } from "./lib.js";
+
+/** PUBLISHED solo events that are still open for sign-ups (upcoming or live). */
+function openSoloEventFilter() {
+  const now = new Date();
+  return {
+    status: "PUBLISHED" as const,
+    format: "SOLO" as const,
+    OR: [{ endsAt: null, startsAt: { gte: now } }, { endsAt: { gte: now } }],
+  };
+}
 
 export const commandData = [
   new SlashCommandBuilder()
@@ -25,9 +36,32 @@ export const commandData = [
     .addUserOption((o) => o.setName("user").setDescription("Whose profile (defaults to you)")),
   new SlashCommandBuilder().setName("team").setDescription("Show your ASCENITH RAIDZONE team"),
   new SlashCommandBuilder()
+    .setName("signup")
+    .setDescription("Sign up for an upcoming solo event")
+    .addStringOption((o) =>
+      o.setName("event").setDescription("Which event").setRequired(true).setAutocomplete(true),
+    ),
+  new SlashCommandBuilder()
     .setName("myevents")
     .setDescription("List the events you're signed up for"),
 ].map((c) => c.toJSON());
+
+export async function handleAutocomplete(interaction: AutocompleteInteraction) {
+  if (interaction.commandName !== "signup") return interaction.respond([]);
+  const q = interaction.options.getFocused().toLowerCase();
+  const events = await db.event.findMany({
+    where: openSoloEventFilter(),
+    orderBy: { startsAt: "asc" },
+    take: 25,
+    select: { id: true, title: true },
+  });
+  await interaction.respond(
+    events
+      .filter((e) => e.title.toLowerCase().includes(q))
+      .slice(0, 25)
+      .map((e) => ({ name: e.title.slice(0, 100), value: e.id })),
+  );
+}
 
 export async function handleCommand(interaction: ChatInputCommandInteraction) {
   switch (interaction.commandName) {
@@ -164,6 +198,58 @@ export async function handleCommand(interaction: ChatInputCommandInteraction) {
           .setFooter({ text: "ASCENITH RAIDZONE" });
       });
       return interaction.reply({ ephemeral: true, embeds });
+    }
+
+    case "signup": {
+      const user = await playerForDiscordUser(interaction.user.id);
+      if (!user?.player) {
+        return interaction.reply({
+          ephemeral: true,
+          content: `You need a profile first — ${APP_URL}/register`,
+        });
+      }
+      const eventId = interaction.options.getString("event", true);
+      const event = await db.event.findUnique({
+        where: { id: eventId },
+        include: { _count: { select: { signups: { where: { state: "SIGNED_UP" } } } } },
+      });
+      if (!event || event.status !== "PUBLISHED") {
+        return interaction.reply({
+          ephemeral: true,
+          content: `Pick an event from the list — that one isn't open. See ${APP_URL}/events`,
+        });
+      }
+      if (event.format === "TEAM") {
+        return interaction.reply({
+          ephemeral: true,
+          content: `**${event.title}** is a team event — your team leader registers the team at ${APP_URL}/events/${event.id}`,
+        });
+      }
+      const full = event.maxSlots ? event._count.signups >= event.maxSlots : false;
+      const state = full ? "WAITLIST" : "SIGNED_UP";
+      await db.eventSignup.upsert({
+        where: { eventId_playerId: { eventId, playerId: user.player.id } },
+        create: { eventId, playerId: user.player.id, state },
+        update: { state },
+      });
+      await db.auditLog
+        .create({
+          data: {
+            actorId: user.id,
+            action: "event.signup",
+            targetType: "Event",
+            targetId: eventId,
+            meta: { state, via: "discord" },
+          },
+        })
+        .catch(() => {});
+      return interaction.reply({
+        ephemeral: true,
+        content:
+          state === "WAITLIST"
+            ? `📋 **${event.title}** is full — you're on the waitlist. We'll DM you if a slot opens.\n${APP_URL}/events/${event.id}`
+            : `✅ You're signed up for **${event.title}**.\n${APP_URL}/events/${event.id}`,
+      });
     }
 
     case "myevents": {

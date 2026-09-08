@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireUser } from "@/lib/session";
 import { db } from "@/lib/db";
 import { fmtDate } from "@/lib/format";
+import { RewardReceipt } from "@/components/me/reward-receipt";
 
 export default async function MyRewardsPage() {
   const user = await requireUser();
@@ -29,7 +30,8 @@ export default async function MyRewardsPage() {
               <th className="py-2">Item</th>
               <th className="py-2">Reason</th>
               <th className="py-2">Event</th>
-              <th className="py-2 text-right">Date</th>
+              <th className="py-2">Date</th>
+              <th className="py-2 text-right">Received</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-edge/60">
@@ -44,7 +46,10 @@ export default async function MyRewardsPage() {
                     "—"
                   )}
                 </td>
-                <td className="py-3 text-right text-slate-500">{fmtDate(r.grantedAt)}</td>
+                <td className="py-3 text-slate-500">{fmtDate(r.grantedAt)}</td>
+                <td className="py-3 text-right">
+                  <RewardReceipt rewardId={r.id} received={!!r.receivedAt} />
+                </td>
               </tr>
             ))}
           </tbody>

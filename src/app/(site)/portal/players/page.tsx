@@ -47,6 +47,13 @@ export default async function PlayersPage({
       <div className="flex flex-wrap items-center gap-3">
         <h2 className="font-display text-xl font-bold text-white">Players</h2>
         <span className="text-sm text-slate-500">{players.length} shown</span>
+        <Link
+          href="/portal/players/export"
+          prefetch={false}
+          className="ml-auto font-mono text-[0.7rem] uppercase tracking-wide text-slate-400 hover:text-teal"
+        >
+          ↓ Export CSV
+        </Link>
       </div>
 
       <nav className="mt-3 flex flex-wrap gap-2 text-xs">

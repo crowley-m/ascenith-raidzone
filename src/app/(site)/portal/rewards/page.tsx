@@ -38,7 +38,16 @@ export default async function PortalRewardsPage() {
   return (
     <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
       <div>
-        <h2 className="font-display text-xl font-bold text-white">Reward log</h2>
+        <div className="flex items-center gap-3">
+          <h2 className="font-display text-xl font-bold text-white">Reward log</h2>
+          <Link
+            href="/portal/rewards/export"
+            prefetch={false}
+            className="ml-auto font-mono text-[0.7rem] uppercase tracking-wide text-slate-400 hover:text-teal"
+          >
+            ↓ Export CSV
+          </Link>
+        </div>
         <div className="mt-4 overflow-x-auto">
           <table className="w-full min-w-[640px] text-sm">
             <thead className="text-left text-xs uppercase text-slate-500">

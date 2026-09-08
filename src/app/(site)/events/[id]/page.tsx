@@ -350,6 +350,14 @@ export default async function EventDetailPage({
                 first.
               </p>
             )}
+            {(upcoming || live) && (
+              <a
+                href={`/events/${event.id}/calendar`}
+                className="mt-4 inline-block font-mono text-[0.7rem] uppercase tracking-wide text-slate-400 hover:text-teal"
+              >
+                + Add to calendar
+              </a>
+            )}
           </div>
         </aside>
       </div>

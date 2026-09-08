@@ -69,3 +69,37 @@ export async function updateProfileAction(
   revalidatePath("/me/profile");
   return { ok: true };
 }
+
+async function myPlayerId(): Promise<string | null> {
+  const user = await requireUser();
+  if (user.playerId) return user.playerId;
+  const p = await db.player.findUnique({ where: { userId: user.id }, select: { id: true } });
+  return p?.id ?? null;
+}
+
+/** Player confirms a reward arrived in-game (or un-confirms). */
+export async function setRewardReceived(rewardId: string, received: boolean) {
+  const playerId = await myPlayerId();
+  if (!playerId) return;
+  await db.reward.updateMany({
+    where: { id: rewardId, playerId },
+    data: { receivedAt: received ? new Date() : null },
+  });
+  await logAudit({
+    actorId: playerId,
+    action: received ? "reward.received" : "reward.unreceived",
+    targetType: "Reward",
+    targetId: rewardId,
+  });
+  revalidatePath("/me/rewards");
+  revalidatePath(`/portal/players/${playerId}`);
+}
+
+/** Toggle Discord DM notifications for the caller. */
+export async function setDmNotifications(on: boolean) {
+  const playerId = await myPlayerId();
+  if (!playerId) return;
+  await db.player.update({ where: { id: playerId }, data: { dmNotifications: on } });
+  revalidatePath("/me/profile");
+  revalidatePath("/me");
+}

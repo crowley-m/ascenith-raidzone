@@ -111,10 +111,11 @@ model Player {
   languages String?
 
   // Community
-  status    PlayerStatus @default(ACTIVE)
-  factionId String?
-  faction   Faction?     @relation(fields: [factionId], references: [id], onDelete: SetNull)
-  joinedAt  DateTime     @default(now())
+  status         PlayerStatus @default(ACTIVE)
+  factionId      String?
+  faction        Faction?     @relation(fields: [factionId], references: [id], onDelete: SetNull)
+  joinedAt       DateTime     @default(now())
+  dmNotifications Boolean     @default(true) // Discord DMs for waitlist / start / rewards
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -421,6 +422,7 @@ model Reward {
   grantedById  String
   grantedBy    User     @relation("RewardGranter", fields: [grantedById], references: [id])
   grantedAt    DateTime @default(now())
+  receivedAt   DateTime? // set by the player when they confirm it arrived in-game
 
   @@index([playerId])
   @@index([isPublic, grantedAt])

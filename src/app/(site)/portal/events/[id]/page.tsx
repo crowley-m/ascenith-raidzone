@@ -16,7 +16,7 @@ import {
 } from "@/components/portal/build-space-button";
 import { ResultsForm, AttendeeRewardForm } from "@/components/portal/results-form";
 import { ConfirmButton } from "@/components/portal/confirm-button";
-import { deleteEvent } from "@/app/(site)/portal/actions";
+import { deleteEvent, cloneEvent, promoteSignup } from "@/app/(site)/portal/actions";
 import type { RewardTier } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
@@ -146,6 +146,15 @@ export default async function PortalEventDetail({
           <Link href={`/events/${event.id}`} className="btn-ghost text-xs" target="_blank">
             Public page ↗
           </Link>
+          {canManage && (
+            <ConfirmButton
+              action={cloneEvent.bind(null, event.id)}
+              confirm="Create a draft copy of this event (schedule shifted forward)?"
+              className="btn-ghost text-xs"
+            >
+              Clone
+            </ConfirmButton>
+          )}
           {canManage &&
             (event.discordCategoryId ? (
               event.discordArchivedAt ? (
@@ -181,7 +190,18 @@ export default async function PortalEventDetail({
                 ({isTeamEvent ? teamCount : confirmed.length})
               </span>
             </h3>
-            {confirmed.length > 0 && <RosterCopy text={rosterText} />}
+            <div className="flex items-center gap-3">
+              {event.signups.length > 0 && (
+                <Link
+                  href={`/portal/events/${event.id}/roster`}
+                  prefetch={false}
+                  className="font-mono text-[0.7rem] uppercase tracking-wide text-slate-400 hover:text-teal"
+                >
+                  ↓ CSV
+                </Link>
+              )}
+              {confirmed.length > 0 && <RosterCopy text={rosterText} />}
+            </div>
           </div>
 
           <div className="mt-3 grid grid-cols-4 gap-2 text-center">
@@ -276,7 +296,22 @@ export default async function PortalEventDetail({
                         {s.player.gameUid ?? "—"}
                       </td>
                       <td className="py-2 text-slate-400">
-                        {s.state === "WAITLIST" ? "waitlist" : "in"}
+                        {s.state === "WAITLIST" ? (
+                          <span className="flex items-center gap-2">
+                            waitlist
+                            {canManage && (
+                              <ConfirmButton
+                                action={promoteSignup.bind(null, s.id)}
+                                confirm={`Pull ${s.player.characterName ?? "this player"} into the roster?`}
+                                className="text-xs text-teal hover:text-cream"
+                              >
+                                promote
+                              </ConfirmButton>
+                            )}
+                          </span>
+                        ) : (
+                          "in"
+                        )}
                       </td>
                       {canMark && (
                         <td className="py-2">

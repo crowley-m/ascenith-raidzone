@@ -29,6 +29,7 @@ import {
 } from "@/lib/discord";
 import { createMediaAsset } from "@/lib/media";
 import { getSettings } from "@/lib/settings";
+import { notify, notifyPlayer } from "@/lib/notify";
 import { Prisma } from "@prisma/client";
 import type { PlayerStatus, Role } from "@prisma/client";
 
@@ -455,6 +456,57 @@ export async function archiveEventDiscord(eventId: string): Promise<FormState> {
   return { ok: true };
 }
 
+export async function cloneEvent(eventId: string): Promise<void> {
+  const actor = await assertPermission("event:manage");
+  const src = await db.event.findUnique({ where: { id: eventId } });
+  if (!src) redirect("/portal/events");
+
+  // shift the schedule forward by the same span, or a week if there's no end
+  const span = src.endsAt ? src.endsAt.getTime() - src.startsAt.getTime() : 0;
+  const startsAt = new Date(src.startsAt.getTime() + (span || 7 * 24 * 3600 * 1000) + 14 * 24 * 3600 * 1000);
+  const endsAt = src.endsAt ? new Date(startsAt.getTime() + span) : null;
+
+  const created = await db.event.create({
+    data: {
+      title: `${src.title} (copy)`,
+      description: src.description,
+      startsAt,
+      endsAt,
+      server: src.server,
+      format: src.format,
+      maxSlots: src.maxSlots,
+      teamSize: src.teamSize,
+      rewardPoolText: src.rewardPoolText,
+      status: "DRAFT",
+      seasonId: src.seasonId,
+      summary: src.summary,
+      mode: src.mode,
+      wipeCycle: src.wipeCycle,
+      raidWindow: src.raidWindow,
+      rewardTiers: (src.rewardTiers as Prisma.InputJsonValue) ?? Prisma.JsonNull,
+      bonusText: src.bonusText,
+      rulesMd: src.rulesMd,
+      detailsMd: src.detailsMd,
+      howToJoinVideoUrl: src.howToJoinVideoUrl,
+      announcementMd: src.announcementMd,
+      howToJoinMd: src.howToJoinMd,
+      gameplayMd: src.gameplayMd,
+      wipeInfoMd: src.wipeInfoMd,
+      rewardsMd: src.rewardsMd,
+      createdById: actor.id,
+    },
+  });
+  await logAudit({
+    actorId: actor.id,
+    action: "event.clone",
+    targetType: "Event",
+    targetId: created.id,
+    meta: { from: eventId },
+  });
+  revalidatePath("/portal/events");
+  redirect(`/portal/events/${created.id}`);
+}
+
 export async function deleteEvent(eventId: string): Promise<void> {
   const actor = await assertPermission("event:manage");
   const ev = await db.event.findUnique({ where: { id: eventId } });
@@ -483,6 +535,41 @@ export async function deleteEvent(eventId: string): Promise<void> {
   revalidatePath("/portal/events");
   revalidatePath("/events");
   redirect("/portal/events");
+}
+
+/** Staff manually pulls a waitlisted player (SOLO) or team (TEAM) into the roster. */
+export async function promoteSignup(signupId: string): Promise<void> {
+  const actor = await assertPermission("event:manage");
+  const s = await db.eventSignup.findUnique({ where: { id: signupId } });
+  if (!s || s.state !== "WAITLIST") return;
+
+  if (s.teamId) {
+    await db.eventSignup.updateMany({
+      where: { eventId: s.eventId, teamId: s.teamId, state: "WAITLIST" },
+      data: { state: "SIGNED_UP" },
+    });
+    const members = await db.eventSignup.findMany({
+      where: { eventId: s.eventId, teamId: s.teamId },
+      select: { playerId: true },
+    });
+    const ev = await db.event.findUnique({ where: { id: s.eventId }, select: { title: true } });
+    const msg = notify.waitlistPromoted(ev?.title ?? "the event", s.eventId);
+    for (const m of members) void notifyPlayer(m.playerId, msg);
+  } else {
+    await db.eventSignup.update({ where: { id: signupId }, data: { state: "SIGNED_UP" } });
+    const ev = await db.event.findUnique({ where: { id: s.eventId }, select: { title: true } });
+    void notifyPlayer(s.playerId, notify.waitlistPromoted(ev?.title ?? "the event", s.eventId));
+  }
+
+  await logAudit({
+    actorId: actor.id,
+    action: "event.promote",
+    targetType: "Event",
+    targetId: s.eventId,
+    meta: { signupId },
+  });
+  revalidatePath(`/portal/events/${s.eventId}`);
+  revalidatePath(`/events/${s.eventId}`);
 }
 
 export async function markAttendance(eventId: string, playerId: string, attended: boolean) {
@@ -550,9 +637,19 @@ export async function grantReward(_prev: FormState, formData: FormData): Promise
     targetId: r.id,
     meta: { playerId: parsed.data.playerId },
   });
+
+  const ev = parsed.data.eventId
+    ? await db.event.findUnique({ where: { id: parsed.data.eventId }, select: { title: true } })
+    : null;
+  void notifyPlayer(
+    parsed.data.playerId,
+    notify.rewardGranted(parsed.data.item, parsed.data.amount ?? null, ev?.title ?? null),
+  );
+
   revalidatePath("/portal/rewards");
   revalidatePath(`/portal/players/${parsed.data.playerId}`);
   revalidatePath("/winners");
+  revalidatePath("/me/rewards");
   return { ok: true };
 }
 

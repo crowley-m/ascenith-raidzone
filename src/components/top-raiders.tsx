@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { RaiderStat } from "@/lib/leaderboard";
 
 export function TopRaiders({
@@ -16,7 +17,9 @@ export function TopRaiders({
         <li key={r.id} className="flex items-center gap-3 py-2.5 text-sm">
           <span className="w-6 text-right font-mono text-xs text-slate-500">{i + 1}</span>
           <span className="flex-1 text-slate-100">
-            {r.name}
+            <Link href={`/players/${r.id}`} className="hover:text-teal">
+              {r.name}
+            </Link>
             {!compact && r.region && (
               <span className="ml-2 text-xs text-slate-500">{r.region}</span>
             )}

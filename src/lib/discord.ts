@@ -38,6 +38,28 @@ async function discordFetch(path: string, init: RequestInit, attempt = 0): Promi
   return res.json();
 }
 
+/**
+ * DM a user by their Discord id. Opens (or reuses) the DM channel then posts.
+ * Best-effort — silently no-ops if the bot can't DM them (closed DMs, no
+ * shared guild, no token). Never throws.
+ */
+export async function dmUser(discordId: string, content: string): Promise<void> {
+  if (!discordId || !process.env.DISCORD_BOT_TOKEN) return;
+  try {
+    const ch = (await discordFetch("/users/@me/channels", {
+      method: "POST",
+      body: JSON.stringify({ recipient_id: discordId }),
+    })) as { id?: string };
+    if (!ch?.id) return;
+    await discordFetch(`/channels/${ch.id}/messages`, {
+      method: "POST",
+      body: JSON.stringify({ content: content.slice(0, 1900) }),
+    });
+  } catch (err) {
+    console.error("dmUser failed", err);
+  }
+}
+
 // A single-button action row (Discord message component).
 type ButtonRow = {
   type: 1;

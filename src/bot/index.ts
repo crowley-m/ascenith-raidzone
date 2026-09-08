@@ -1,5 +1,5 @@
 import { Client, GatewayIntentBits, Events, MessageFlags } from "discord.js";
-import { handleCommand } from "./commands.js";
+import { handleCommand, handleAutocomplete } from "./commands.js";
 import { startReminders } from "./reminders.js";
 
 const token = process.env.DISCORD_BOT_TOKEN;
@@ -20,6 +20,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
   try {
     if (interaction.isChatInputCommand()) {
       await handleCommand(interaction);
+      return;
+    }
+    if (interaction.isAutocomplete()) {
+      await handleAutocomplete(interaction);
       return;
     }
     // Sign-up is done on the website now (link buttons); nothing else to handle.
