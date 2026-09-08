@@ -20,9 +20,16 @@ export default async function MyTeamPage() {
     );
   }
 
-  const [teams, openEvents] = await Promise.all([
+  const [teams, openEvents, anyTeamEvents] = await Promise.all([
     teamsForPlayer(player.id),
     selectableTeamEvents(player.id),
+    db.event.count({
+      where: {
+        status: "PUBLISHED",
+        format: "TEAM",
+        OR: [{ endsAt: null }, { endsAt: { gte: new Date() } }],
+      },
+    }),
   ]);
 
   return (
@@ -63,12 +70,20 @@ export default async function MyTeamPage() {
 
       <div className="card">
         <h3 className="font-display font-bold text-white">Create a team</h3>
-        {openEvents.length === 0 ? (
+        {openEvents.length > 0 ? (
+          <CreateTeamForm events={openEvents} />
+        ) : anyTeamEvents === 0 ? (
           <p className="mt-2 text-sm text-slate-400">
-            No team events open right now that you can form a team for.
+            There are no team events right now. Teams are formed for{" "}
+            <span className="text-slate-300">team-format</span> events only — solo events you sign
+            up for yourself on the event page. When staff publish a team event it&apos;ll show up
+            here.
           </p>
         ) : (
-          <CreateTeamForm events={openEvents} />
+          <p className="mt-2 text-sm text-slate-400">
+            You already have a team for every open team event. You can only lead or join one team
+            per event.
+          </p>
         )}
       </div>
 
