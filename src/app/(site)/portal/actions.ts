@@ -24,6 +24,7 @@ import {
   eventEmoji,
 } from "@/lib/discord";
 import { createMediaAsset } from "@/lib/media";
+import { getSettings } from "@/lib/settings";
 import { Prisma } from "@prisma/client";
 import type { PlayerStatus, Role } from "@prisma/client";
 
@@ -176,6 +177,7 @@ export async function saveEvent(_prev: FormState, formData: FormData): Promise<F
     include: { _count: { select: { signups: { where: { state: "SIGNED_UP" } } } } },
   });
   if (ev && ev.status === "PUBLISHED") {
+    const settings = await getSettings();
     try {
       const embed = eventEmbed({
         ...ev,
@@ -186,7 +188,11 @@ export async function saveEvent(_prev: FormState, formData: FormData): Promise<F
       if (ev.discordMessageId && ev.discordChannelId) {
         await editAnnouncement(ev.discordChannelId, ev.discordMessageId, embed, undefined, components);
       } else {
-        const posted = await postAnnouncement({ embed, components });
+        const posted = await postAnnouncement({
+          embed,
+          components,
+          channelId: settings.announceChannelId || undefined,
+        });
         if (posted) {
           await db.event.update({
             where: { id: ev.id },
@@ -196,6 +202,13 @@ export async function saveEvent(_prev: FormState, formData: FormData): Promise<F
       }
     } catch (err) {
       console.error("announcement failed", err);
+    }
+    if (settings.autoBuildSpace && !ev.discordCategoryId) {
+      try {
+        await buildEventSpace(ev.id);
+      } catch (err) {
+        console.error("auto build space failed", err);
+      }
     }
   }
 
@@ -219,9 +232,14 @@ export async function buildEventSpace(eventId: string): Promise<FormState> {
   if (ev.discordCategoryId) return { error: "This event already has a Discord space." };
 
   const spaceName = ev.mode ? `RAIDZONE ${ev.mode}` : ev.title;
+  const { eventChannels } = await getSettings();
   let space;
   try {
-    space = await createEventSpace({ name: spaceName, emoji: eventEmoji(ev.mode) });
+    space = await createEventSpace({
+      name: spaceName,
+      emoji: eventEmoji(ev.mode),
+      channels: eventChannels,
+    });
   } catch (err) {
     console.error("createEventSpace failed", err);
     return { error: `Discord: ${err instanceof Error ? err.message : "channel creation failed"}` };
@@ -234,24 +252,29 @@ export async function buildEventSpace(eventId: string): Promise<FormState> {
     : [];
 
   // seed the key channels — best-effort, don't fail the action on a post error
+  let posted: { id: string } | null = null;
   try {
     const embed = eventEmbed({ ...ev, signupCount: 0, url });
-    const posted = await postToChannel(space.channels.announcement, {
-      embed,
-      components: [signupButtonRow(url, "Sign up on the website")],
-    });
+    if (space.channels.announcement) {
+      posted = await postToChannel(space.channels.announcement, {
+        embed,
+        components: [signupButtonRow(url, "Sign up on the website")],
+      });
+    }
 
-    await postToChannel(space.channels["how-to-join"], {
-      content:
-        `**How to join**\n` +
-        `1. Register once at ${APP_URL}/register (Discord login links automatically)\n` +
-        `2. Fill your in-game UID on your profile — that's where rewards go\n` +
-        (ev.format === "TEAM"
-          ? `3. Team event: your team leader registers the whole team at ${url}\n`
-          : `3. Sign up at ${url}\n`),
-    });
+    if (space.channels["how-to-join"]) {
+      await postToChannel(space.channels["how-to-join"], {
+        content:
+          `**How to join**\n` +
+          `1. Register once at ${APP_URL}/register (Discord login links automatically)\n` +
+          `2. Fill your in-game UID on your profile — that's where rewards go\n` +
+          (ev.format === "TEAM"
+            ? `3. Team event: your team leader registers the whole team at ${url}\n`
+            : `3. Sign up at ${url}\n`),
+      });
+    }
 
-    if (tiers.length || ev.bonusText || ev.rewardPoolText) {
+    if (space.channels.rewards && (tiers.length || ev.bonusText || ev.rewardPoolText)) {
       const lines = ["**Rewards**"];
       for (const t of tiers) lines.push(`${t.place} — ${t.reward}`);
       if (!tiers.length && ev.rewardPoolText) lines.push(ev.rewardPoolText);
@@ -395,6 +418,67 @@ export async function deleteReward(rewardId: string, playerId: string) {
   revalidatePath("/portal/rewards");
   revalidatePath(`/portal/players/${playerId}`);
   revalidatePath("/winners");
+}
+
+// --------------------------------------------------------------------------
+// Teams (staff moderation)
+// --------------------------------------------------------------------------
+
+export async function staffKickTeamMember(teamId: string, playerId: string) {
+  const actor = await assertPermission("player:edit");
+  const team = await db.team.findUnique({ where: { id: teamId }, select: { leaderId: true } });
+  if (!team) throw new Error("Team not found.");
+  if (team.leaderId === playerId) throw new Error("Transfer leadership or disband the team instead.");
+  await db.teamMember.deleteMany({ where: { teamId, playerId } });
+  await logAudit({ actorId: actor.id, action: "team.staff_kick", targetType: "Team", targetId: teamId, meta: { playerId } });
+  revalidatePath(`/portal/teams/${teamId}`);
+  revalidatePath("/portal/teams");
+  revalidatePath("/teams");
+}
+
+export async function staffDisbandTeam(teamId: string) {
+  const actor = await assertPermission("player:edit");
+  await db.team.delete({ where: { id: teamId } });
+  await logAudit({ actorId: actor.id, action: "team.staff_disband", targetType: "Team", targetId: teamId });
+  revalidatePath("/portal/teams");
+  revalidatePath("/teams");
+  redirect("/portal/teams");
+}
+
+// --------------------------------------------------------------------------
+// Settings (Owner)
+// --------------------------------------------------------------------------
+
+export async function saveSettings(_prev: FormState, formData: FormData): Promise<FormState> {
+  const actor = await assertPermission("settings:manage");
+  const str = (k: string) => ((formData.get(k) as string) || "").trim();
+
+  const entries: [string, unknown][] = [
+    ["announceChannelId", str("announceChannelId")],
+    ["discordInvite", str("discordInvite")],
+    [
+      "eventChannels",
+      str("eventChannels")
+        .split(/[\n,]/)
+        .map((s) => s.trim().toLowerCase().replace(/\s+/g, "-"))
+        .filter(Boolean),
+    ],
+    ["autoBuildSpace", formData.get("autoBuildSpace") === "on"],
+    ["reminderLeadMinutes", Math.max(0, parseInt(str("reminderLeadMinutes") || "0", 10) || 0)],
+  ];
+
+  await db.$transaction(
+    entries.map(([key, value]) =>
+      db.setting.upsert({
+        where: { key },
+        create: { key, value: value as Prisma.InputJsonValue },
+        update: { value: value as Prisma.InputJsonValue },
+      }),
+    ),
+  );
+  await logAudit({ actorId: actor.id, action: "settings.save", targetType: "Setting" });
+  revalidatePath("/portal/settings");
+  return { ok: true };
 }
 
 // --------------------------------------------------------------------------

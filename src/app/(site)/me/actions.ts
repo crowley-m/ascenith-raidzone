@@ -27,7 +27,6 @@ export async function updateProfileAction(
     timezone: clean(formData.get("timezone")),
     playHours: clean(formData.get("playHours")),
     languages: clean(formData.get("languages")),
-    factionId: clean(formData.get("factionId")),
   });
 
   if (!parsed.success) {
@@ -49,7 +48,6 @@ export async function updateProfileAction(
       timezone: d.timezone ?? null,
       playHours: d.playHours ?? null,
       languages: d.languages ?? null,
-      factionId: d.factionId ?? null,
     },
     update: {
       characterName: d.characterName,
@@ -59,7 +57,6 @@ export async function updateProfileAction(
       timezone: d.timezone ?? null,
       playHours: d.playHours ?? null,
       languages: d.languages ?? null,
-      factionId: d.factionId ?? null,
     },
   });
 

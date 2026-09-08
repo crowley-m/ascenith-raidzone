@@ -20,7 +20,6 @@ export const profileSchema = z.object({
   timezone: z.string().max(60).nullable().optional(),
   playHours: z.string().max(200).nullable().optional(),
   languages: z.string().max(200).nullable().optional(),
-  factionId: z.string().nullable().optional(),
 });
 
 export const teamCreateSchema = z.object({

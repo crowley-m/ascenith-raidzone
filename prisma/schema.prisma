@@ -372,6 +372,13 @@ model AuditLog {
   @@index([createdAt])
 }
 
+// Owner-editable settings (bot behaviour, invite link, channel template …).
+model Setting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}
+
 // ---------------------------------------------------------------------------
 // Media — image uploads (gallery stills, reward proof). Bytes live in the DB
 // so there's no upload volume to manage; served via /api/media/[id].

@@ -11,7 +11,6 @@ type PlayerInit = {
   timezone: string | null;
   playHours: string | null;
   languages: string | null;
-  factionId: string | null;
 };
 
 const REGIONS = [
@@ -41,11 +40,9 @@ const initial: ProfileState = {};
 
 export function ProfileForm({
   player,
-  factions,
   isNew,
 }: {
   player: PlayerInit | null;
-  factions: { id: string; name: string }[];
   isNew?: boolean;
 }) {
   const [state, action, pending] = useActionState(updateProfileAction, initial);
@@ -124,15 +121,9 @@ export function ProfileForm({
           defaultValue={player?.languages ?? ""} placeholder="e.g. English" />
       </div>
 
-      <div>
-        <label className="label" htmlFor="factionId">Faction / team</label>
-        <select id="factionId" name="factionId" className="input" defaultValue={player?.factionId ?? ""}>
-          <option value="">Unassigned</option>
-          {factions.map((f) => (
-            <option key={f.id} value={f.id}>{f.name}</option>
-          ))}
-        </select>
-      </div>
+      <p className="text-xs text-slate-500">
+        Teams are managed on the <a href="/me/team" className="link">Team</a> page.
+      </p>
 
       <div>
         <button type="submit" className="btn-primary" disabled={pending}>
