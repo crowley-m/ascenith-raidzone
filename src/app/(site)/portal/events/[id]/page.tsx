@@ -180,7 +180,7 @@ export default async function PortalEventDetail({
         {event.discordMessageId && " · announced in Discord"}
       </p>
 
-      <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_360px]">
+      <div className="mt-8 space-y-12">
         {/* Registrations */}
         <div>
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -391,7 +391,7 @@ export default async function PortalEventDetail({
         </div>
 
         {/* Edit */}
-        <div>
+        <div className="max-w-3xl">
           {canManage ? (
             <div className="card">
               <h3 className="font-display font-bold text-white">Edit</h3>

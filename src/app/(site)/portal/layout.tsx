@@ -1,6 +1,6 @@
 import { requireStaff } from "@/lib/session";
 import { can, roleLabel } from "@/lib/rbac";
-import { SubNav } from "@/components/sub-nav";
+import { PortalNav } from "@/components/portal/portal-nav";
 
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
   const user = await requireStaff();
@@ -22,17 +22,18 @@ export default async function PortalLayout({ children }: { children: React.React
   ].filter((i) => i.show);
 
   return (
-    <div className="container-x py-10">
+    <div className="mx-auto w-full max-w-6xl px-5 py-10">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <h1 className="font-display text-2xl font-extrabold text-white">Staff portal</h1>
         <span className="badge border-teal/40 text-teal">{roleLabel(user.role)}</span>
       </div>
 
-      <div className="mt-5">
-        <SubNav items={items} />
+      <div className="mt-6 gap-8 lg:grid lg:grid-cols-[12rem_1fr]">
+        <aside className="lg:sticky lg:top-6 lg:self-start">
+          <PortalNav items={items} />
+        </aside>
+        <div className="mt-6 min-w-0 lg:mt-0">{children}</div>
       </div>
-
-      <div className="mt-8">{children}</div>
     </div>
   );
 }

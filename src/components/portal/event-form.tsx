@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useRef } from "react";
 import { saveEvent } from "@/app/(site)/portal/actions";
 
 type EventInit = {
@@ -34,6 +34,12 @@ type EventInit = {
 
 export type SeasonOption = { id: string; series: string; number: number; name: string | null };
 
+const pad = (n: number) => String(n).padStart(2, "0");
+const dtLocal = (d: Date) =>
+  `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(
+    d.getMinutes(),
+  )}`;
+
 export function EventForm({
   event,
   seasons = [],
@@ -42,19 +48,98 @@ export function EventForm({
   seasons?: SeasonOption[];
 }) {
   const [state, action, pending] = useActionState(saveEvent, {});
+  const formRef = useRef<HTMLFormElement>(null);
+
+  function fillExample() {
+    const f = formRef.current;
+    if (!f) return;
+    const set = (name: string, val: string) => {
+      const el = f.elements.namedItem(name) as
+        | HTMLInputElement
+        | HTMLTextAreaElement
+        | HTMLSelectElement
+        | null;
+      if (el) el.value = val;
+    };
+    const start = new Date();
+    start.setDate(start.getDate() + 7);
+    start.setHours(20, 0, 0, 0);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 14);
+
+    set("title", "RAIDZONE Purge — Season 2");
+    set("description", "Two-week no-rules purge wipe. Internal test event.");
+    set("startsAt", dtLocal(start));
+    set("endsAt", dtLocal(end));
+    set("server", "ASCENITH • RaidZone 01 (NA)");
+    set("format", "SOLO");
+    set("maxSlots", "60");
+    set("teamSize", "");
+    set("status", "DRAFT");
+    set("summary", "No rules, no limits. 2-week wipe. Top 3 on the Glory board take the pool.");
+    set("mode", "PURGE");
+    set("wipeCycle", "2 weeks");
+    set("raidWindow", "15:30 – 21:29 · 6 hrs/day");
+    set("rewardTiersText", "1st | 30K Crystgin\n2nd | 20K Crystgin\n3rd | 10K Crystgin");
+    set("bonusText", "20K Crystgin · hidden across airdrops, cards, alpha boss");
+    set("rewardPoolText", "");
+    set(
+      "rulesMd",
+      "- No cheating — permanent ban, no appeal\n- No bug exploiting\n- No account sharing — reward UID must match the player\n- Clips on request, or no points",
+    );
+    set(
+      "detailsMd",
+      "## Wipe & raid schedule\n\n- Raid time: 15:30 – 21:29 (6 hrs/day)\n\n## Glory Points\n\n**Red Room** — 2 pts, spawns every 2h\n**Blue Room** — 1 pt, spawns every 1h\n\nHighest Glory total at wipe wins.",
+    );
+    set("howToJoinVideoUrl", "");
+    set(
+      "announcementMd",
+      "The purge is back. Two weeks, no rules, one board. Sign up on the website.",
+    );
+    set("howToJoinMd", "");
+    set(
+      "gameplayMd",
+      "Capture Red and Blue rooms for Glory Points. Rooms rotate on the map every cycle — check pins. Bases are fair game outside the safe window.",
+    );
+    set("wipeInfoMd", "Full server wipe at start. Blueprints reset. Bring nothing, leave nothing.");
+    set("rewardsMd", "");
+  }
 
   return (
-    <form action={action} className="grid max-w-2xl gap-4">
+    <form ref={formRef} action={action} className="grid max-w-3xl gap-4">
       {event && <input type="hidden" name="id" value={event.id} />}
+
+      {!event && (
+        <div className="flex items-center justify-between gap-3 border border-edge bg-panel/40 p-3">
+          <p className="text-xs text-slate-400">
+            First time? Load example values to see the shape of a full event, then edit.
+          </p>
+          <button type="button" onClick={fillExample} className="btn-ghost shrink-0 text-xs">
+            Fill with example data
+          </button>
+        </div>
+      )}
 
       <div>
         <label className="label">Title *</label>
-        <input name="title" required className="input" defaultValue={event?.title ?? ""} />
+        <input
+          name="title"
+          required
+          className="input"
+          defaultValue={event?.title ?? ""}
+          placeholder="RAIDZONE Purge — Season 2"
+        />
       </div>
 
       <div>
         <label className="label">Description (internal / short)</label>
-        <textarea name="description" rows={3} className="input" defaultValue={event?.description ?? ""} />
+        <textarea
+          name="description"
+          rows={3}
+          className="input"
+          defaultValue={event?.description ?? ""}
+          placeholder="A note for staff — not shown publicly."
+        />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -87,7 +172,12 @@ export function EventForm({
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className="label">Server / world</label>
-          <input name="server" className="input" defaultValue={event?.server ?? ""} />
+          <input
+            name="server"
+            className="input"
+            defaultValue={event?.server ?? ""}
+            placeholder="ASCENITH • RaidZone 01 (NA)"
+          />
         </div>
         <div>
           <label className="label">Format</label>
@@ -103,11 +193,25 @@ export function EventForm({
           <label className="label">
             Max <span className="lowercase">slots / teams</span> (blank = unlimited)
           </label>
-          <input type="number" name="maxSlots" min={0} className="input" defaultValue={event?.maxSlots ?? ""} />
+          <input
+            type="number"
+            name="maxSlots"
+            min={0}
+            className="input"
+            defaultValue={event?.maxSlots ?? ""}
+            placeholder="60"
+          />
         </div>
         <div>
           <label className="label">Team size cap (team events, optional)</label>
-          <input type="number" name="teamSize" min={0} className="input" defaultValue={event?.teamSize ?? ""} />
+          <input
+            type="number"
+            name="teamSize"
+            min={0}
+            className="input"
+            defaultValue={event?.teamSize ?? ""}
+            placeholder="4"
+          />
         </div>
       </div>
 
@@ -178,7 +282,13 @@ export function EventForm({
 
       <div>
         <label className="label">Reward pool (free text — optional)</label>
-        <textarea name="rewardPoolText" rows={2} className="input" defaultValue={event?.rewardPoolText ?? ""} />
+        <textarea
+          name="rewardPoolText"
+          rows={2}
+          className="input"
+          defaultValue={event?.rewardPoolText ?? ""}
+          placeholder="Use this only if the tiers above don't fit — free text shown as-is."
+        />
       </div>
 
       <div>
@@ -230,13 +340,43 @@ export function EventForm({
 
       {(
         [
-          ["announcementMd", "Announcement", 4, "Extra text above the announcement embed (optional)."],
-          ["howToJoinMd", "How to join", 5, "Overrides the default register → UID → sign-up steps."],
-          ["gameplayMd", "Gameplay", 8, "Objectives, map, how the mode plays."],
-          ["wipeInfoMd", "Wipe info", 6, "Extra wipe detail beyond cycle / raid window."],
-          ["rewardsMd", "Rewards (override)", 4, "Leave blank to auto-generate from the reward tiers."],
+          [
+            "announcementMd",
+            "Announcement",
+            4,
+            "Extra text above the announcement embed (optional).",
+            "The purge is back. Two weeks, no rules, one board.",
+          ],
+          [
+            "howToJoinMd",
+            "How to join",
+            5,
+            "Overrides the default register → UID → sign-up steps.",
+            "",
+          ],
+          [
+            "gameplayMd",
+            "Gameplay",
+            8,
+            "Objectives, map, how the mode plays.",
+            "Capture Red and Blue rooms for Glory Points. Rooms rotate every cycle — check pins.",
+          ],
+          [
+            "wipeInfoMd",
+            "Wipe info",
+            6,
+            "Extra wipe detail beyond cycle / raid window.",
+            "Full server wipe at start. Blueprints reset.",
+          ],
+          [
+            "rewardsMd",
+            "Rewards (override)",
+            4,
+            "Leave blank to auto-generate from the reward tiers.",
+            "",
+          ],
         ] as const
-      ).map(([name, label, rows, hint]) => (
+      ).map(([name, label, rows, hint, ph]) => (
         <div key={name}>
           <label className="label">{label}</label>
           <textarea
@@ -244,6 +384,7 @@ export function EventForm({
             rows={rows}
             className="input font-mono text-xs"
             defaultValue={(event?.[name] as string | null) ?? ""}
+            placeholder={ph || undefined}
           />
           <p className="mt-1 text-xs text-slate-500">{hint}</p>
         </div>
