@@ -25,6 +25,7 @@ type EventInit = {
   rulesMd: string | null;
   detailsMd: string | null;
   howToJoinVideoUrl: string | null;
+  announcePing: boolean;
   announcementMd: string | null;
   howToJoinMd: string | null;
   gameplayMd: string | null;
@@ -92,6 +93,8 @@ export function EventForm({
       "## Wipe & raid schedule\n\n- Raid time: 15:30 – 21:29 (6 hrs/day)\n\n## Glory Points\n\n**Red Room** — 2 pts, spawns every 2h\n**Blue Room** — 1 pt, spawns every 1h\n\nHighest Glory total at wipe wins.",
     );
     set("howToJoinVideoUrl", "");
+    const ping = f.elements.namedItem("announcePing");
+    if (ping) (ping as HTMLInputElement).checked = true;
     set(
       "announcementMd",
       "The purge is back. Two weeks, no rules, one board. Sign up on the website.",
@@ -337,6 +340,21 @@ export function EventForm({
         Discord channels — posted into the event&apos;s space (build it, then &ldquo;Sync
         channels&rdquo; after edits)
       </p>
+
+      <label className="flex items-start gap-2 text-sm text-slate-300">
+        <input
+          type="checkbox"
+          name="announcePing"
+          defaultChecked={event?.announcePing ?? false}
+          className="mt-0.5 accent-teal"
+        />
+        <span>
+          Ping <span className="font-mono">@everyone</span> when the announcement first posts
+          <span className="mt-0.5 block text-xs text-slate-500">
+            Only fires on the first post — editing the announcement later won&apos;t re-ping.
+          </span>
+        </span>
+      </label>
 
       {(
         [

@@ -61,6 +61,7 @@ export const eventSchema = z.object({
   rulesMd: z.string().max(20000).nullable().optional(),
   detailsMd: z.string().max(20000).nullable().optional(),
   howToJoinVideoUrl: z.string().trim().max(500).nullable().optional().or(z.literal("")),
+  announcePing: z.coerce.boolean().optional(),
   announcementMd: z.string().max(4000).nullable().optional(),
   howToJoinMd: z.string().max(4000).nullable().optional(),
   gameplayMd: z.string().max(20000).nullable().optional(),

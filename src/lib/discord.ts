@@ -80,17 +80,23 @@ export async function postAnnouncement(opts: {
   content?: string;
   embed: Embed;
   components?: ButtonRow[];
+  mentionEveryone?: boolean;
 }): Promise<{ id: string; channelId: string } | null> {
   const channelId = opts.channelId ?? process.env.DISCORD_ANNOUNCE_CHANNEL_ID;
   if (!channelId || !process.env.DISCORD_BOT_TOKEN) return null;
 
+  const parse = opts.mentionEveryone ? ["roles", "everyone"] : ["roles"];
+  const content = opts.mentionEveryone
+    ? `@everyone${opts.content ? `\n${opts.content}` : ""}`
+    : opts.content;
+
   const msg = (await discordFetch(`/channels/${channelId}/messages`, {
     method: "POST",
     body: JSON.stringify({
-      content: opts.content,
+      content,
       embeds: [{ color: 0x2fd4c7, ...opts.embed }],
       components: opts.components ?? [],
-      allowed_mentions: { parse: ["roles"] },
+      allowed_mentions: { parse },
     }),
   })) as { id: string };
 
@@ -104,13 +110,19 @@ export async function editAnnouncement(
   embed: Embed,
   content?: string,
   components?: ButtonRow[],
+  mentionEveryone?: boolean,
 ): Promise<void> {
   if (!process.env.DISCORD_BOT_TOKEN) return;
+  const parse = mentionEveryone ? ["roles", "everyone"] : ["roles"];
+  const body = mentionEveryone
+    ? `@everyone${content ? `\n${content}` : ""}`
+    : content;
   await discordFetch(`/channels/${channelId}/messages/${messageId}`, {
     method: "PATCH",
     body: JSON.stringify({
-      content,
+      content: body,
       embeds: [{ color: 0x2fd4c7, ...embed }],
+      allowed_mentions: { parse },
       ...(components ? { components } : {}),
     }),
   });
@@ -330,33 +342,74 @@ export async function lockReadonlyChannels(channels: Record<string, string>): Pr
   }
 }
 
+const PERM_CONNECT = (1n << 20n).toString();
+
 /**
  * Archive an event's space: rename the category to mark it done, sink it to the
- * bottom of the list, and best-effort hide it from @everyone. Non-destructive.
+ * bottom, and make it fully private — deny @everyone VIEW_CHANNEL on the
+ * category and every channel, and strip VIEW_CHANNEL from any other overwrite
+ * that granted it (so no lingering role can see it). Non-destructive.
+ * Returns which steps succeeded so the caller can warn about missing bot perms.
  */
-export async function archiveEventSpace(categoryId: string, channelIds: string[]): Promise<void> {
+export async function archiveEventSpace(
+  categoryId: string,
+  channelIds: string[],
+): Promise<{ renamed: boolean; hidden: boolean }> {
   const gid = process.env.DISCORD_GUILD_ID;
-  if (!gid || !process.env.DISCORD_BOT_TOKEN) return;
+  if (!gid || !process.env.DISCORD_BOT_TOKEN) return { renamed: false, hidden: false };
 
   const cat = (await discordFetch(`/channels/${categoryId}`, { method: "GET" }).catch(
     () => null,
   )) as { name?: string } | null;
   const base = (cat?.name ?? "event").replace(/^[^A-Za-z0-9\uD800-\uDFFF]*/, "").trim();
 
-  await discordFetch(`/channels/${categoryId}`, {
-    method: "PATCH",
-    body: JSON.stringify({ name: `🗄️ ARCHIVED — ${base}`.slice(0, 95), position: 900 }),
-  }).catch(() => {});
-
-  // hide from @everyone (deny VIEW_CHANNEL) on the category + every channel.
-  // Needs the bot to have Manage Roles; silently no-ops otherwise.
-  const deny = (BigInt(PERM_VIEW_CHANNEL) | BigInt(PERM_SEND_MESSAGES)).toString();
-  for (const id of [categoryId, ...channelIds]) {
-    await discordFetch(`/channels/${id}/permissions/${gid}`, {
-      method: "PUT",
-      body: JSON.stringify({ type: 0, deny }),
-    }).catch(() => {});
+  let renamed = false;
+  try {
+    await discordFetch(`/channels/${categoryId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ name: `🗄️ ARCHIVED — ${base}`.slice(0, 95), position: 900 }),
+    });
+    renamed = true;
+  } catch (err) {
+    console.error("archive rename failed", err);
   }
+
+  const view = BigInt(PERM_VIEW_CHANNEL);
+  const hideDeny = (view | BigInt(PERM_SEND_MESSAGES) | BigInt(PERM_CONNECT)).toString();
+  let hidden = true;
+
+  for (const id of [categoryId, ...channelIds]) {
+    // 1. deny @everyone view / send / connect
+    try {
+      await discordFetch(`/channels/${id}/permissions/${gid}`, {
+        method: "PUT",
+        body: JSON.stringify({ type: 0, deny: hideDeny }),
+      });
+    } catch (err) {
+      console.error(`archive hide failed for ${id}`, err);
+      hidden = false;
+      continue;
+    }
+    // 2. strip VIEW_CHANNEL from any other overwrite that allowed it
+    try {
+      const ch = (await discordFetch(`/channels/${id}`, { method: "GET" })) as {
+        permission_overwrites?: { id: string; type: number; allow: string; deny: string }[];
+      };
+      for (const ow of ch.permission_overwrites ?? []) {
+        if (ow.id === gid) continue;
+        if ((BigInt(ow.allow) & view) === 0n) continue;
+        const allow = (BigInt(ow.allow) & ~view).toString();
+        await discordFetch(`/channels/${id}/permissions/${ow.id}`, {
+          method: "PUT",
+          body: JSON.stringify({ type: ow.type, allow, deny: ow.deny }),
+        }).catch(() => {});
+      }
+    } catch {
+      /* couldn't read overwrites — the @everyone deny above still applies */
+    }
+  }
+
+  return { renamed, hidden };
 }
 
 /** Plain message (optionally with an embed / components) to a channel. */
@@ -406,14 +459,16 @@ export async function listGuildTextChannels(): Promise<{ id: string; name: strin
 export async function editChannelMessage(
   channelId: string,
   messageId: string,
-  payload: { content?: string; embed?: Embed; components?: ButtonRow[] },
+  payload: { content?: string; embed?: Embed; components?: ButtonRow[]; mentionEveryone?: boolean },
 ): Promise<void> {
   if (!process.env.DISCORD_BOT_TOKEN) return;
+  const parse = payload.mentionEveryone ? ["roles", "everyone"] : ["roles"];
   await discordFetch(`/channels/${channelId}/messages/${messageId}`, {
     method: "PATCH",
     body: JSON.stringify({
       content: payload.content ?? "",
       embeds: payload.embed ? [{ color: 0x2fd4c7, ...payload.embed }] : [],
+      allowed_mentions: { parse },
       ...(payload.components ? { components: payload.components } : {}),
     }),
   });

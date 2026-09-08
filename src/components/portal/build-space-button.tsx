@@ -50,7 +50,7 @@ export function ArchiveSpaceButton({ eventId }: { eventId: string }) {
           start(async () => {
             const res = await archiveEventDiscord(eventId);
             if (res?.error) setErr(res.error);
-            else router.refresh();
+            router.refresh();
           });
         }}
       >

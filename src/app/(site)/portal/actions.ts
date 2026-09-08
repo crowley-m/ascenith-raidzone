@@ -152,6 +152,7 @@ export async function saveEvent(_prev: FormState, formData: FormData): Promise<F
     rulesMd: str("rulesMd"),
     detailsMd: str("detailsMd"),
     howToJoinVideoUrl: str("howToJoinVideoUrl"),
+    announcePing: formData.get("announcePing") === "on",
     announcementMd: str("announcementMd"),
     howToJoinMd: str("howToJoinMd"),
     gameplayMd: str("gameplayMd"),
@@ -191,6 +192,7 @@ export async function saveEvent(_prev: FormState, formData: FormData): Promise<F
     rulesMd: d.rulesMd ?? null,
     detailsMd: d.detailsMd ?? null,
     howToJoinVideoUrl: d.howToJoinVideoUrl ? d.howToJoinVideoUrl : null,
+    announcePing: d.announcePing ?? false,
     announcementMd: d.announcementMd ?? null,
     howToJoinMd: d.howToJoinMd ?? null,
     gameplayMd: d.gameplayMd ?? null,
@@ -238,12 +240,14 @@ export async function saveEvent(_prev: FormState, formData: FormData): Promise<F
         });
         const components = [signupButtonRow(`${APP_URL}/events/${ev.id}`, "Sign up on the website")];
         if (ev.discordMessageId && ev.discordChannelId) {
+          // don't re-ping @everyone on an edit — the first post already did
           await editAnnouncement(ev.discordChannelId, ev.discordMessageId, embed, undefined, components);
         } else {
           const posted = await postAnnouncement({
             embed,
             components,
             channelId: settings.announceChannelId || undefined,
+            mentionEveryone: ev.announcePing,
           });
           if (posted) {
             await db.event.update({
@@ -277,6 +281,7 @@ type ChannelPayload = {
   content?: string;
   embed?: Parameters<typeof postToChannel>[1]["embed"];
   components?: Parameters<typeof postToChannel>[1]["components"];
+  mentionEveryone?: boolean;
 };
 
 type FullEvent = NonNullable<Awaited<ReturnType<typeof db.event.findUnique>>>;
@@ -294,6 +299,7 @@ function eventChannelPayloads(ev: FullEvent): Record<string, ChannelPayload> {
     content: ev.announcementMd ? clip(ev.announcementMd) : undefined,
     embed: eventEmbed({ ...ev, signupCount: 0, url }),
     components: [signupButtonRow(url, "Sign up on the website")],
+    mentionEveryone: ev.announcePing,
   };
 
   out["how-to-join"] = {
@@ -459,8 +465,9 @@ export async function archiveEventDiscord(eventId: string): Promise<FormState> {
   if (ev.discordArchivedAt) return { error: "Already archived." };
 
   const channels = Object.values((ev.discordChannels as Record<string, string>) ?? {});
+  let result: { renamed: boolean; hidden: boolean };
   try {
-    await archiveEventSpace(ev.discordCategoryId, channels);
+    result = await archiveEventSpace(ev.discordCategoryId, channels);
   } catch (err) {
     console.error("archiveEventSpace failed", err);
     return { error: `Discord: ${err instanceof Error ? err.message : "archive failed"}` };
@@ -468,6 +475,13 @@ export async function archiveEventDiscord(eventId: string): Promise<FormState> {
   await db.event.update({ where: { id: ev.id }, data: { discordArchivedAt: new Date() } });
   await logAudit({ actorId: actor.id, action: "event.discord_archive", targetType: "Event", targetId: ev.id });
   revalidatePath(`/portal/events/${ev.id}`);
+  if (!result.hidden) {
+    return {
+      ok: true,
+      error:
+        "Archived, but couldn't lock every channel private — give the bot the Manage Roles + Manage Channels permissions and archive again.",
+    };
+  }
   return { ok: true };
 }
 
@@ -503,6 +517,7 @@ export async function cloneEvent(eventId: string): Promise<void> {
       rulesMd: src.rulesMd,
       detailsMd: src.detailsMd,
       howToJoinVideoUrl: src.howToJoinVideoUrl,
+      announcePing: src.announcePing,
       announcementMd: src.announcementMd,
       howToJoinMd: src.howToJoinMd,
       gameplayMd: src.gameplayMd,
