@@ -309,3 +309,20 @@ export async function postToChannel(
     }),
   })) as { id: string };
 }
+
+/** Edit one of the bot's own messages (no Manage Messages needed). */
+export async function editChannelMessage(
+  channelId: string,
+  messageId: string,
+  payload: { content?: string; embed?: Embed; components?: ButtonRow[] },
+): Promise<void> {
+  if (!process.env.DISCORD_BOT_TOKEN) return;
+  await discordFetch(`/channels/${channelId}/messages/${messageId}`, {
+    method: "PATCH",
+    body: JSON.stringify({
+      content: payload.content ?? "",
+      embeds: payload.embed ? [{ color: 0x2fd4c7, ...payload.embed }] : [],
+      ...(payload.components ? { components: payload.components } : {}),
+    }),
+  });
+}

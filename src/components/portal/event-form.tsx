@@ -23,6 +23,11 @@ type EventInit = {
   bonusText: string | null;
   rulesMd: string | null;
   detailsMd: string | null;
+  announcementMd: string | null;
+  howToJoinMd: string | null;
+  gameplayMd: string | null;
+  wipeInfoMd: string | null;
+  rewardsMd: string | null;
 };
 
 export function EventForm({ event }: { event?: EventInit }) {
@@ -161,6 +166,33 @@ export function EventForm({ event }: { event?: EventInit }) {
           placeholder={"## Wipe & raid schedule\n\n- Start: 28 Aug 2026 09:30\n- End: 11 Sep 2026 21:29\n- Raid time: 15:30 – 21:29 (6 hrs/day)\n\n## Glory Points\n\n**Red Room** — 2 pts, spawns every 2h\n**Blue Room** — 1 pt, spawns every 1h"}
         />
       </div>
+
+      <hr className="border-edge" />
+      <p className="font-mono text-[0.68rem] font-bold uppercase tracking-[0.18em] text-teal">
+        Discord channels — posted into the event&apos;s space (build it, then &ldquo;Sync
+        channels&rdquo; after edits)
+      </p>
+
+      {(
+        [
+          ["announcementMd", "Announcement", 4, "Extra text above the announcement embed (optional)."],
+          ["howToJoinMd", "How to join", 5, "Overrides the default register → UID → sign-up steps."],
+          ["gameplayMd", "Gameplay", 8, "Objectives, map, how the mode plays."],
+          ["wipeInfoMd", "Wipe info", 6, "Extra wipe detail beyond cycle / raid window."],
+          ["rewardsMd", "Rewards (override)", 4, "Leave blank to auto-generate from the reward tiers."],
+        ] as const
+      ).map(([name, label, rows, hint]) => (
+        <div key={name}>
+          <label className="label">{label}</label>
+          <textarea
+            name={name}
+            rows={rows}
+            className="input font-mono text-xs"
+            defaultValue={(event?.[name] as string | null) ?? ""}
+          />
+          <p className="mt-1 text-xs text-slate-500">{hint}</p>
+        </div>
+      ))}
 
       {state.error && <p className="font-mono text-sm text-ember">{state.error}</p>}
 

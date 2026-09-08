@@ -58,6 +58,11 @@ export const eventSchema = z.object({
   bonusText: z.string().max(400).nullable().optional(),
   rulesMd: z.string().max(20000).nullable().optional(),
   detailsMd: z.string().max(20000).nullable().optional(),
+  announcementMd: z.string().max(4000).nullable().optional(),
+  howToJoinMd: z.string().max(4000).nullable().optional(),
+  gameplayMd: z.string().max(20000).nullable().optional(),
+  wipeInfoMd: z.string().max(20000).nullable().optional(),
+  rewardsMd: z.string().max(4000).nullable().optional(),
 });
 
 export type RewardTier = { place: string; reward: string };

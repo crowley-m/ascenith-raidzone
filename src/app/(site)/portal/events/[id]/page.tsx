@@ -9,7 +9,11 @@ import { EventForm } from "@/components/portal/event-form";
 import { AttendanceToggle } from "@/components/portal/attendance-toggle";
 import { RewardForm } from "@/components/portal/reward-form";
 import { RosterCopy } from "@/components/portal/roster-copy";
-import { BuildSpaceButton, ArchiveSpaceButton } from "@/components/portal/build-space-button";
+import {
+  BuildSpaceButton,
+  ArchiveSpaceButton,
+  SyncChannelsButton,
+} from "@/components/portal/build-space-button";
 import { ResultsForm, AttendeeRewardForm } from "@/components/portal/results-form";
 import type { RewardTier } from "@/lib/validation";
 
@@ -146,6 +150,7 @@ export default async function PortalEventDetail({
                     {Object.keys((event.discordChannels as Record<string, string>) ?? {}).length}{" "}
                     channels
                   </span>
+                  <SyncChannelsButton eventId={event.id} />
                   <ArchiveSpaceButton eventId={event.id} />
                 </>
               )
@@ -370,6 +375,11 @@ export default async function PortalEventDetail({
                     bonusText: event.bonusText,
                     rulesMd: event.rulesMd,
                     detailsMd: event.detailsMd,
+                    announcementMd: event.announcementMd,
+                    howToJoinMd: event.howToJoinMd,
+                    gameplayMd: event.gameplayMd,
+                    wipeInfoMd: event.wipeInfoMd,
+                    rewardsMd: event.rewardsMd,
                   }}
                 />
               </div>

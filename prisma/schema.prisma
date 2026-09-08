@@ -267,11 +267,19 @@ model Event {
   rulesMd     String? // markdown rules for this event (shown on the page + Discord)
   detailsMd   String? // full markdown brief shown on /events/[id]
 
-  discordMessageId   String?
-  discordChannelId   String?
-  discordCategoryId  String? // event's Discord category, once the bot builds it
-  discordChannels    Json? // { announcement: "id", rules: "id", ... }
-  discordArchivedAt  DateTime? // when the space was archived (renamed + sunk)
+  // per-Discord-channel content (posted to the event's channels)
+  announcementMd String?
+  howToJoinMd    String?
+  gameplayMd     String?
+  wipeInfoMd     String?
+  rewardsMd      String? // overrides the auto reward-tier post if set
+
+  discordMessageId    String?
+  discordChannelId    String?
+  discordCategoryId   String? // event's Discord category, once the bot builds it
+  discordChannels     Json? // { announcement: "id", rules: "id", ... }
+  discordSeedMessages Json? // { announcement: "messageId", ... } — for re-sync
+  discordArchivedAt   DateTime? // when the space was archived (renamed + sunk)
 
   createdById String
   createdBy   User   @relation("EventCreator", fields: [createdById], references: [id])

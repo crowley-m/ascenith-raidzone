@@ -21,6 +21,7 @@ import {
   createEventSpace,
   archiveEventSpace,
   postToChannel,
+  editChannelMessage,
   eventEmoji,
 } from "@/lib/discord";
 import { createMediaAsset } from "@/lib/media";
@@ -131,6 +132,11 @@ export async function saveEvent(_prev: FormState, formData: FormData): Promise<F
     bonusText: str("bonusText"),
     rulesMd: str("rulesMd"),
     detailsMd: str("detailsMd"),
+    announcementMd: str("announcementMd"),
+    howToJoinMd: str("howToJoinMd"),
+    gameplayMd: str("gameplayMd"),
+    wipeInfoMd: str("wipeInfoMd"),
+    rewardsMd: str("rewardsMd"),
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid event." };
@@ -156,6 +162,11 @@ export async function saveEvent(_prev: FormState, formData: FormData): Promise<F
     bonusText: d.bonusText ?? null,
     rulesMd: d.rulesMd ?? null,
     detailsMd: d.detailsMd ?? null,
+    announcementMd: d.announcementMd ?? null,
+    howToJoinMd: d.howToJoinMd ?? null,
+    gameplayMd: d.gameplayMd ?? null,
+    wipeInfoMd: d.wipeInfoMd ?? null,
+    rewardsMd: d.rewardsMd ?? null,
   };
 
   let eventId: string;
@@ -181,25 +192,34 @@ export async function saveEvent(_prev: FormState, formData: FormData): Promise<F
   if (ev && ev.status === "PUBLISHED") {
     const settings = await getSettings();
     try {
-      const embed = eventEmbed({
-        ...ev,
-        signupCount: ev._count.signups,
-        url: `${APP_URL}/events/${ev.id}`,
-      });
-      const components = [signupButtonRow(`${APP_URL}/events/${ev.id}`, "Sign up on the website")];
-      if (ev.discordMessageId && ev.discordChannelId) {
-        await editAnnouncement(ev.discordChannelId, ev.discordMessageId, embed, undefined, components);
+      if (ev.discordCategoryId) {
+        // full space exists — resync every channel (announcement included)
+        await pushEventChannelContent(
+          ev.id,
+          (ev.discordChannels as Record<string, string>) ?? {},
+          (ev.discordSeedMessages as Record<string, string>) ?? {},
+        );
       } else {
-        const posted = await postAnnouncement({
-          embed,
-          components,
-          channelId: settings.announceChannelId || undefined,
+        const embed = eventEmbed({
+          ...ev,
+          signupCount: ev._count.signups,
+          url: `${APP_URL}/events/${ev.id}`,
         });
-        if (posted) {
-          await db.event.update({
-            where: { id: ev.id },
-            data: { discordMessageId: posted.id, discordChannelId: posted.channelId },
+        const components = [signupButtonRow(`${APP_URL}/events/${ev.id}`, "Sign up on the website")];
+        if (ev.discordMessageId && ev.discordChannelId) {
+          await editAnnouncement(ev.discordChannelId, ev.discordMessageId, embed, undefined, components);
+        } else {
+          const posted = await postAnnouncement({
+            embed,
+            components,
+            channelId: settings.announceChannelId || undefined,
           });
+          if (posted) {
+            await db.event.update({
+              where: { id: ev.id },
+              data: { discordMessageId: posted.id, discordChannelId: posted.channelId },
+            });
+          }
         }
       }
     } catch (err) {
@@ -220,6 +240,127 @@ export async function saveEvent(_prev: FormState, formData: FormData): Promise<F
   revalidatePath(`/events/${eventId}`);
   revalidatePath("/"); // landing shows the current / next published event
   redirect(`/portal/events/${eventId}`);
+}
+
+type ChannelPayload = {
+  content?: string;
+  embed?: Parameters<typeof postToChannel>[1]["embed"];
+  components?: Parameters<typeof postToChannel>[1]["components"];
+};
+
+type FullEvent = NonNullable<Awaited<ReturnType<typeof db.event.findUnique>>>;
+
+/** What goes in each of the event's Discord channels. */
+function eventChannelPayloads(ev: FullEvent): Record<string, ChannelPayload> {
+  const url = `${APP_URL}/events/${ev.id}`;
+  const tiers = Array.isArray(ev.rewardTiers)
+    ? (ev.rewardTiers as Array<{ place: string; reward: string }>)
+    : [];
+  const clip = (s: string) => s.slice(0, 1990);
+  const out: Record<string, ChannelPayload> = {};
+
+  out.announcement = {
+    content: ev.announcementMd ? clip(ev.announcementMd) : undefined,
+    embed: eventEmbed({ ...ev, signupCount: 0, url }),
+    components: [signupButtonRow(url, "Sign up on the website")],
+  };
+
+  out["how-to-join"] = {
+    content: clip(
+      ev.howToJoinMd ??
+        `**How to join**\n` +
+          `1. Register once at ${APP_URL}/register (Discord login links automatically)\n` +
+          `2. Fill your in-game UID on your profile — that's where rewards go\n` +
+          (ev.format === "TEAM"
+            ? `3. Team event: your team leader registers the whole team at ${url}`
+            : `3. Sign up at ${url}`),
+    ),
+  };
+
+  if (ev.rulesMd) out.rules = { content: clip(`**Rules — ${ev.title}**\n\n${ev.rulesMd}`) };
+  if (ev.gameplayMd) out.gameplay = { content: clip(ev.gameplayMd) };
+
+  if (ev.wipeInfoMd || ev.wipeCycle || ev.raidWindow) {
+    const lines: string[] = ["**Wipe info**"];
+    if (ev.wipeCycle) lines.push(`Cycle: ${ev.wipeCycle}`);
+    if (ev.raidWindow) lines.push(`Raid window: ${ev.raidWindow}`);
+    if (ev.wipeInfoMd) lines.push("", ev.wipeInfoMd);
+    out["wipe-info"] = { content: clip(lines.join("\n")) };
+  }
+
+  if (ev.rewardsMd) {
+    out.rewards = { content: clip(ev.rewardsMd) };
+  } else if (tiers.length || ev.bonusText || ev.rewardPoolText) {
+    const lines = ["**Rewards**"];
+    for (const t of tiers) lines.push(`${t.place} — ${t.reward}`);
+    if (!tiers.length && ev.rewardPoolText) lines.push(ev.rewardPoolText);
+    if (ev.bonusText) lines.push(`\n**Bonus:** ${ev.bonusText}`);
+    out.rewards = { content: clip(lines.join("\n")) };
+  }
+
+  return out;
+}
+
+/**
+ * Post (or edit, if a seed message id exists) the event's channel content.
+ * Stores the message ids on the event for the next re-sync.
+ */
+async function pushEventChannelContent(
+  eventId: string,
+  channels: Record<string, string>,
+  seed: Record<string, string>,
+): Promise<void> {
+  const ev = await db.event.findUnique({ where: { id: eventId } });
+  if (!ev) return;
+  const payloads = eventChannelPayloads(ev);
+  const next: Record<string, string> = { ...seed };
+
+  for (const [name, payload] of Object.entries(payloads)) {
+    const channelId = channels[name];
+    if (!channelId || (!payload.content && !payload.embed)) continue;
+    const existing = seed[name];
+    try {
+      if (existing) {
+        await editChannelMessage(channelId, existing, payload);
+      } else {
+        const m = await postToChannel(channelId, payload);
+        if (m) next[name] = m.id;
+      }
+    } catch (err) {
+      console.error(`channel sync failed for ${name}`, err);
+      // a deleted message → post a fresh one next time
+      if (existing) delete next[name];
+    }
+  }
+
+  await db.event.update({
+    where: { id: eventId },
+    data: {
+      discordSeedMessages: next as Prisma.InputJsonValue,
+      discordMessageId: next.announcement ?? ev.discordMessageId,
+      discordChannelId: channels.announcement ?? ev.discordChannelId,
+    },
+  });
+}
+
+/**
+ * Re-post / update the event's channel content after you've edited it.
+ */
+export async function syncEventChannels(eventId: string): Promise<FormState> {
+  const actor = await assertPermission("event:manage");
+  const ev = await db.event.findUnique({ where: { id: eventId } });
+  if (!ev?.discordCategoryId) return { error: "This event has no Discord space yet." };
+
+  const channels = (ev.discordChannels as Record<string, string>) ?? {};
+  const seed = (ev.discordSeedMessages as Record<string, string>) ?? {};
+  try {
+    await pushEventChannelContent(eventId, channels, seed);
+  } catch (err) {
+    return { error: `Discord: ${err instanceof Error ? err.message : "sync failed"}` };
+  }
+  await logAudit({ actorId: actor.id, action: "event.discord_sync", targetType: "Event", targetId: eventId });
+  revalidatePath(`/portal/events/${eventId}`);
+  return { ok: true };
 }
 
 /**
@@ -248,67 +389,20 @@ export async function buildEventSpace(eventId: string): Promise<FormState> {
   }
   if (!space) return { error: "Discord isn't configured (bot token / guild id)." };
 
-  const url = `${APP_URL}/events/${ev.id}`;
-  const tiers = Array.isArray(ev.rewardTiers)
-    ? (ev.rewardTiers as Array<{ place: string; reward: string }>)
-    : [];
+  // record category + channel ids straight away so nothing is orphaned
+  await db.event.update({
+    where: { id: ev.id },
+    data: {
+      discordCategoryId: space.categoryId,
+      discordChannels: space.channels as Prisma.InputJsonValue,
+      discordChannelId: space.channels.announcement ?? null,
+    },
+  });
 
-  // seed the key channels — best-effort, don't fail the action on a post error
-  let posted: { id: string } | null = null;
   try {
-    const embed = eventEmbed({ ...ev, signupCount: 0, url });
-    if (space.channels.announcement) {
-      posted = await postToChannel(space.channels.announcement, {
-        embed,
-        components: [signupButtonRow(url, "Sign up on the website")],
-      });
-    }
-
-    if (space.channels["how-to-join"]) {
-      await postToChannel(space.channels["how-to-join"], {
-        content:
-          `**How to join**\n` +
-          `1. Register once at ${APP_URL}/register (Discord login links automatically)\n` +
-          `2. Fill your in-game UID on your profile — that's where rewards go\n` +
-          (ev.format === "TEAM"
-            ? `3. Team event: your team leader registers the whole team at ${url}\n`
-            : `3. Sign up at ${url}\n`),
-      });
-    }
-
-    if (space.channels.rewards && (tiers.length || ev.bonusText || ev.rewardPoolText)) {
-      const lines = ["**Rewards**"];
-      for (const t of tiers) lines.push(`${t.place} — ${t.reward}`);
-      if (!tiers.length && ev.rewardPoolText) lines.push(ev.rewardPoolText);
-      if (ev.bonusText) lines.push(`\n**Bonus:** ${ev.bonusText}`);
-      await postToChannel(space.channels.rewards, { content: lines.join("\n") });
-    }
-
-    if (space.channels.rules && ev.rulesMd) {
-      await postToChannel(space.channels.rules, {
-        content: `**Rules — ${ev.title}**\n\n${ev.rulesMd}`.slice(0, 1990),
-      });
-    }
-
-    await db.event.update({
-      where: { id: ev.id },
-      data: {
-        discordCategoryId: space.categoryId,
-        discordChannels: space.channels as Prisma.InputJsonValue,
-        discordChannelId: space.channels.announcement,
-        discordMessageId: posted?.id ?? ev.discordMessageId,
-      },
-    });
+    await pushEventChannelContent(ev.id, space.channels, {});
   } catch (err) {
     console.error("event space seed failed", err);
-    // still record the category/channels so we don't orphan them
-    await db.event.update({
-      where: { id: ev.id },
-      data: {
-        discordCategoryId: space.categoryId,
-        discordChannels: space.channels as Prisma.InputJsonValue,
-      },
-    });
   }
 
   await logAudit({
