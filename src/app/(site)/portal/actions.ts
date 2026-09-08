@@ -1094,14 +1094,79 @@ export async function removeStaffRole(userId: string) {
 // Media — landing gallery images
 // --------------------------------------------------------------------------
 
-function mediaKind(v: FormDataEntryValue | null): "gallery" | "proof" {
-  return v === "proof" ? "proof" : "gallery";
+const RESERVED_MEDIA_KINDS = new Set(["gallery", "proof", "reward"]);
+
+/** Resolve the target kind: a built-in, or an existing collection slug. */
+async function mediaKind(v: FormDataEntryValue | null): Promise<string> {
+  const s = typeof v === "string" ? v.trim() : "";
+  if (s === "gallery" || s === "proof") return s;
+  if (s && (await db.mediaCollection.findUnique({ where: { slug: s }, select: { id: true } }))) {
+    return s;
+  }
+  return "gallery";
 }
-const mediaRevalidate = (kind: string) => (kind === "proof" ? "/winners" : "/");
+const mediaRevalidate = (kind: string) => (kind === "gallery" ? "/" : "/winners");
+
+function slugifyTitle(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 40);
+}
+
+export async function createMediaCollection(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const actor = await assertPermission("media:manage");
+  const title = ((formData.get("title") as string) || "").trim();
+  if (title.length < 2) return { error: "Give the section a title." };
+  let slug = slugifyTitle(title);
+  if (!slug || RESERVED_MEDIA_KINDS.has(slug) || slug === "champions" || slug === "campaign") {
+    slug = `${slug || "section"}-${Date.now().toString(36).slice(-4)}`;
+  }
+  const last = await db.mediaCollection.findFirst({
+    orderBy: { sortOrder: "desc" },
+    select: { sortOrder: true },
+  });
+  try {
+    await db.mediaCollection.create({
+      data: { slug, title: title.slice(0, 60), sortOrder: (last?.sortOrder ?? 0) + 1 },
+    });
+  } catch {
+    return { error: "A section with a similar name already exists." };
+  }
+  await logAudit({ actorId: actor.id, action: "media.collection_create", targetType: "MediaCollection" });
+  revalidatePath("/portal/media");
+  revalidatePath("/winners");
+  return { ok: true };
+}
+
+export async function renameMediaCollection(id: string, title: string) {
+  const actor = await assertPermission("media:manage");
+  const t = title.trim();
+  if (t.length < 2) return;
+  await db.mediaCollection.update({ where: { id }, data: { title: t.slice(0, 60) } });
+  await logAudit({ actorId: actor.id, action: "media.collection_rename", targetType: "MediaCollection", targetId: id });
+  revalidatePath("/portal/media");
+  revalidatePath("/winners");
+}
+
+export async function deleteMediaCollection(id: string) {
+  const actor = await assertPermission("media:manage");
+  const col = await db.mediaCollection.findUnique({ where: { id }, select: { slug: true } });
+  if (!col) return;
+  await db.mediaAsset.deleteMany({ where: { kind: col.slug } });
+  await db.mediaCollection.delete({ where: { id } });
+  await logAudit({ actorId: actor.id, action: "media.collection_delete", targetType: "MediaCollection", targetId: id });
+  revalidatePath("/portal/media");
+  revalidatePath("/winners");
+}
 
 export async function addGalleryImage(_prev: FormState, formData: FormData): Promise<FormState> {
   const actor = await assertPermission("media:manage");
-  const kind = mediaKind(formData.get("kind"));
+  const kind = await mediaKind(formData.get("kind"));
   const file = formData.get("image");
   if (!(file instanceof File) || file.size === 0) return { error: "Pick an image to upload." };
 

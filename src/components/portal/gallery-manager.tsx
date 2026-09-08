@@ -30,8 +30,8 @@ export function GalleryManager({
   note,
 }: {
   images: Img[];
-  kind?: "gallery" | "proof";
-  liveSlots?: number; // gallery: first N show on landing. proof: undefined = all show
+  kind?: string; // "gallery" | "proof" | a collection slug
+  liveSlots?: number; // gallery: first N show on landing. others: undefined = all show
   note?: string;
 }) {
   const [addState, addAction, adding] = useActionState(addGalleryImage, {});

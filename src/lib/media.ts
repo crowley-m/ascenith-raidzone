@@ -73,7 +73,7 @@ export async function processImageUpload(file: File): Promise<ProcessedImage> {
 }
 
 export async function createMediaAsset(input: {
-  kind: "gallery" | "reward" | "proof";
+  kind: string; // "gallery" | "reward" | "proof" | a MediaCollection slug
   file: File;
   caption?: string | null;
   tag?: string | null;

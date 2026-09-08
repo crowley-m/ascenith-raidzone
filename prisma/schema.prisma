@@ -460,9 +460,21 @@ model Setting {
 // so there's no upload volume to manage; served via /api/media/[id].
 // ---------------------------------------------------------------------------
 
+// A titled image section on the public Winners page. Built-ins ("gallery",
+// "proof", "reward") are not stored here — these are the extra staff-made ones.
+model MediaCollection {
+  id        String   @id @default(cuid())
+  slug      String   @unique // MediaAsset.kind for its images
+  title     String
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([sortOrder])
+}
+
 model MediaAsset {
   id          String   @id @default(cuid())
-  kind        String // "gallery" | "reward"
+  kind        String // "gallery" | "proof" | "reward" | a MediaCollection slug
   data        Bytes
   contentType String
   bytes       Int
