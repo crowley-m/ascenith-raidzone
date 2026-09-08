@@ -18,7 +18,11 @@ if (process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET) {
     Discord({
       clientId: process.env.DISCORD_CLIENT_ID,
       clientSecret: process.env.DISCORD_CLIENT_SECRET,
-      authorization: { params: { scope: "identify email" } },
+      // NOTE: do NOT pass a bare `authorization: { params: {...} }` here.
+      // next-auth beta shallow-replaces the provider's default `authorization`
+      // object, dropping its `url`; the sign-in leg then hits `new URL(issuer)`
+      // with no issuer and dies with "TypeError: Invalid URL" (error=Configuration).
+      // The default scope is already "identify email", so we just use it.
       // Discord verifies emails; auto-link so a member who signed up with
       // email/password can also use "Login with Discord".
       allowDangerousEmailAccountLinking: true,
