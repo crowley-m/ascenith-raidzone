@@ -18,5 +18,7 @@ declare module "next-auth/jwt" {
     role?: Role | null;
     playerId?: string | null;
     playerStatus?: PlayerStatus | null;
+    /** ms timestamp of the last DB refresh of role/player fields. */
+    checkedAt?: number;
   }
 }

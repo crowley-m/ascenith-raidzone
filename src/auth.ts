@@ -56,7 +56,10 @@ providers.push(
   }),
 );
 
-async function resolveRole(userId: string): Promise<"OWNER" | "ADMIN" | "MODERATOR" | null> {
+async function resolveRole(
+  userId: string,
+  allowUpsert: boolean,
+): Promise<"OWNER" | "ADMIN" | "MODERATOR" | null> {
   const user = await db.user.findUnique({
     where: { id: userId },
     select: { discordId: true, discordUsername: true, staffRole: { select: { role: true } } },
@@ -64,17 +67,20 @@ async function resolveRole(userId: string): Promise<"OWNER" | "ADMIN" | "MODERAT
   if (!user) return null;
   if (user.staffRole) return user.staffRole.role;
 
-  // Auto-grant OWNER to the configured owner on first sign-in.
+  // Auto-grant OWNER to the configured owner. Only write on sign-in — later
+  // reads just report the role, they don't re-provision it every request.
   const isOwner =
     (OWNER_DISCORD_ID && user.discordId === OWNER_DISCORD_ID) ||
     (OWNER_DISCORD_USERNAME &&
       user.discordUsername?.toLowerCase() === OWNER_DISCORD_USERNAME);
   if (isOwner) {
-    await db.staffRole.upsert({
-      where: { userId },
-      create: { userId, role: "OWNER" },
-      update: { role: "OWNER" },
-    });
+    if (allowUpsert) {
+      await db.staffRole.upsert({
+        where: { userId },
+        create: { userId, role: "OWNER" },
+        update: { role: "OWNER" },
+      });
+    }
     return "OWNER";
   }
   return null;
@@ -109,16 +115,31 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   callbacks: {
     ...authConfig.callbacks,
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user?.id) token.uid = user.id;
-      if (token.uid) {
-        token.role = await resolveRole(token.uid as string);
+      if (!token.uid) return token;
+
+      // The jwt callback runs on *every* request that reads the session. Only
+      // touch the DB on sign-in or an explicit session update, or once the
+      // cached copy is older than 10 minutes — and never let a DB hiccup throw,
+      // because a throw here silently signs the user out.
+      const last = typeof token.checkedAt === "number" ? token.checkedAt : 0;
+      const stale = Date.now() - last > 10 * 60 * 1000;
+      const isSignIn = !!user;
+      if (!isSignIn && trigger !== "update" && !stale) return token;
+
+      try {
+        token.role = await resolveRole(token.uid as string, isSignIn);
         const player = await db.player.findUnique({
           where: { userId: token.uid as string },
           select: { id: true, status: true },
         });
         token.playerId = player?.id ?? null;
         token.playerStatus = player?.status ?? null;
+        token.checkedAt = Date.now();
+      } catch (err) {
+        // Keep whatever we already had on the token; try again next request.
+        console.error("[auth] jwt refresh failed, keeping cached token", err);
       }
       return token;
     },
