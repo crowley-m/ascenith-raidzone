@@ -6,6 +6,14 @@ import s from "./landing.module.css";
 
 export type RewardTier = { place: string; reward: string };
 
+export type UpcomingOp = {
+  id: string;
+  title: string;
+  mode: string | null;
+  startsAt: string;
+  endsAt: string | null;
+};
+
 export type OpEvent = {
   id: string;
   title: string;
@@ -72,9 +80,11 @@ function fmtManila(iso: string, withTime = true) {
 
 export function EventBrief({
   event,
+  upcoming = [],
   discordOnline = null,
 }: {
   event: OpEvent | null;
+  upcoming?: UpcomingOp[];
   discordOnline?: number | null;
 }) {
   const [now, setNow] = useState<number | null>(null);
@@ -260,7 +270,7 @@ export function EventBrief({
             <div className={s.eventActs}>
               {event.id && (
                 <Link className={`${s.box} ${s.solid}`} href={`/events/${event.id}`}>
-                  <span className={s.t}>Full brief</span>
+                  <span className={s.t}>Full event details</span>
                   <span className={s.arw}>{"→"}</span>
                 </Link>
               )}
@@ -269,6 +279,10 @@ export function EventBrief({
                 href="/register"
               >
                 <span className={s.t}>Register</span>
+                <span className={s.arw}>{"→"}</span>
+              </Link>
+              <Link className={`${s.box} ${s.plain}`} href="/events">
+                <span className={s.t}>All events</span>
                 <span className={s.arw}>{"→"}</span>
               </Link>
               <a
@@ -281,6 +295,30 @@ export function EventBrief({
                 <span className={s.arw}>{"→"}</span>
               </a>
             </div>
+
+            {upcoming.length > 0 && (
+              <div className={s.nextUp}>
+                <span className={s.nextUpHead}>Next up</span>
+                <ul>
+                  {upcoming.map((u) => (
+                    <li key={u.id}>
+                      <Link href={`/events/${u.id}`} className={s.nextUpRow}>
+                        <span className={s.nextUpName}>
+                          {u.mode ? <b>{u.mode}</b> : null} {u.title}
+                        </span>
+                        <span className={s.nextUpDate}>
+                          {fmtManila(u.startsAt, false)} GMT+8
+                        </span>
+                        <span className={s.arw}>{"→"}</span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+                <Link href="/events" className={s.nextUpAll}>
+                  See all events {"→"}
+                </Link>
+              </div>
+            )}
           </>
         ) : (
           <>
@@ -293,6 +331,10 @@ export function EventBrief({
                 <span className={s.t}>Register</span>
                 <span className={s.arw}>{"→"}</span>
               </Link>
+              <Link className={`${s.box} ${s.plain}`} href="/events">
+                <span className={s.t}>All events</span>
+                <span className={s.arw}>{"→"}</span>
+              </Link>
               <a
                 className={`${s.box} ${s.plain}`}
                 href={DISCORD}
@@ -303,6 +345,27 @@ export function EventBrief({
                 <span className={s.arw}>{"→"}</span>
               </a>
             </div>
+
+            {upcoming.length > 0 && (
+              <div className={s.nextUp}>
+                <span className={s.nextUpHead}>Next up</span>
+                <ul>
+                  {upcoming.map((u) => (
+                    <li key={u.id}>
+                      <Link href={`/events/${u.id}`} className={s.nextUpRow}>
+                        <span className={s.nextUpName}>
+                          {u.mode ? <b>{u.mode}</b> : null} {u.title}
+                        </span>
+                        <span className={s.nextUpDate}>
+                          {fmtManila(u.startsAt, false)} GMT+8
+                        </span>
+                        <span className={s.arw}>{"→"}</span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </>
         )}
       </div>

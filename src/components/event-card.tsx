@@ -6,6 +6,7 @@ export type EventCardData = {
   title: string;
   description?: string | null;
   startsAt: Date;
+  endsAt?: Date | null;
   server?: string | null;
   maxSlots?: number | null;
   status: string;
@@ -14,13 +15,25 @@ export type EventCardData = {
 
 export function EventCard({ event, href }: { event: EventCardData; href?: string }) {
   const signups = event._count?.signups ?? 0;
+  const now = Date.now();
+  const live =
+    event.status === "PUBLISHED" &&
+    event.startsAt.getTime() <= now &&
+    (event.endsAt ? event.endsAt.getTime() > now : false);
   return (
     <Link
       href={href ?? `/events/${event.id}`}
       className="card group block transition hover:border-teal/50"
     >
       <div className="flex items-center justify-between gap-3">
-        <span className="badge">{relative(event.startsAt)}</span>
+        {live ? (
+          <span className="badge border-teal/50 text-teal">
+            <span className="mr-1.5 inline-block h-1.5 w-1.5 rounded-full bg-teal align-middle" />
+            Running now
+          </span>
+        ) : (
+          <span className="badge">{relative(event.startsAt)}</span>
+        )}
         {event.status !== "PUBLISHED" && (
           <span className="badge border-ember/40 text-ember">{event.status}</span>
         )}

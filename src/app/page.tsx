@@ -1,5 +1,5 @@
 import { Landing } from "@/components/landing/Landing";
-import type { OpEvent } from "@/components/landing/EventBrief";
+import type { OpEvent, UpcomingOp } from "@/components/landing/EventBrief";
 import type { GalleryImage } from "@/components/landing/Gallery";
 import { db } from "@/lib/db";
 import { latestVideos } from "@/lib/youtube";
@@ -31,7 +31,7 @@ const FALLBACK_EVENT: OpEvent = {
 // re-fetch the current op at most once a minute; the client ticker handles seconds
 export const revalidate = 60;
 
-async function currentOp(): Promise<OpEvent | null> {
+async function eventData(): Promise<{ current: OpEvent | null; upcoming: UpcomingOp[] }> {
   const now = new Date();
   let events: Awaited<ReturnType<typeof db.event.findMany>> = [];
   try {
@@ -41,7 +41,7 @@ async function currentOp(): Promise<OpEvent | null> {
       include: { _count: { select: { signups: true } } },
     });
   } catch {
-    return null;
+    return { current: null, upcoming: [] };
   }
 
   const withCount = events as Array<
@@ -50,27 +50,42 @@ async function currentOp(): Promise<OpEvent | null> {
   const ongoing = withCount.find(
     (e) => e.startsAt <= now && (!e.endsAt || e.endsAt >= now),
   );
-  const upcoming = withCount.find((e) => e.startsAt > now);
-  const e = ongoing ?? upcoming;
-  if (!e) return null;
+  const laterStart = withCount.filter((e) => e.startsAt > now);
+  const current = ongoing ?? laterStart[0] ?? null;
+
+  const upcoming: UpcomingOp[] = laterStart
+    .filter((e) => e.id !== current?.id)
+    .slice(0, 3)
+    .map((e) => ({
+      id: e.id,
+      title: e.title,
+      mode: e.mode,
+      startsAt: e.startsAt.toISOString(),
+      endsAt: e.endsAt ? e.endsAt.toISOString() : null,
+    }));
+
+  if (!current) return { current: null, upcoming };
 
   return {
-    id: e.id,
-    title: e.title,
-    server: e.server,
-    startsAt: e.startsAt.toISOString(),
-    endsAt: e.endsAt ? e.endsAt.toISOString() : null,
-    maxSlots: e.maxSlots,
-    signups: e._count.signups,
-    rewardPoolText: e.rewardPoolText,
-    summary: e.summary,
-    mode: e.mode,
-    wipeCycle: e.wipeCycle,
-    raidWindow: e.raidWindow,
-    rewardTiers: Array.isArray(e.rewardTiers)
-      ? (e.rewardTiers as Array<{ place: string; reward: string }>)
-      : [],
-    bonusText: e.bonusText,
+    current: {
+      id: current.id,
+      title: current.title,
+      server: current.server,
+      startsAt: current.startsAt.toISOString(),
+      endsAt: current.endsAt ? current.endsAt.toISOString() : null,
+      maxSlots: current.maxSlots,
+      signups: current._count.signups,
+      rewardPoolText: current.rewardPoolText,
+      summary: current.summary,
+      mode: current.mode,
+      wipeCycle: current.wipeCycle,
+      raidWindow: current.raidWindow,
+      rewardTiers: Array.isArray(current.rewardTiers)
+        ? (current.rewardTiers as Array<{ place: string; reward: string }>)
+        : [],
+      bonusText: current.bonusText,
+    },
+    upcoming,
   };
 }
 
@@ -88,15 +103,16 @@ async function galleryImages(): Promise<GalleryImage[]> {
 }
 
 export default async function HomePage() {
-  const [event, videos, presence, gallery] = await Promise.all([
-    currentOp(),
+  const [{ current, upcoming }, videos, presence, gallery] = await Promise.all([
+    eventData(),
     latestVideos(9),
     guildPresence(),
     galleryImages(),
   ]);
   return (
     <Landing
-      event={event ?? FALLBACK_EVENT}
+      event={current ?? FALLBACK_EVENT}
+      upcoming={upcoming}
       videos={videos}
       discordOnline={presence?.online ?? null}
       gallery={gallery}

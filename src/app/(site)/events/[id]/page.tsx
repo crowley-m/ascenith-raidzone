@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { auth } from "@/auth";
@@ -81,7 +82,10 @@ export default async function EventDetailPage({
 
   return (
     <div className="container-x py-14">
-      <div className="grid gap-10 lg:grid-cols-[1fr_320px]">
+      <Link href="/events" className="link text-xs uppercase tracking-widest">
+        &larr; All events
+      </Link>
+      <div className="mt-4 grid gap-10 lg:grid-cols-[1fr_320px]">
         <div>
           <p className="eyebrow">
             {event.mode ? `${event.mode} event` : "Event"} &mdash;{" "}

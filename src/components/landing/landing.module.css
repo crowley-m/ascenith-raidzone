@@ -955,6 +955,70 @@
   gap: 12px;
   margin-top: clamp(16px, 2.5vw, 24px);
 }
+
+/* --- Next up (upcoming events) --- */
+.nextUp {
+  margin-top: clamp(20px, 3vw, 30px);
+  padding-top: clamp(16px, 2.5vw, 22px);
+  border-top: 1px solid var(--rule);
+}
+.nextUpHead {
+  display: block;
+  font-family: var(--f-mono);
+  font-weight: 700;
+  font-size: 0.62rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--crimson);
+  margin-bottom: 10px;
+}
+.nextUp ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.nextUpRow {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 11px 4px;
+  border-bottom: 1px solid var(--rule);
+  color: var(--cream);
+  transition: color 0.15s;
+}
+.nextUpRow:hover { color: var(--crimson); }
+.nextUpName {
+  flex: 1;
+  font-size: 0.86rem;
+}
+.nextUpName b {
+  font-family: var(--f-mono);
+  font-weight: 700;
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--crimson);
+  margin-right: 6px;
+}
+.nextUpDate {
+  font-family: var(--f-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  color: var(--cream-2);
+  white-space: nowrap;
+}
+.nextUpAll {
+  display: inline-block;
+  margin-top: 12px;
+  font-family: var(--f-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--cream-2);
+}
+.nextUpAll:hover { color: var(--crimson); }
 .briefCol {
   display: flex;
   flex-direction: column;

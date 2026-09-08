@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { isStaff } from "@/lib/rbac";
 import s from "./landing.module.css";
@@ -9,7 +10,7 @@ import { SparkleField } from "./SparkleField";
 import { Wordmark } from "./Wordmark";
 import { Watch } from "./Watch";
 import { Gallery, type GalleryImage } from "./Gallery";
-import { EventBrief, type OpEvent } from "./EventBrief";
+import { EventBrief, type OpEvent, type UpcomingOp } from "./EventBrief";
 import { HowItWorks } from "./HowItWorks";
 import type { YtVideo } from "@/lib/youtube";
 
@@ -84,11 +85,13 @@ const RUN: [string, string, string][] = [
 
 export function Landing({
   event = null,
+  upcoming = [],
   videos = [],
   discordOnline = null,
   gallery = [],
 }: {
   event?: OpEvent | null;
+  upcoming?: UpcomingOp[];
   videos?: YtVideo[];
   discordOnline?: number | null;
   gallery?: GalleryImage[];
@@ -169,7 +172,8 @@ export function Landing({
           ASCENITH&middot;RAIDZONE
         </span>
         <div className={s.navMid}>
-          <a href="#event">Event</a>
+          <a href="#event">The op</a>
+          <Link href="/events">All events</Link>
           <a href="#how">How it works</a>
           <a href="#watch">Watch</a>
           <a href="#run">Field manual</a>
@@ -268,7 +272,7 @@ export function Landing({
       </section>
 
       <div className={s.after}>
-        <EventBrief event={event} discordOnline={discordOnline} />
+        <EventBrief event={event} upcoming={upcoming} discordOnline={discordOnline} />
 
         <HowItWorks />
 
@@ -358,19 +362,21 @@ export function Landing({
         <footer className={s.footer}>
           <span>ASCENITH&middot;RAIDZONE</span>
           <nav>
+            <Link href="/events">Events</Link>
+            <Link href="/proof">Results</Link>
+            <Link href="/rules">Rules</Link>
             {user ? (
               <>
-                <a href="/me">My profile</a>
-                {staff && <a href="/portal">Portal</a>}
+                <Link href="/me">My profile</Link>
+                {staff && <Link href="/portal">Portal</Link>}
               </>
             ) : (
               <>
-                <a href={REGISTER}>Register</a>
-                <a href={LOGIN}>Sign in</a>
+                <Link href={REGISTER}>Register</Link>
+                <Link href={LOGIN}>Sign in</Link>
               </>
             )}
             <a href={DISCORD}>Discord</a>
-            <a href="/rules">Rules</a>
           </nav>
           <span>Made by Crowley</span>
         </footer>
