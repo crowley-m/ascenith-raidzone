@@ -1945,3 +1945,76 @@
   .shot { animation: none; }
   .shotPop { opacity: 1 !important; transform: none !important; }
 }
+
+/* ---- posters / seasons ---- */
+.posters {
+  position: relative;
+  z-index: 10;
+  border-top: 1px solid var(--rule);
+  padding-block: clamp(56px, 10vh, 120px);
+  scroll-margin-top: 84px;
+}
+.postersHead {
+  margin-bottom: clamp(26px, 5vh, 54px);
+}
+.postersHead h2 {
+  margin-top: 12px;
+  font-size: clamp(2rem, 1.4rem + 3.2vw, 3.8rem);
+  color: var(--cream);
+}
+.postersNote {
+  margin-top: 14px;
+  font-family: var(--f-mono);
+  font-size: 0.74rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cream-dim);
+  max-width: 46ch;
+}
+.posterWall {
+  columns: 1;
+  column-gap: clamp(14px, 2vw, 22px);
+}
+@media (min-width: 640px) {
+  .posterWall { columns: 2; }
+}
+@media (min-width: 1040px) {
+  .posterWall { columns: 3; }
+}
+.poster {
+  position: relative;
+  break-inside: avoid;
+  margin: 0 0 clamp(14px, 2vw, 22px);
+  border: 1px solid var(--rule);
+  background: var(--ink);
+  overflow: hidden;
+}
+.poster img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.posterCorner {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 14px;
+  height: 14px;
+  border-top: 1px solid var(--crimson);
+  border-left: 1px solid var(--crimson);
+}
+.posterTag {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  padding: 5px 10px;
+  font-family: var(--f-mono);
+  font-weight: 700;
+  font-size: 0.56rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--cream);
+  background: rgba(12, 10, 8, 0.72);
+  border-top: 1px solid var(--rule);
+  border-left: 1px solid var(--rule);
+}
