@@ -23,6 +23,10 @@ export const commandData = [
     .setName("profile")
     .setDescription("Show an ASCENITH RAIDZONE player profile")
     .addUserOption((o) => o.setName("user").setDescription("Whose profile (defaults to you)")),
+  new SlashCommandBuilder().setName("team").setDescription("Show your ASCENITH RAIDZONE team"),
+  new SlashCommandBuilder()
+    .setName("myevents")
+    .setDescription("List the events you're signed up for"),
 ].map((c) => c.toJSON());
 
 export async function handleCommand(interaction: ChatInputCommandInteraction) {
@@ -108,6 +112,87 @@ export async function handleCommand(interaction: ChatInputCommandInteraction) {
         })),
       };
       return interaction.reply({ embeds: [embed], components: [row] });
+    }
+
+    case "team": {
+      const user = await playerForDiscordUser(interaction.user.id);
+      if (!user?.player) {
+        return interaction.reply({
+          ephemeral: true,
+          content: `You need a profile first — ${APP_URL}/register`,
+        });
+      }
+      const team = await db.team.findFirst({
+        where: {
+          OR: [
+            { leaderId: user.player.id },
+            { members: { some: { playerId: user.player.id } } },
+          ],
+        },
+        include: {
+          event: { select: { title: true, mode: true } },
+          members: { include: { player: { select: { characterName: true } } } },
+        },
+      });
+      if (!team) {
+        return interaction.reply({
+          ephemeral: true,
+          content: `No team yet. Create or join one at ${APP_URL}/me/team`,
+        });
+      }
+      const isLeader = team.leaderId === user.player.id;
+      const forEvent = team.event
+        ? team.event.mode
+          ? `RAIDZONE ${team.event.mode}`
+          : team.event.title
+        : "no specific event";
+      const embed = new EmbedBuilder()
+        .setColor(TEAL)
+        .setTitle(`${team.tag ? `[${team.tag}] ` : ""}${team.name}`)
+        .setDescription(
+          `Formed for **${forEvent}**\n` +
+            team.members
+              .map(
+                (m) =>
+                  `• ${m.player.characterName ?? "Unnamed"}${
+                    m.playerId === team.leaderId ? " (leader)" : ""
+                  }`,
+              )
+              .join("\n") +
+            (isLeader ? `\n\nInvite code: \`${team.inviteCode}\`` : ""),
+        )
+        .setFooter({ text: "ASCENITH RAIDZONE" });
+      return interaction.reply({ ephemeral: true, embeds: [embed] });
+    }
+
+    case "myevents": {
+      const now = new Date();
+      const signups = await db.eventSignup.findMany({
+        where: {
+          player: { user: { discordId: interaction.user.id } },
+          state: { in: ["SIGNED_UP", "WAITLIST"] },
+          event: { startsAt: { gte: now } },
+        },
+        include: { event: { select: { id: true, title: true, startsAt: true } } },
+        orderBy: { event: { startsAt: "asc" } },
+        take: 10,
+      });
+      if (signups.length === 0) {
+        return interaction.reply({
+          ephemeral: true,
+          content: `You're not signed up for anything upcoming. See ${APP_URL}/events`,
+        });
+      }
+      return interaction.reply({
+        ephemeral: true,
+        content: signups
+          .map(
+            (s) =>
+              `**${s.event.title}** — <t:${Math.floor(s.event.startsAt.getTime() / 1000)}:R>` +
+              `${s.state === "WAITLIST" ? " (waitlist)" : ""}\n${APP_URL}/events/${s.event.id}`,
+          )
+          .join("\n\n"),
+      });
     }
   }
 }

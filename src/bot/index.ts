@@ -1,5 +1,6 @@
 import { Client, GatewayIntentBits, Events, MessageFlags } from "discord.js";
 import { handleCommand } from "./commands.js";
+import { startReminders } from "./reminders.js";
 
 const token = process.env.DISCORD_BOT_TOKEN;
 if (!token) {
@@ -12,6 +13,7 @@ const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 client.once(Events.ClientReady, (c) => {
   console.log(`Bot online as ${c.user.tag}`);
   c.guilds.cache.forEach((g) => console.log(`  guild: ${g.name} (${g.id})`));
+  startReminders(c);
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {

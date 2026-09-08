@@ -7,6 +7,7 @@ export default async function PortalLayout({ children }: { children: React.React
 
   const items = [
     { href: "/portal", label: "Overview", show: true },
+    { href: "/portal/analytics", label: "Analytics", show: can(user.role, "player:view") },
     { href: "/portal/players", label: "Players", show: can(user.role, "player:view") },
     { href: "/portal/teams", label: "Teams", show: can(user.role, "player:view") },
     { href: "/portal/events", label: "Events", show: can(user.role, "event:view") },
