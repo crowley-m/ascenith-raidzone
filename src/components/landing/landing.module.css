@@ -5,11 +5,12 @@
 .root {
   --void: #0c0a08;
   --ink: #16110d;
-  --crimson: #d5303f;
+  /* accent — lifted off the old #d5303f so small mono labels stay legible on the void */
+  --crimson: #ec4f57;
   --crimson-deep: #7a1c26;
   --cream: #e9e1d1;
-  --cream-2: rgba(233, 225, 209, 0.72);
-  --cream-dim: rgba(233, 225, 209, 0.5);
+  --cream-2: rgba(233, 225, 209, 0.74);
+  --cream-dim: rgba(233, 225, 209, 0.58);
   --rule: rgba(233, 225, 209, 0.18);
   --pad: clamp(18px, 4.5vw, 72px);
   --maxw: 1360px;
@@ -434,7 +435,7 @@
   align-items: center;
   gap: 10px;
   font-family: var(--f-mono);
-  font-size: 0.6rem;
+  font-size: 0.62rem;
   letter-spacing: 0.24em;
   text-transform: uppercase;
   color: var(--cream-dim);
@@ -581,7 +582,7 @@
 @media (max-width: 719px) {
   .termBar {
     gap: 8px 10px;
-    font-size: 0.56rem;
+    font-size: 0.62rem;
     letter-spacing: 0.1em;
     padding: 11px 14px;
   }
@@ -676,7 +677,7 @@
 .clockLbl {
   font-family: var(--f-mono);
   font-weight: 700;
-  font-size: 0.56rem;
+  font-size: 0.62rem;
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--cream-dim);
@@ -692,7 +693,7 @@
 .clockCap {
   font-family: var(--f-mono);
   font-weight: 700;
-  font-size: 0.6rem;
+  font-size: 0.62rem;
   letter-spacing: 0.24em;
   text-transform: uppercase;
   color: var(--crimson);
@@ -818,7 +819,7 @@
   border: 1px solid var(--rule);
   font-family: var(--f-mono);
   font-weight: 700;
-  font-size: 0.6rem;
+  font-size: 0.62rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--cream-dim);
@@ -910,7 +911,7 @@
 .eventFacts b {
   font-family: var(--f-mono);
   font-weight: 700;
-  font-size: 0.58rem;
+  font-size: 0.62rem;
   letter-spacing: 0.18em;
   color: var(--crimson);
 }
@@ -1165,7 +1166,7 @@
   color: var(--crimson);
   padding: 3px 8px;
   font-weight: 700;
-  font-size: 0.6rem;
+  font-size: 0.62rem;
   letter-spacing: 0.16em;
 }
 
@@ -1398,8 +1399,8 @@
 .stepMeta {
   font-family: var(--f-mono);
   font-weight: 700;
-  font-size: 0.58rem;
-  letter-spacing: 0.16em;
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--crimson);
   align-self: center;
@@ -1714,7 +1715,7 @@
   margin-top: 10px;
   font-family: var(--f-mono);
   font-weight: 700;
-  font-size: 0.6rem;
+  font-size: 0.62rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
 }
@@ -1828,7 +1829,7 @@
 .clipActive .clipPlay { border-left-color: var(--cream); }
 .clipTag {
   font-weight: 700;
-  font-size: 0.56rem;
+  font-size: 0.62rem;
   letter-spacing: 0.16em;
   color: var(--cream-dim);
 }
@@ -1912,7 +1913,7 @@
   right: 10px;
   bottom: 9px;
   font-family: var(--f-mono);
-  font-size: 0.56rem;
+  font-size: 0.62rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--cream-dim);
@@ -1924,7 +1925,7 @@
   margin-top: 9px;
   font-family: var(--f-mono);
   font-weight: 700;
-  font-size: 0.58rem;
+  font-size: 0.62rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
 }
@@ -2010,7 +2011,7 @@
   padding: 5px 10px;
   font-family: var(--f-mono);
   font-weight: 700;
-  font-size: 0.56rem;
+  font-size: 0.62rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--cream);

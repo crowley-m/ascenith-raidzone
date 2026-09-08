@@ -209,6 +209,21 @@ export function useImmersive(rootRef: RefObject<HTMLDivElement | null>, ready: b
         if (document.fonts?.ready) {
           document.fonts.ready.then(() => ScrollTrigger.refresh());
         }
+
+        // Failsafe: reveals use autoAlpha (visibility:hidden), so a ScrollTrigger
+        // that never fires — fast scroll past it, refresh mid-page, a stalled RAF —
+        // would leave that content permanently invisible. Force anything still
+        // hidden back on after a beat. Cheap insurance; the animation still plays
+        // for everything the observer caught normally.
+        const failsafe = window.setTimeout(() => {
+          qa("[data-reveal], [data-split]").forEach((el) => {
+            if (getComputedStyle(el).visibility === "hidden") {
+              gsap.set(el, { autoAlpha: 1, y: 0, yPercent: 0, clearProps: "transform" });
+            }
+          });
+          ScrollTrigger.refresh();
+        }, 2600);
+        disposers.push(() => window.clearTimeout(failsafe));
       }, root);
 
       cleanup = () => {
