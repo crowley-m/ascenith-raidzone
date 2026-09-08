@@ -102,21 +102,47 @@ export function eventEmbed(e: {
 }
 
 /**
- * Live presence from the guild's public widget (Server Settings → Widget → Enable).
- * No bot token needed — just DISCORD_GUILD_ID and the widget switched on.
- * Returns null if unavailable.
+ * Live member / online counts for the guild.
+ * Uses the bot token + `?with_counts=true` — no privileged intents, no widget
+ * toggle needed (the bot just has to be in the server). Falls back to the public
+ * widget JSON if there's no bot token. Returns null if nothing is available.
  */
-export async function guildPresence(): Promise<{ online: number; name?: string } | null> {
+export async function guildPresence(): Promise<{
+  online: number | null;
+  members: number | null;
+} | null> {
   const gid = process.env.DISCORD_GUILD_ID;
   if (!gid) return null;
+  const token = process.env.DISCORD_BOT_TOKEN;
+
+  if (token) {
+    try {
+      const res = await fetch(
+        `${API}/guilds/${gid}?with_counts=true`,
+        { headers: { Authorization: `Bot ${token}` }, next: { revalidate: 60 } },
+      );
+      if (res.ok) {
+        const d = (await res.json()) as {
+          approximate_presence_count?: number;
+          approximate_member_count?: number;
+        };
+        return {
+          online: d.approximate_presence_count ?? null,
+          members: d.approximate_member_count ?? null,
+        };
+      }
+    } catch {
+      /* fall through to widget */
+    }
+  }
+
   try {
     const res = await fetch(`https://discord.com/api/guilds/${gid}/widget.json`, {
       next: { revalidate: 60 },
     });
     if (!res.ok) return null;
-    const data = (await res.json()) as { presence_count?: number; name?: string };
-    if (typeof data.presence_count !== "number") return null;
-    return { online: data.presence_count, name: data.name };
+    const data = (await res.json()) as { presence_count?: number };
+    return { online: data.presence_count ?? null, members: null };
   } catch {
     return null;
   }
