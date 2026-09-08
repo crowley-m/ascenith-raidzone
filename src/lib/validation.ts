@@ -56,6 +56,7 @@ export const eventSchema = z.object({
   raidWindow: z.string().max(120).nullable().optional(),
   rewardTiersText: z.string().max(2000).nullable().optional(),
   bonusText: z.string().max(400).nullable().optional(),
+  rulesMd: z.string().max(20000).nullable().optional(),
   detailsMd: z.string().max(20000).nullable().optional(),
 });
 

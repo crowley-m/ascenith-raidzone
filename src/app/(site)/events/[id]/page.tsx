@@ -214,6 +214,13 @@ export default async function EventDetailPage({
             </p>
           )}
 
+          {event.rulesMd && (
+            <div className="mt-10 max-w-2xl border-l-2 border-teal/50 pl-5">
+              <h2 className="font-poster text-2xl uppercase text-white">Rules</h2>
+              <Markdown source={event.rulesMd} className="md mt-3" />
+            </div>
+          )}
+
           <div className="mt-12">
             {isTeamEvent ? (
               <>

@@ -129,6 +129,7 @@ export async function saveEvent(_prev: FormState, formData: FormData): Promise<F
     raidWindow: str("raidWindow"),
     rewardTiersText: str("rewardTiersText"),
     bonusText: str("bonusText"),
+    rulesMd: str("rulesMd"),
     detailsMd: str("detailsMd"),
   });
   if (!parsed.success) {
@@ -153,6 +154,7 @@ export async function saveEvent(_prev: FormState, formData: FormData): Promise<F
     rewardTiers:
       (parseRewardTiers(d.rewardTiersText) as Prisma.InputJsonValue) ?? Prisma.JsonNull,
     bonusText: d.bonusText ?? null,
+    rulesMd: d.rulesMd ?? null,
     detailsMd: d.detailsMd ?? null,
   };
 
@@ -280,6 +282,12 @@ export async function buildEventSpace(eventId: string): Promise<FormState> {
       if (!tiers.length && ev.rewardPoolText) lines.push(ev.rewardPoolText);
       if (ev.bonusText) lines.push(`\n**Bonus:** ${ev.bonusText}`);
       await postToChannel(space.channels.rewards, { content: lines.join("\n") });
+    }
+
+    if (space.channels.rules && ev.rulesMd) {
+      await postToChannel(space.channels.rules, {
+        content: `**Rules — ${ev.title}**\n\n${ev.rulesMd}`.slice(0, 1990),
+      });
     }
 
     await db.event.update({

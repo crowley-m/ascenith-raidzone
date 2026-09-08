@@ -21,6 +21,7 @@ type EventInit = {
   raidWindow: string | null;
   rewardTiersText: string;
   bonusText: string | null;
+  rulesMd: string | null;
   detailsMd: string | null;
 };
 
@@ -136,13 +137,28 @@ export function EventForm({ event }: { event?: EventInit }) {
       </div>
 
       <div>
+        <label className="label">Event rules (Markdown)</label>
+        <textarea
+          name="rulesMd"
+          rows={8}
+          className="input font-mono text-xs"
+          defaultValue={event?.rulesMd ?? ""}
+          placeholder={"- No cheating — permanent ban, no appeal\n- No bug exploiting\n- No account sharing — reward UID must match the player\n- Clips on request, or no points"}
+        />
+        <p className="mt-1 text-xs text-slate-500">
+          Shown in its own section on the event page and posted to the event&apos;s Discord{" "}
+          <code>rules</code> channel when you build the space.
+        </p>
+      </div>
+
+      <div>
         <label className="label">Full brief (Markdown) — the whole event details page</label>
         <textarea
           name="detailsMd"
           rows={14}
           className="input font-mono text-xs"
           defaultValue={event?.detailsMd ?? ""}
-          placeholder={"## Wipe & raid schedule\n\n- Start: 28 Aug 2026 09:30\n- End: 11 Sep 2026 21:29\n- Raid time: 15:30 – 21:29 (6 hrs/day)\n\n## Glory Points\n\n**Red Room** — 2 pts, spawns every 2h\n**Blue Room** — 1 pt, spawns every 1h\n\n## Rules\n\n- No cheating — permanent ban\n- No bug exploiting\n- Keep toxicity in check"}
+          placeholder={"## Wipe & raid schedule\n\n- Start: 28 Aug 2026 09:30\n- End: 11 Sep 2026 21:29\n- Raid time: 15:30 – 21:29 (6 hrs/day)\n\n## Glory Points\n\n**Red Room** — 2 pts, spawns every 2h\n**Blue Room** — 1 pt, spawns every 1h"}
         />
       </div>
 

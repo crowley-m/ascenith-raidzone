@@ -368,6 +368,7 @@ export default async function PortalEventDetail({
                     raidWindow: event.raidWindow,
                     rewardTiersText: tiersToText(event.rewardTiers),
                     bonusText: event.bonusText,
+                    rulesMd: event.rulesMd,
                     detailsMd: event.detailsMd,
                   }}
                 />
