@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { db } from "@/lib/db";
 import { EventCard } from "@/components/event-card";
+import { PageMasthead } from "@/components/page-masthead";
 
 export const metadata: Metadata = { title: "Events" };
 export const dynamic = "force-dynamic";
@@ -29,52 +30,57 @@ export default async function EventsPage() {
     .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime());
   const past = events.filter(ended).slice(0, 12);
 
+  const kicker = `The calendar — ${live.length} live · ${upcoming.length} upcoming · ${past.length} in the book`;
+
   return (
-    <div className="container-x py-16">
-      <h1 className="font-display text-3xl font-extrabold text-white">Events</h1>
-      <p className="mt-3 max-w-2xl text-slate-300">
-        Raids, wipes, and community nights on our custom servers. Sign up to claim a slot.
-      </p>
+    <div className="bg-void">
+      <PageMasthead
+        title="Events"
+        kicker={kicker}
+        lead="Raids, wipes, and community nights on our custom servers. Sign up to claim a slot."
+      />
 
-      {live.length > 0 && (
-        <section className="mt-12">
-          <h2 className="font-display text-xl font-bold text-white">
-            <span className="mr-2 inline-block h-2 w-2 rounded-full bg-teal align-middle" />
-            Running now
-          </h2>
-          <div className="mt-6 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-            {live.map((e) => (
-              <EventCard key={e.id} event={e} />
-            ))}
-          </div>
-        </section>
-      )}
-
-      <section className="mt-12">
-        <h2 className="font-display text-xl font-bold text-white">Upcoming</h2>
-        {upcoming.length === 0 ? (
-          <p className="mt-4 text-sm text-slate-400">
-            Nothing scheduled yet — the next one is announced in Discord first.
-          </p>
-        ) : (
-          <div className="mt-6 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-            {upcoming.map((e) => (
-              <EventCard key={e.id} event={e} />
-            ))}
-          </div>
+      <div className="mx-auto w-full max-w-6xl px-5 pb-24">
+        {live.length > 0 && (
+          <section className="mt-14 border-t border-edge pt-6">
+            <h2 className="eyebrow">
+              <span className="mr-2 inline-block h-2 w-2 rounded-full bg-teal align-middle" />
+              Running now
+            </h2>
+            <div className="mt-6 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+              {live.map((e) => (
+                <EventCard key={e.id} event={e} />
+              ))}
+            </div>
+          </section>
         )}
-      </section>
 
-      {past.length > 0 && (
-        <section className="mt-16">
-          <h2 className="font-display text-xl font-bold text-white">Past events</h2>
-          <div className="mt-6 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-            {past.map((e) => (
-              <EventCard key={e.id} event={e} />
-            ))}
-          </div>
+        <section className="mt-14 border-t border-edge pt-6">
+          <h2 className="eyebrow">+ Upcoming</h2>
+          {upcoming.length === 0 ? (
+            <p className="mt-4 text-sm text-slate-400">
+              Nothing scheduled yet — the next one is announced in Discord first.
+            </p>
+          ) : (
+            <div className="mt-6 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+              {upcoming.map((e) => (
+                <EventCard key={e.id} event={e} />
+              ))}
+            </div>
+          )}
         </section>
-      )}
+
+        {past.length > 0 && (
+          <section className="mt-14 border-t border-edge pt-6">
+            <h2 className="eyebrow">+ Past events</h2>
+            <div className="mt-6 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+              {past.map((e) => (
+                <EventCard key={e.id} event={e} />
+              ))}
+            </div>
+          </section>
+        )}
+      </div>
     </div>
   );
 }

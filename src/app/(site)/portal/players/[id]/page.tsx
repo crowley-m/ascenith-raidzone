@@ -6,6 +6,7 @@ import { can } from "@/lib/rbac";
 import { fmtDate, fmtDateTime } from "@/lib/format";
 import { hiddenActorIds, maskName } from "@/lib/staff-mask";
 import { PlayerStatusControl } from "@/components/portal/player-status-control";
+import { FactionPicker } from "@/components/portal/faction-picker";
 import { NoteForm } from "@/components/portal/note-form";
 import { FlagForm } from "@/components/portal/flag-form";
 import { RewardForm } from "@/components/portal/reward-form";
@@ -36,6 +37,11 @@ export default async function PlayerDetailPage({
   });
   if (!player) notFound();
 
+  const canManageFaction = can(user.role, "faction:manage");
+  const factions = canManageFaction
+    ? await db.faction.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } })
+    : [];
+
   const hidden = await hiddenActorIds(user.role);
   const attendedIds = new Set(player.attendance.filter((a) => a.attended).map((a) => a.eventId));
 
@@ -54,7 +60,14 @@ export default async function PlayerDetailPage({
     ["Timezone", player.timezone ?? "—"],
     ["Play hours", player.playHours ?? "—"],
     ["Languages", player.languages ?? "—"],
-    ["Faction", player.faction?.name ?? "—"],
+    [
+      "Faction",
+      canManageFaction ? (
+        <FactionPicker playerId={player.id} current={player.factionId} factions={factions} />
+      ) : (
+        (player.faction?.name ?? "—")
+      ),
+    ],
     ["Discord", player.user.discordUsername ?? "—"],
     ["Email", player.user.email ?? "—"],
     ["Joined", fmtDate(player.joinedAt)],

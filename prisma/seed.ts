@@ -4,9 +4,8 @@ const db = new PrismaClient();
 
 async function main() {
   const factions = [
-    { name: "Raidzone Alpha", tag: "RZA", color: "#2fd4c7" },
-    { name: "Raidzone Bravo", tag: "RZB", color: "#ff8a3d" },
-    { name: "Freelancers", tag: "FREE", color: "#8b5cf6" },
+    { name: "Rosetta", tag: "ROS", color: "#c9a86a" },
+    { name: "Mayflies", tag: "MAY", color: "#6fcf97" },
   ];
   for (const f of factions) {
     await db.faction.upsert({

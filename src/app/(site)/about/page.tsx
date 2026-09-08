@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { site } from "@/lib/site";
+import { PageMasthead } from "@/components/page-masthead";
 
 export const metadata: Metadata = {
   title: "About",
@@ -63,20 +64,27 @@ const STEPS = [
 
 export default function AboutPage() {
   return (
-    <div className="container-x py-16">
-      <h1 className="font-poster text-5xl uppercase leading-[0.95] text-white sm:text-6xl">
-        Competitive survival,
-        <br />
-        run properly<span className="text-teal">.</span>
-      </h1>
-      <p className="mt-6 max-w-2xl text-lg text-slate-300">
-        {site.name} is a {site.game} community that treats the game like a competitive sport —
-        custom RaidZone scenarios where skill decides the outcome, on a server run by {site.owner}.
-      </p>
-      <p className="mt-3 max-w-2xl text-slate-400">
-        Fair play, real stakes. Seasoned raider or first drop, there&apos;s a spot on the roster.
-      </p>
+    <div className="bg-void">
+      <PageMasthead
+        title={
+          <>
+            Competitive survival,
+            <br />
+            run properly<span className="text-teal">.</span>
+          </>
+        }
+        kicker={`The project — a ${site.game} community, run like a sport`}
+        lead={
+          <>
+            {site.name} is a {site.game} community that treats the game like a competitive sport —
+            custom RaidZone scenarios where skill decides the outcome, on a server run by{" "}
+            {site.owner}. Fair play, real stakes. Seasoned raider or first drop, there&apos;s a
+            spot on the roster.
+          </>
+        }
+      />
 
+      <div className="mx-auto w-full max-w-6xl px-5 pb-24">
       <section className="mt-14 grid gap-8 md:grid-cols-2">
         <div className="card">
           <h2 className="font-display text-lg font-bold text-teal">RAIDZONE is</h2>
@@ -126,6 +134,7 @@ export default function AboutPage() {
           Read the rules
         </Link>
       </section>
+      </div>
     </div>
   );
 }

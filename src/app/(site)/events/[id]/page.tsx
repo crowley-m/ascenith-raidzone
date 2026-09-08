@@ -143,7 +143,8 @@ export default async function EventDetailPage({
   ]);
 
   return (
-    <div className="container-x py-14">
+    <div className="bg-void">
+      <div className="mx-auto w-full max-w-6xl px-5 py-14">
       <Link href="/events" className="link text-xs uppercase tracking-widest">
         &larr; All events
       </Link>
@@ -360,6 +361,7 @@ export default async function EventDetailPage({
             )}
           </div>
         </aside>
+      </div>
       </div>
     </div>
   );

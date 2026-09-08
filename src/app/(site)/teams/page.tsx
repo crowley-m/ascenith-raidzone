@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { db } from "@/lib/db";
+import { PageMasthead } from "@/components/page-masthead";
 
 export const metadata: Metadata = {
   title: "Teams",
@@ -24,22 +25,26 @@ export default async function TeamsPage() {
   }
 
   return (
-    <div className="container-x py-16">
-      <h1 className="font-poster text-5xl uppercase leading-[0.95] text-white sm:text-6xl">
-        The squads
-      </h1>
-      <p className="mt-4 max-w-2xl text-slate-300">
-        Teams enter RAIDZONE team events as a unit. Anyone can start one —{" "}
-        <Link href="/me/team" className="link">
-          create or join a team
-        </Link>{" "}
-        from your account.
-      </p>
+    <div className="bg-void">
+      <PageMasthead
+        title="The squads"
+        kicker={`The roster — ${teams.length} team${teams.length === 1 ? "" : "s"} formed`}
+        lead={
+          <>
+            Teams enter RAIDZONE team events as a unit. Anyone can start one —{" "}
+            <Link href="/me/team" className="link">
+              create or join a team
+            </Link>{" "}
+            from your account.
+          </>
+        }
+      />
 
+      <div className="mx-auto w-full max-w-6xl px-5 pb-24">
       {teams.length === 0 ? (
         <p className="mt-12 text-sm text-slate-400">No teams yet. Be the first.</p>
       ) : (
-        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {teams.map((t) => {
             const tt = t as typeof t & {
               leader: { characterName: string | null };
@@ -75,6 +80,7 @@ export default async function TeamsPage() {
           })}
         </div>
       )}
+      </div>
     </div>
   );
 }

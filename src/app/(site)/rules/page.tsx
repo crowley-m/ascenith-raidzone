@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { site } from "@/lib/site";
+import { PageMasthead } from "@/components/page-masthead";
 
 export const metadata: Metadata = {
   title: "Rules & how to join",
@@ -73,16 +74,20 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 export default function RulesPage() {
   return (
-    <div className="container-x py-16">
-      <h1 className="font-poster text-5xl uppercase leading-[0.95] text-white sm:text-6xl">
-        Rules &amp; how to join
-      </h1>
-      <p className="mt-4 max-w-2xl text-slate-300">
-        {site.name} is run by {site.owner}. Keep it fair, keep it friendly, and everyone gets to
-        enjoy the raids. These are the community rules — <b>each event&apos;s own rules, scoring
-        and objectives are in its brief</b> on the event page.
-      </p>
+    <div className="bg-void">
+      <PageMasthead
+        title={<>Rules &amp; how to join</>}
+        kicker="The code — community rules · anti-cheat · appeals"
+        lead={
+          <>
+            {site.name} is run by {site.owner}. Keep it fair, keep it friendly, and everyone gets
+            to enjoy the raids. These are the community rules — <b>each event&apos;s own rules,
+            scoring and objectives are in its brief</b> on the event page.
+          </>
+        }
+      />
 
+      <div className="mx-auto w-full max-w-6xl px-5 pb-24">
       <Section title="Community rules">
         <ol className="mt-5 space-y-3">
           {RULES.map((r, i) => (
@@ -173,6 +178,7 @@ export default function RulesPage() {
           </div>
         </dl>
       </Section>
+      </div>
     </div>
   );
 }

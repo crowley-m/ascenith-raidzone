@@ -63,9 +63,25 @@ export function EventForm({
           <input type="datetime-local" name="startsAt" required className="input" defaultValue={event?.startsAt ?? ""} />
         </div>
         <div>
-          <label className="label">Ends (wipe)</label>
+          <label className="label">Ends (wipe) — exact</label>
           <input type="datetime-local" name="endsAt" className="input" defaultValue={event?.endsAt ?? ""} />
         </div>
+      </div>
+
+      <div>
+        <label className="label">…or ends N weeks after start</label>
+        <input
+          type="number"
+          name="endsWeeks"
+          min={0}
+          max={52}
+          className="input sm:max-w-[10rem]"
+          placeholder="2"
+        />
+        <p className="mt-1 text-xs text-slate-500">
+          Set this and the end date is worked out for you (start + N weeks). Overrides the exact
+          field above.
+        </p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">

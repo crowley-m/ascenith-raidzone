@@ -5,6 +5,7 @@ import { fmtDate } from "@/lib/format";
 import { topRaiders } from "@/lib/leaderboard";
 import { TopRaiders } from "@/components/top-raiders";
 import { GalleryGrid, type GalleryItem } from "@/components/winners/gallery-grid";
+import { PageMasthead } from "@/components/page-masthead";
 import type { RewardTier } from "@/lib/validation";
 
 export const metadata: Metadata = {
@@ -93,13 +94,12 @@ export default async function WinnersPage() {
 
   return (
     <div className="bg-void">
-      <div className="container-x py-16">
-        <h1 className="font-poster text-5xl uppercase leading-[0.95] text-white sm:text-6xl">
-          Hall of winners
-        </h1>
-        <p className="mt-4 max-w-2xl text-slate-300">
-          Every RAIDZONE event, who placed, and what they took home. Real events, real payouts.
-        </p>
+      <PageMasthead
+        title="Hall of winners"
+        kicker={`The honours — ${champions.length} champion${champions.length === 1 ? "" : "s"} · ${events.length} event${events.length === 1 ? "" : "s"} settled`}
+        lead="Every RAIDZONE event, who placed, and what they took home. Real events, real payouts."
+      />
+      <div className="mx-auto w-full max-w-6xl px-5 pb-24 pt-10">
 
         {championItems.length > 0 && (
           <section className="mt-14 border-t border-edge pt-6">

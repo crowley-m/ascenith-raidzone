@@ -43,6 +43,7 @@ export const eventSchema = z.object({
   description: z.string().max(4000).nullable().optional(),
   startsAt: z.string().min(1),
   endsAt: z.string().nullable().optional(),
+  endsWeeks: z.coerce.number().int().min(0).max(52).nullable().optional(),
   server: z.string().max(120).nullable().optional(),
   format: z.enum(["SOLO", "TEAM"]).default("SOLO"),
   maxSlots: z.coerce.number().int().min(0).max(10000).nullable().optional(),
@@ -147,6 +148,13 @@ export const factionSchema = z.object({
     .nullable()
     .optional(),
   description: z.string().max(500).nullable().optional(),
+  discordRoleId: z
+    .string()
+    .trim()
+    .regex(/^\d{5,25}$/, "Discord role ID is digits only")
+    .nullable()
+    .optional()
+    .or(z.literal("")),
 });
 
 export const noteSchema = z.object({

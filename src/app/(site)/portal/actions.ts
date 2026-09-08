@@ -30,6 +30,7 @@ import {
 import { createMediaAsset } from "@/lib/media";
 import { getSettings } from "@/lib/settings";
 import { notify, notifyPlayer } from "@/lib/notify";
+import { syncMemberRolesByPlayer } from "@/lib/discord-roles";
 import { Prisma } from "@prisma/client";
 import type { PlayerStatus, Role } from "@prisma/client";
 
@@ -134,6 +135,7 @@ export async function saveEvent(_prev: FormState, formData: FormData): Promise<F
     description: str("description"),
     startsAt: formData.get("startsAt"),
     endsAt: str("endsAt"),
+    endsWeeks: str("endsWeeks"),
     server: str("server"),
     format: str("format") ?? "SOLO",
     maxSlots: str("maxSlots"),
@@ -160,11 +162,18 @@ export async function saveEvent(_prev: FormState, formData: FormData): Promise<F
     return { error: parsed.error.issues[0]?.message ?? "Invalid event." };
   }
   const d = parsed.data;
+  const startsAt = new Date(d.startsAt);
+  const endsAt =
+    d.endsWeeks && d.endsWeeks > 0
+      ? new Date(startsAt.getTime() + d.endsWeeks * 7 * 24 * 60 * 60 * 1000)
+      : d.endsAt
+        ? new Date(d.endsAt)
+        : null;
   const data = {
     title: d.title,
     description: d.description ?? null,
-    startsAt: new Date(d.startsAt),
-    endsAt: d.endsAt ? new Date(d.endsAt) : null,
+    startsAt,
+    endsAt,
     server: d.server ?? null,
     format: d.format,
     maxSlots: d.maxSlots ?? null,
@@ -861,24 +870,50 @@ export async function saveFaction(_prev: FormState, formData: FormData): Promise
     tag: (formData.get("tag") as string) || null,
     color: (formData.get("color") as string) || null,
     description: (formData.get("description") as string) || null,
+    discordRoleId: (formData.get("discordRoleId") as string) || null,
   });
-  if (!parsed.success) return { error: "Faction name is required." };
-
-  if (id) {
-    await db.faction.update({ where: { id }, data: parsed.data });
-  } else {
-    await db.faction.create({ data: parsed.data });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Faction name is required." };
   }
-  await logAudit({ actorId: actor.id, action: id ? "faction.update" : "faction.create", targetType: "Faction" });
+  const data = { ...parsed.data, discordRoleId: parsed.data.discordRoleId || null };
+
+  const faction = id
+    ? await db.faction.update({ where: { id }, data })
+    : await db.faction.create({ data });
+  await logAudit({ actorId: actor.id, action: id ? "faction.update" : "faction.create", targetType: "Faction", targetId: faction.id });
+
+  // reconcile the Discord role for everyone currently in this faction
+  const members = await db.player.findMany({ where: { factionId: faction.id }, select: { id: true } });
+  for (const m of members) void syncMemberRolesByPlayer(m.id);
+
   revalidatePath("/portal/factions");
   return { ok: true };
 }
 
 export async function deleteFaction(id: string) {
   const actor = await assertPermission("faction:manage");
+  const members = await db.player.findMany({ where: { factionId: id }, select: { id: true } });
   await db.faction.delete({ where: { id } });
   await logAudit({ actorId: actor.id, action: "faction.delete", targetType: "Faction", targetId: id });
+  for (const m of members) void syncMemberRolesByPlayer(m.id);
   revalidatePath("/portal/factions");
+}
+
+export async function setPlayerFaction(playerId: string, factionId: string | null) {
+  const actor = await assertPermission("faction:manage");
+  await db.player.update({
+    where: { id: playerId },
+    data: { factionId: factionId || null },
+  });
+  await logAudit({
+    actorId: actor.id,
+    action: "player.faction",
+    targetType: "Player",
+    targetId: playerId,
+    meta: { factionId: factionId || null },
+  });
+  void syncMemberRolesByPlayer(playerId);
+  revalidatePath(`/portal/players/${playerId}`);
 }
 
 // --------------------------------------------------------------------------

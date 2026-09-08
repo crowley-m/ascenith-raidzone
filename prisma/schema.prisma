@@ -175,12 +175,13 @@ model TeamMember {
 }
 
 model Faction {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  tag         String?
-  color       String? // hex
-  description String?
-  createdAt   DateTime @default(now())
+  id            String   @id @default(cuid())
+  name          String   @unique
+  tag           String?
+  color         String? // hex
+  description   String?
+  discordRoleId String? // Discord role granted to members of this faction
+  createdAt     DateTime @default(now())
 
   players Player[]
 }
