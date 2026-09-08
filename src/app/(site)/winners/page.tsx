@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { fmtDate } from "@/lib/format";
 import { topRaiders } from "@/lib/leaderboard";
 import { TopRaiders } from "@/components/top-raiders";
-import { FloatingGallery, type FloatItem } from "@/components/winners/floating-gallery";
+import { GalleryGrid, type GalleryItem } from "@/components/winners/gallery-grid";
 import type { RewardTier } from "@/lib/validation";
 
 export const metadata: Metadata = {
@@ -30,12 +30,13 @@ export default async function WinnersPage() {
     .findMany({ orderBy: { number: "desc" } })
     .catch(() => []);
   const champions = seasons.filter((s) => s.championName);
-  const championItems: FloatItem[] = champions
+  const championItems: GalleryItem[] = champions
     .filter((c) => c.posterUrl)
     .map((c) => ({
       key: c.id,
       src: c.posterUrl as string,
       alt: `Season ${c.number} champion — ${c.championName}`,
+      caption: `Season ${c.number} — ${c.championName}`,
     }));
 
   const proofImages = await db.mediaAsset
@@ -45,16 +46,18 @@ export default async function WinnersPage() {
       select: { id: true, caption: true, tag: true },
     })
     .catch(() => []);
-  const proofItems: FloatItem[] = proofImages.map((img) => ({
+  const proofItems: GalleryItem[] = proofImages.map((img) => ({
     key: img.id,
     src: `/api/media/${img.id}`,
     alt: img.caption ?? "",
+    caption: img.caption ?? null,
   }));
 
-  const campaignItems: FloatItem[] = CAMPAIGN_POSTERS.map((p) => ({
+  const campaignItems: GalleryItem[] = CAMPAIGN_POSTERS.map((p) => ({
     key: p.img,
     src: p.img,
     alt: p.label,
+    caption: p.label,
   }));
 
   let events: Awaited<ReturnType<typeof db.event.findMany>> = [];
@@ -89,44 +92,53 @@ export default async function WinnersPage() {
   }
 
   return (
-    <div className="container-x py-16">
-      <h1 className="font-poster text-5xl uppercase leading-[0.95] text-white sm:text-6xl">
-        Hall of winners
-      </h1>
-      <p className="mt-4 max-w-2xl text-slate-300">
-        Every RAIDZONE event, who placed, and what they took home. Real events, real payouts.
-      </p>
+    <div className="relative">
+      {/* full-bleed page background */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 -z-10 bg-cover bg-center bg-no-repeat opacity-[0.16]"
+        style={{ backgroundImage: "url(/media/bg-raidzone.webp)" }}
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 -z-10 bg-gradient-to-b from-void/85 via-void/70 to-void/95"
+      />
 
-      {championItems.length > 0 && (
+      <div className="container-x py-16">
+        <h1 className="font-poster text-5xl uppercase leading-[0.95] text-white sm:text-6xl">
+          Hall of winners
+        </h1>
+        <p className="mt-4 max-w-2xl text-slate-300">
+          Every RAIDZONE event, who placed, and what they took home. Real events, real payouts.
+        </p>
+
+        {championItems.length > 0 && (
+          <section className="mt-14 border-t border-edge pt-6">
+            <h2 className="eyebrow">+ Season champions</h2>
+            <GalleryGrid items={championItems} />
+          </section>
+        )}
+
+        {raiders.length > 0 && (
+          <section className="mt-14 border-t border-edge pt-6">
+            <h2 className="eyebrow">+ Top raiders</h2>
+            <div className="mt-5 max-w-xl">
+              <TopRaiders raiders={raiders} />
+            </div>
+          </section>
+        )}
+
+        {proofItems.length > 0 && (
+          <section className="mt-14 border-t border-edge pt-6">
+            <h2 className="eyebrow">+ Proof</h2>
+            <GalleryGrid items={proofItems} />
+          </section>
+        )}
+
         <section className="mt-14 border-t border-edge pt-6">
-          <h2 className="eyebrow">+ Season champions</h2>
-          <FloatingGallery items={championItems} watermark="Champions" />
+          <h2 className="eyebrow">+ From the campaign</h2>
+          <GalleryGrid items={campaignItems} />
         </section>
-      )}
-
-      {raiders.length > 0 && (
-        <section className="mt-12 border-t border-edge pt-8">
-          <h2 className="font-display text-xl font-bold text-white">Top raiders</h2>
-          <p className="mt-1 text-sm text-slate-500">
-            Weighted by podium finishes and events played.
-          </p>
-          <div className="mt-4 max-w-xl">
-            <TopRaiders raiders={raiders} />
-          </div>
-        </section>
-      )}
-
-      {proofItems.length > 0 && (
-        <section className="mt-14 border-t border-edge pt-6">
-          <h2 className="eyebrow">+ Proof</h2>
-          <FloatingGallery items={proofItems} watermark="Proof" />
-        </section>
-      )}
-
-      <section className="mt-14 border-t border-edge pt-6">
-        <h2 className="eyebrow">+ From the campaign</h2>
-        <FloatingGallery items={campaignItems} watermark="Campaign" />
-      </section>
 
       {events.length === 0 &&
       looseRewards.length === 0 &&
@@ -206,6 +218,7 @@ export default async function WinnersPage() {
           )}
         </div>
       )}
+      </div>
     </div>
   );
 }
