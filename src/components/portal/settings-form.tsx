@@ -81,6 +81,33 @@ export function SettingsForm({ settings }: { settings: Settings }) {
         </p>
       </div>
 
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label className="label">&ldquo;Registered&rdquo; role ID</label>
+          <input
+            name="registeredRoleId"
+            className="input font-mono"
+            defaultValue={settings.registeredRoleId}
+            placeholder="1234567890"
+          />
+          <p className="mt-1 text-xs text-slate-500">
+            Given to anyone with a player profile. Blank = off.
+          </p>
+        </div>
+        <div>
+          <label className="label">&ldquo;Team leader&rdquo; role ID</label>
+          <input
+            name="teamLeaderRoleId"
+            className="input font-mono"
+            defaultValue={settings.teamLeaderRoleId}
+            placeholder="1234567890"
+          />
+          <p className="mt-1 text-xs text-slate-500">
+            Given to team leaders. The bot&apos;s role must sit above these in the role list.
+          </p>
+        </div>
+      </div>
+
       {state.error && <p className="text-sm text-ember">{state.error}</p>}
       {state.ok && <p className="text-sm text-teal">Saved.</p>}
       <div>

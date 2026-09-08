@@ -280,6 +280,7 @@ model Event {
   discordChannels     Json? // { announcement: "id", rules: "id", ... }
   discordSeedMessages Json? // { announcement: "messageId", ... } — for re-sync
   discordArchivedAt   DateTime? // when the space was archived (renamed + sunk)
+  reminderSentAt      DateTime? // when the bot posted the "starts soon" reminder
 
   createdById String
   createdBy   User   @relation("EventCreator", fields: [createdById], references: [id])

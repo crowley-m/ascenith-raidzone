@@ -354,3 +354,23 @@ export async function editChannelMessage(
     }),
   });
 }
+
+// ---------------------------------------------------------------------------
+// Guild role management (bot needs Manage Roles + a role above the target)
+// ---------------------------------------------------------------------------
+
+export async function addGuildRole(discordUserId: string, roleId: string): Promise<void> {
+  const gid = process.env.DISCORD_GUILD_ID;
+  if (!gid || !roleId || !process.env.DISCORD_BOT_TOKEN) return;
+  await discordFetch(`/guilds/${gid}/members/${discordUserId}/roles/${roleId}`, {
+    method: "PUT",
+  }).catch(() => {});
+}
+
+export async function removeGuildRole(discordUserId: string, roleId: string): Promise<void> {
+  const gid = process.env.DISCORD_GUILD_ID;
+  if (!gid || !roleId || !process.env.DISCORD_BOT_TOKEN) return;
+  await discordFetch(`/guilds/${gid}/members/${discordUserId}/roles/${roleId}`, {
+    method: "DELETE",
+  }).catch(() => {});
+}

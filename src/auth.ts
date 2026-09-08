@@ -7,6 +7,11 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { authConfig } from "@/auth.config";
+import { syncMemberRoles } from "@/lib/discord-roles";
+
+// Email/password sign-in is opt-in — set ENABLE_EMAIL_AUTH=true to turn it on.
+// Discord is the only route by default.
+export const EMAIL_AUTH_ENABLED = process.env.ENABLE_EMAIL_AUTH === "true";
 
 const OWNER_DISCORD_ID = process.env.OWNER_DISCORD_ID ?? "";
 const OWNER_DISCORD_USERNAME = (process.env.OWNER_DISCORD_USERNAME ?? "").toLowerCase();
@@ -30,31 +35,33 @@ if (process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET) {
   );
 }
 
-providers.push(
-  Credentials({
-    name: "Email",
-    credentials: {
-      email: { label: "Email", type: "email" },
-      password: { label: "Password", type: "password" },
-    },
-    async authorize(raw) {
-      const parsed = z
-        .object({ email: z.string().email(), password: z.string().min(1) })
-        .safeParse(raw);
-      if (!parsed.success) return null;
+if (EMAIL_AUTH_ENABLED) {
+  providers.push(
+    Credentials({
+      name: "Email",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(raw) {
+        const parsed = z
+          .object({ email: z.string().email(), password: z.string().min(1) })
+          .safeParse(raw);
+        if (!parsed.success) return null;
 
-      const user = await db.user.findUnique({
-        where: { email: parsed.data.email.toLowerCase() },
-      });
-      if (!user?.passwordHash) return null;
+        const user = await db.user.findUnique({
+          where: { email: parsed.data.email.toLowerCase() },
+        });
+        if (!user?.passwordHash) return null;
 
-      const ok = await bcrypt.compare(parsed.data.password, user.passwordHash);
-      if (!ok) return null;
+        const ok = await bcrypt.compare(parsed.data.password, user.passwordHash);
+        if (!ok) return null;
 
-      return { id: user.id, email: user.email, name: user.name, image: user.image };
-    },
-  }),
-);
+        return { id: user.id, email: user.email, name: user.name, image: user.image };
+      },
+    }),
+  );
+}
 
 async function resolveRole(
   userId: string,
@@ -110,6 +117,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             image: user.image ?? p.image_url ?? null,
           },
         });
+        void syncMemberRoles(user.id);
       }
     },
   },

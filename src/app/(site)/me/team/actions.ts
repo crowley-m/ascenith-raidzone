@@ -8,6 +8,7 @@ import { requireUser } from "@/lib/session";
 import { logAudit } from "@/lib/audit";
 import { teamCreateSchema, teamJoinSchema } from "@/lib/validation";
 import { uniqueInviteCode, teamForPlayer } from "@/lib/team";
+import { syncMemberRolesByPlayer } from "@/lib/discord-roles";
 
 export type TeamState = { ok?: boolean; error?: string };
 
@@ -60,6 +61,7 @@ export async function createTeam(_prev: TeamState, formData: FormData): Promise<
     throw e;
   }
 
+  void syncMemberRolesByPlayer(playerId);
   revalidatePath("/me/team");
   revalidatePath("/teams");
   return { ok: true };
@@ -154,6 +156,8 @@ export async function transferLeadership(newLeaderPlayerId: string) {
   if (!isMember) throw new Error("Pick someone on the team.");
   await db.team.update({ where: { id: team.id }, data: { leaderId: newLeaderPlayerId } });
   await logAudit({ actorId: playerId, action: "team.transfer", targetType: "Team", targetId: team.id, meta: { newLeaderPlayerId } });
+  void syncMemberRolesByPlayer(playerId);
+  void syncMemberRolesByPlayer(newLeaderPlayerId);
   revalidatePath("/me/team");
 }
 
@@ -170,6 +174,7 @@ export async function disbandTeam() {
   const team = await requireLeadership(playerId);
   await db.team.delete({ where: { id: team.id } });
   await logAudit({ actorId: playerId, action: "team.disband", targetType: "Team", targetId: team.id });
+  void syncMemberRolesByPlayer(playerId);
   revalidatePath("/me/team");
   revalidatePath("/teams");
 }

@@ -52,7 +52,11 @@ export default async function TeamsPage() {
                 : tt.event.title
               : null;
             return (
-              <div key={t.id} className="card">
+              <Link
+                key={t.id}
+                href={`/teams/${t.id}`}
+                className="card block transition hover:border-teal/50"
+              >
                 <div className="flex items-baseline justify-between gap-2">
                   <h2 className="font-display text-lg font-bold text-white">
                     {t.tag && <span className="text-teal">[{t.tag}] </span>}
@@ -65,10 +69,8 @@ export default async function TeamsPage() {
                 <p className="mt-2 text-xs text-slate-500">
                   Led by {tt.leader.characterName ?? "—"}
                 </p>
-                {forEvent && (
-                  <p className="mt-1 text-xs text-teal">For {forEvent}</p>
-                )}
-              </div>
+                {forEvent && <p className="mt-1 text-xs text-teal">For {forEvent}</p>}
+              </Link>
             );
           })}
         </div>

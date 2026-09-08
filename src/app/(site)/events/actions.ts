@@ -87,6 +87,13 @@ export async function registerTeamForEvent(eventId: string) {
   const event = await db.event.findUnique({ where: { id: eventId } });
   if (!event || event.status !== "PUBLISHED") return { error: "This event is not open." };
   if (event.format !== "TEAM") return { error: "This is a solo event." };
+  if (event.teamSize && team.members.length > event.teamSize) {
+    return {
+      error: `This event caps teams at ${event.teamSize} — drop ${
+        team.members.length - event.teamSize
+      } member${team.members.length - event.teamSize === 1 ? "" : "s"} first.`,
+    };
+  }
 
   // capacity is counted in whole teams
   const signedTeams = await db.eventSignup.findMany({

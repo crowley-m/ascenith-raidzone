@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 import { profileSchema } from "@/lib/validation";
 import { logAudit } from "@/lib/audit";
+import { syncMemberRoles } from "@/lib/discord-roles";
 
 export type ProfileState = { ok?: boolean; error?: string; fieldErrors?: Record<string, string> };
 
@@ -62,6 +63,7 @@ export async function updateProfileAction(
 
   await db.user.update({ where: { id: user.id }, data: { name: d.characterName } });
   await logAudit({ actorId: user.id, action: "player.profile_update", targetType: "User", targetId: user.id });
+  void syncMemberRoles(user.id);
 
   revalidatePath("/me");
   revalidatePath("/me/profile");

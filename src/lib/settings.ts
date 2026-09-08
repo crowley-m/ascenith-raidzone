@@ -13,6 +13,10 @@ export type Settings = {
   reminderLeadMinutes: number;
   /** YouTube URL for the "how to join" video shown on the landing (blank = hidden). */
   howToJoinVideoUrl: string;
+  /** Discord role id granted to anyone with a player profile (blank = off). */
+  registeredRoleId: string;
+  /** Discord role id granted to team leaders (blank = off). */
+  teamLeaderRoleId: string;
 };
 
 const DEFAULTS: Settings = {
@@ -34,6 +38,8 @@ const DEFAULTS: Settings = {
   autoBuildSpace: false,
   reminderLeadMinutes: 60,
   howToJoinVideoUrl: "",
+  registeredRoleId: "",
+  teamLeaderRoleId: "",
 };
 
 export async function getSettings(): Promise<Settings> {
@@ -60,6 +66,10 @@ export async function getSettings(): Promise<Settings> {
       typeof map.howToJoinVideoUrl === "string"
         ? map.howToJoinVideoUrl
         : DEFAULTS.howToJoinVideoUrl,
+    registeredRoleId:
+      typeof map.registeredRoleId === "string" ? map.registeredRoleId : DEFAULTS.registeredRoleId,
+    teamLeaderRoleId:
+      typeof map.teamLeaderRoleId === "string" ? map.teamLeaderRoleId : DEFAULTS.teamLeaderRoleId,
   };
 }
 

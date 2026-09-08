@@ -1,15 +1,11 @@
 "use client";
 
-import { Suspense, useActionState } from "react";
+import { Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { loginAction, type LoginState } from "./actions";
 import { DiscordButton } from "@/components/discord-button";
 
-const initial: LoginState = {};
-
 function LoginForm() {
-  const [state, action, pending] = useActionState(loginAction, initial);
   const params = useSearchParams();
   const callbackUrl = params.get("callbackUrl") ?? "/me";
 
@@ -20,37 +16,15 @@ function LoginForm() {
       </h1>
       <p className="mt-3 text-sm text-slate-400">Back to the roster.</p>
 
-      <div className="mt-6 border border-edge bg-panel/70">
-        <div className="p-5">
-          <DiscordButton callbackUrl={callbackUrl} />
-          <div className="my-4 flex items-center gap-3 font-mono text-[0.6rem] uppercase tracking-widest text-slate-500">
-            <span className="h-px flex-1 bg-edge" /> or <span className="h-px flex-1 bg-edge" />
-          </div>
-
-          <form action={action} className="space-y-4">
-            <input type="hidden" name="callbackUrl" value={callbackUrl} />
-            <div>
-              <label className="label" htmlFor="email">
-                Email
-              </label>
-              <input id="email" name="email" type="email" className="input" required />
-            </div>
-            <div>
-              <label className="label" htmlFor="password">
-                Password
-              </label>
-              <input id="password" name="password" type="password" className="input" required />
-            </div>
-            {state.error && <p className="font-mono text-sm text-ember">{state.error}</p>}
-            <button type="submit" className="btn-primary w-full" disabled={pending}>
-              {pending ? "Signing in…" : "Sign in"}
-            </button>
-          </form>
-        </div>
+      <div className="mt-6 border border-edge bg-panel/70 p-5">
+        <DiscordButton callbackUrl={callbackUrl} />
+        <p className="mt-3 text-xs text-slate-500">
+          ASCENITH RAIDZONE uses your Discord account — no separate password.
+        </p>
       </div>
 
       <p className="mt-4 text-center font-mono text-[0.7rem] uppercase tracking-wide text-slate-400">
-        New here?{" "}
+        First time?{" "}
         <Link href="/register" className="link">
           Register
         </Link>
@@ -61,7 +35,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="container-x flex min-h-[80vh] items-center justify-center py-16">
+    <div className="container-x flex min-h-[70vh] items-center justify-center py-16">
       <Suspense>
         <LoginForm />
       </Suspense>
