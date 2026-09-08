@@ -4,6 +4,7 @@ import type { GalleryImage } from "@/components/landing/Gallery";
 import { db } from "@/lib/db";
 import { latestVideos } from "@/lib/youtube";
 import { guildPresence } from "@/lib/discord";
+import { getSettings } from "@/lib/settings";
 
 /** Shown when the DB has no published event yet (local dev, or before staff add one). */
 const FALLBACK_EVENT: OpEvent = {
@@ -14,18 +15,18 @@ const FALLBACK_EVENT: OpEvent = {
   endsAt: "2026-09-10T23:59:00+08:00",
   maxSlots: null,
   signups: 0,
-  rewardPoolText: "90K Crystgen total",
+  rewardPoolText: "90K Crystgin total",
   summary:
     "No rules, no limits — a normal RaidZone wipe with PvP and raiding fully allowed. Top 3 on the Glory Points leaderboard split the pool.",
   mode: "PURGE",
   wipeCycle: "2 weeks",
   raidWindow: "6:00 PM – 12:00 AM GMT+8 · 6 hrs/day",
   rewardTiers: [
-    { place: "1st", reward: "30K Crystgen" },
-    { place: "2nd", reward: "25K Crystgen" },
-    { place: "3rd", reward: "15K Crystgen" },
+    { place: "1st", reward: "30K Crystgin" },
+    { place: "2nd", reward: "25K Crystgin" },
+    { place: "3rd", reward: "15K Crystgin" },
   ],
-  bonusText: "20K Crystgen · hidden across airdrops, cards & alpha boss",
+  bonusText: "20K Crystgin · hidden across airdrops, cards & alpha boss",
 };
 
 // re-fetch the current op at most once a minute; the client ticker handles seconds
@@ -103,17 +104,19 @@ async function galleryImages(): Promise<GalleryImage[]> {
 }
 
 export default async function HomePage() {
-  const [{ current, upcoming }, videos, presence, gallery] = await Promise.all([
+  const [{ current, upcoming }, videos, presence, gallery, settings] = await Promise.all([
     eventData(),
     latestVideos(9),
     guildPresence(),
     galleryImages(),
+    getSettings(),
   ]);
   return (
     <Landing
       event={current ?? FALLBACK_EVENT}
       upcoming={upcoming}
       videos={videos}
+      howToJoinVideo={settings.howToJoinVideoUrl}
       discordOnline={presence?.online ?? null}
       gallery={gallery}
     />

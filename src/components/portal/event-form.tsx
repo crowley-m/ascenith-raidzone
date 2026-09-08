@@ -122,13 +122,13 @@ export function EventForm({ event }: { event?: EventInit }) {
           rows={4}
           className="input font-mono text-xs"
           defaultValue={event?.rewardTiersText ?? ""}
-          placeholder={"1st | 30K Crystgen\n2nd | 25K Crystgen\n3rd | 15K Crystgen"}
+          placeholder={"1st | 30K Crystgin\n2nd | 25K Crystgin\n3rd | 15K Crystgin"}
         />
       </div>
 
       <div>
         <label className="label">Bonus line</label>
-        <input name="bonusText" className="input" defaultValue={event?.bonusText ?? ""} placeholder="20K Crystgen · hidden across airdrops, cards, alpha boss" />
+        <input name="bonusText" className="input" defaultValue={event?.bonusText ?? ""} placeholder="20K Crystgin · hidden across airdrops, cards, alpha boss" />
       </div>
 
       <div>

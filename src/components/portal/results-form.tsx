@@ -117,7 +117,7 @@ export function AttendeeRewardForm({ eventId }: { eventId: string }) {
       <h3 className="font-display font-bold text-white">Reward every attendee</h3>
       <input type="hidden" name="eventId" value={eventId} />
       <div className="grid gap-3 sm:grid-cols-2">
-        <input name="item" required className="input" placeholder="Item (e.g. 500 Crystgen)" />
+        <input name="item" required className="input" placeholder="Item (e.g. 500 Crystgin)" />
         <input name="amount" className="input" placeholder="Amount (optional)" />
       </div>
       <input name="reason" className="input" placeholder="Reason (default: Attendance)" />

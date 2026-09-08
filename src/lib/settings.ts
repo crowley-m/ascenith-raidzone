@@ -11,6 +11,8 @@ export type Settings = {
   autoBuildSpace: boolean;
   /** Minutes before an event starts to post a reminder (0 = off). */
   reminderLeadMinutes: number;
+  /** YouTube URL for the "how to join" video shown on the landing (blank = hidden). */
+  howToJoinVideoUrl: string;
 };
 
 const DEFAULTS: Settings = {
@@ -22,6 +24,7 @@ const DEFAULTS: Settings = {
     "how-to-join",
     "rules",
     "gameplay",
+    "wipe-info",
     "rewards",
     "registration",
     "looking-for-team",
@@ -30,6 +33,7 @@ const DEFAULTS: Settings = {
   ],
   autoBuildSpace: false,
   reminderLeadMinutes: 60,
+  howToJoinVideoUrl: "",
 };
 
 export async function getSettings(): Promise<Settings> {
@@ -52,6 +56,10 @@ export async function getSettings(): Promise<Settings> {
       typeof map.reminderLeadMinutes === "number"
         ? map.reminderLeadMinutes
         : DEFAULTS.reminderLeadMinutes,
+    howToJoinVideoUrl:
+      typeof map.howToJoinVideoUrl === "string"
+        ? map.howToJoinVideoUrl
+        : DEFAULTS.howToJoinVideoUrl,
   };
 }
 

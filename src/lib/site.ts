@@ -1,6 +1,6 @@
 export const site = {
   name: "ASCENITH RAIDZONE",
-  owner: "NOT POTATOZIE",
+  owner: "POTATOZIE",
   game: "Once Human",
   tagline: "Custom servers. Real events. Real rewards.",
   discordInvite:

@@ -13,6 +13,7 @@ import { Watch } from "./Watch";
 import { Gallery, type GalleryImage } from "./Gallery";
 import { EventBrief, type OpEvent, type UpcomingOp } from "./EventBrief";
 import { HowItWorks } from "./HowItWorks";
+import { HowToJoinVideo } from "./HowToJoinVideo";
 import type { YtVideo } from "@/lib/youtube";
 
 const DISCORD = process.env.NEXT_PUBLIC_DISCORD_INVITE ?? "https://discord.gg/a4k3KTfE7";
@@ -107,12 +108,14 @@ export function Landing({
   videos = [],
   discordOnline = null,
   gallery = [],
+  howToJoinVideo = "",
 }: {
   event?: OpEvent | null;
   upcoming?: UpcomingOp[];
   videos?: YtVideo[];
   discordOnline?: number | null;
   gallery?: GalleryImage[];
+  howToJoinVideo?: string;
 }) {
   const { data: session } = useSession();
   const user = session?.user ?? null;
@@ -271,7 +274,7 @@ export function Landing({
             <span className={s.x}>Sponsored prizes for the squads that take it.</span>
           </p>
           <p className={s.heroSub} data-reveal>
-            Run by NOT POTATOZIE &mdash; Season 1 roster open
+            Run by POTATOZIE &mdash; Season 1 roster open
           </p>
           {typeof discordOnline === "number" && (
             <p className={s.heroLive} data-reveal>
@@ -302,6 +305,8 @@ export function Landing({
 
       <div className={s.after}>
         <EventBrief event={event} upcoming={upcoming} discordOnline={discordOnline} />
+
+        {howToJoinVideo ? <HowToJoinVideo url={howToJoinVideo} /> : null}
 
         <HowItWorks />
 

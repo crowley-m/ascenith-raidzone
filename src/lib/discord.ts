@@ -216,6 +216,7 @@ export const EVENT_CHANNELS = [
   "how-to-join",
   "rules",
   "gameplay",
+  "wipe-info",
   "rewards",
   "registration",
   "looking-for-team",

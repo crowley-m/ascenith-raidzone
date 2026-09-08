@@ -1170,6 +1170,65 @@
 }
 
 /* ---- how it works: is / isn't ---- */
+.joinVid {
+  position: relative;
+  z-index: 10;
+  padding-block: clamp(44px, 9vh, 104px);
+  border-top: 1px solid var(--rule);
+  scroll-margin-top: 90px;
+}
+.joinVid h2 {
+  margin-top: 12px;
+  font-size: clamp(2rem, 1.4rem + 3.2vw, 3.8rem);
+  color: var(--cream);
+}
+.joinVidFrame {
+  margin-top: clamp(20px, 3vw, 34px);
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 1px solid var(--rule);
+  background: #000;
+  overflow: hidden;
+}
+.joinVidFrame iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+.joinVidPlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  cursor: pointer;
+  background: #000;
+}
+.joinVidPlay img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.72;
+  transition: opacity 0.2s;
+}
+.joinVidPlay:hover img {
+  opacity: 0.9;
+}
+.joinVidTri {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: clamp(2.4rem, 6vw, 4rem);
+  color: var(--cream);
+  text-shadow: 0 4px 40px rgba(0, 0, 0, 0.7);
+  pointer-events: none;
+}
+
 .vs {
   position: relative;
   z-index: 10;

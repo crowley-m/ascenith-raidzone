@@ -473,6 +473,7 @@ export async function saveSettings(_prev: FormState, formData: FormData): Promis
     ],
     ["autoBuildSpace", formData.get("autoBuildSpace") === "on"],
     ["reminderLeadMinutes", Math.max(0, parseInt(str("reminderLeadMinutes") || "0", 10) || 0)],
+    ["howToJoinVideoUrl", str("howToJoinVideoUrl")],
   ];
 
   await db.$transaction(

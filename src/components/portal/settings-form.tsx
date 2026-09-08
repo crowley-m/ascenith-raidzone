@@ -68,6 +68,19 @@ export function SettingsForm({ settings }: { settings: Settings }) {
         </p>
       </div>
 
+      <div>
+        <label className="label">&ldquo;How to join&rdquo; video (YouTube URL)</label>
+        <input
+          name="howToJoinVideoUrl"
+          className="input"
+          defaultValue={settings.howToJoinVideoUrl}
+          placeholder="https://youtube.com/watch?v=…"
+        />
+        <p className="mt-1 text-xs text-slate-500">
+          Shown on the landing page just before &ldquo;How it works&rdquo;. Leave blank to hide it.
+        </p>
+      </div>
+
       {state.error && <p className="text-sm text-ember">{state.error}</p>}
       {state.ok && <p className="text-sm text-teal">Saved.</p>}
       <div>

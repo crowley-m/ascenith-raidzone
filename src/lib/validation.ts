@@ -71,7 +71,7 @@ export function tiersToText(raw: unknown): string {
     .join("\n");
 }
 
-/** "1st | 30K Crystgen" per line → [{ place, reward }] */
+/** "1st | 30K Crystgin" per line → [{ place, reward }] */
 export function parseRewardTiers(text: string | null | undefined) {
   if (!text) return null;
   const tiers = text

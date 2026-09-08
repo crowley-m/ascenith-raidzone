@@ -24,7 +24,7 @@ export function Watch({ videos = [] }: { videos?: YtVideo[] }) {
         </span>
         <h2 data-split>Watch the ops.</h2>
         <p className={s.watchNote} data-reveal>
-          Latest from NOT POTATOZIE &mdash; raids, recaps and callouts.
+          Latest from POTATOZIE &mdash; raids, recaps and callouts.
         </p>
       </div>
 
