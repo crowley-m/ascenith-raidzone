@@ -232,12 +232,15 @@ enum SeasonStatus {
   ENDED
 }
 
-// A competitive season — events roll up into one, and the Hall of Winners
-// shows its champion. Editable in the portal (no deploy to crown a winner).
+// A competitive season within a tournament series (e.g. "Duo-Squad
+// Tournament — Season 3"). Events roll up into one; each has its own page
+// with match videos. Editable in the portal.
 model Season {
   id            String       @id @default(cuid())
-  number        Int          @unique
-  name          String? // e.g. "Ascension"
+  series        String       @default("Duo-Squad Tournament")
+  number        Int
+  slug          String       @unique // URL — e.g. "duo-squad-3", "faction-war-1"
+  name          String? // optional subtitle, e.g. "Ascension"
   status        SeasonStatus @default(UPCOMING)
   startsAt      DateTime?
   endsAt        DateTime?
@@ -251,8 +254,21 @@ model Season {
   updatedAt DateTime @updatedAt
 
   events Event[]
+  videos SeasonVideo[]
 
+  @@unique([series, number])
   @@index([status])
+}
+
+model SeasonVideo {
+  id        String  @id @default(cuid())
+  seasonId  String
+  season    Season  @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  url       String
+  title     String?
+  sortOrder Int     @default(0)
+
+  @@index([seasonId])
 }
 
 enum EventStatus {

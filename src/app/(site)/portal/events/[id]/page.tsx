@@ -53,8 +53,8 @@ export default async function PortalEventDetail({
   if (!event) notFound();
 
   const seasons = await db.season.findMany({
-    orderBy: { number: "desc" },
-    select: { id: true, number: true, name: true },
+    orderBy: [{ series: "asc" }, { number: "desc" }],
+    select: { id: true, series: true, number: true, name: true },
   });
 
   const attMap = new Map(event.attendance.map((a) => [a.playerId, a.attended]));

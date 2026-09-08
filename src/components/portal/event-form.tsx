@@ -32,7 +32,7 @@ type EventInit = {
   rewardsMd: string | null;
 };
 
-export type SeasonOption = { id: string; number: number; name: string | null };
+export type SeasonOption = { id: string; series: string; number: number; name: string | null };
 
 export function EventForm({
   event,
@@ -111,7 +111,7 @@ export function EventForm({
             <option value="">— none —</option>
             {seasons.map((s) => (
               <option key={s.id} value={s.id}>
-                Season {s.number}
+                {s.series} · S{s.number}
                 {s.name ? ` · ${s.name}` : ""}
               </option>
             ))}

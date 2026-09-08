@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requirePermission } from "@/lib/session";
 import { db } from "@/lib/db";
 import { fmtDate } from "@/lib/format";
@@ -13,22 +14,25 @@ export default async function SeasonsPage() {
   await requirePermission("event:manage");
 
   const seasons = await db.season.findMany({
-    orderBy: { number: "desc" },
-    include: { _count: { select: { events: true } } },
+    orderBy: [{ series: "asc" }, { number: "desc" }],
+    include: {
+      _count: { select: { events: true } },
+      videos: { orderBy: { sortOrder: "asc" } },
+    },
   });
-  const nextNumber = (seasons[0]?.number ?? 0) + 1;
+  const seriesList = [...new Set(seasons.map((s) => s.series))];
 
   return (
     <div className="max-w-2xl">
       <h2 className="font-display text-xl font-bold text-white">Seasons</h2>
       <p className="mt-1 text-sm text-slate-400">
-        Events roll up into a season; the Hall of Winners shows its champion. Crowning a winner is
-        just editing the season here — no deploy.
+        Each tournament series has its own seasons. Events link to a season in the event form;
+        each season gets a public page at <code>/seasons/&lt;slug&gt;</code>.
       </p>
 
       <div className="card mt-6">
         <p className="label mb-2">New season</p>
-        <SeasonForm nextNumber={nextNumber} />
+        <SeasonForm seriesList={seriesList} />
       </div>
 
       <ul className="mt-6 space-y-3">
@@ -37,7 +41,7 @@ export default async function SeasonsPage() {
             <details>
               <summary className="flex cursor-pointer flex-wrap items-center gap-x-3 gap-y-1 list-none">
                 <span className="font-display font-bold text-white">
-                  Season {s.number}
+                  {s.series} · S{s.number}
                   {s.name ? ` · ${s.name}` : ""}
                 </span>
                 <span className="badge">{s.status}</span>
@@ -47,16 +51,25 @@ export default async function SeasonsPage() {
                   <span className="text-xs text-slate-500">no champion yet</span>
                 )}
                 <span className="text-xs text-slate-500">
-                  {s._count.events} event{s._count.events === 1 ? "" : "s"}
-                  {s.startsAt ? ` · from ${fmtDate(s.startsAt)}` : ""}
+                  {s._count.events} event{s._count.events === 1 ? "" : "s"} · {s.videos.length} video
+                  {s.videos.length === 1 ? "" : "s"}
                 </span>
+                <Link
+                  href={`/seasons/${s.slug}`}
+                  className="text-xs text-slate-500 underline hover:text-teal"
+                >
+                  /seasons/{s.slug}
+                </Link>
               </summary>
 
               <div className="mt-4 border-t border-edge pt-4">
                 <SeasonForm
+                  seriesList={seriesList}
                   season={{
                     id: s.id,
+                    series: s.series,
                     number: s.number,
+                    slug: s.slug,
                     name: s.name,
                     status: s.status,
                     startsAt: d(s.startsAt),
@@ -66,12 +79,15 @@ export default async function SeasonsPage() {
                     championNote: s.championNote,
                     posterUrl: s.posterUrl,
                     blurb: s.blurb,
+                    videosText: s.videos
+                      .map((v) => (v.title ? `${v.url} | ${v.title}` : v.url))
+                      .join("\n"),
                   }}
                 />
                 <div className="mt-3">
                   <ConfirmButton
                     action={deleteSeason.bind(null, s.id)}
-                    confirm={`Delete Season ${s.number}? Events stay but lose their season link.`}
+                    confirm={`Delete ${s.series} Season ${s.number}? Events stay but lose their season link.`}
                   >
                     Delete season
                   </ConfirmButton>

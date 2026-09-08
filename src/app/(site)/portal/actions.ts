@@ -11,6 +11,7 @@ import {
   flagSchema,
   noteSchema,
   parseRewardTiers,
+  parseSeasonVideos,
   rewardSchema,
   seasonSchema,
 } from "@/lib/validation";
@@ -781,7 +782,9 @@ export async function saveSeason(_prev: FormState, formData: FormData): Promise<
   const str = (k: string) => ((formData.get(k) as string) || "").trim() || null;
 
   const parsed = seasonSchema.safeParse({
+    series: str("series"),
     number: formData.get("number"),
+    slug: str("slug"),
     name: str("name"),
     status: formData.get("status") ?? "UPCOMING",
     startsAt: str("startsAt"),
@@ -791,13 +794,16 @@ export async function saveSeason(_prev: FormState, formData: FormData): Promise<
     championNote: str("championNote"),
     posterUrl: str("posterUrl"),
     blurb: str("blurb"),
+    videosText: str("videosText"),
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Check the season fields." };
   }
   const s = parsed.data;
   const data = {
+    series: s.series,
     number: s.number,
+    slug: s.slug,
     name: s.name ?? null,
     status: s.status,
     startsAt: s.startsAt ? new Date(s.startsAt) : null,
@@ -808,26 +814,42 @@ export async function saveSeason(_prev: FormState, formData: FormData): Promise<
     posterUrl: s.posterUrl ?? null,
     blurb: s.blurb ?? null,
   };
+  const videos = parseSeasonVideos(s.videosText);
 
+  let seasonId = id;
   try {
     if (id) {
       await db.season.update({ where: { id }, data });
     } else {
-      await db.season.create({ data });
+      const created = await db.season.create({ data });
+      seasonId = created.id;
     }
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
-      return { error: `Season ${s.number} already exists.` };
+      return { error: `That series + number, or that slug, already exists.` };
     }
     throw err;
   }
+
+  // videos: replace the set from the textarea
+  if (seasonId) {
+    await db.seasonVideo.deleteMany({ where: { seasonId } });
+    if (videos.length) {
+      await db.seasonVideo.createMany({
+        data: videos.map((v, i) => ({ seasonId, url: v.url, title: v.title, sortOrder: i })),
+      });
+    }
+  }
+
   await logAudit({
     actorId: actor.id,
     action: id ? "season.update" : "season.create",
     targetType: "Season",
-    targetId: id ?? undefined,
+    targetId: seasonId ?? undefined,
   });
   revalidatePath("/portal/seasons");
+  revalidatePath("/seasons");
+  if (seasonId) revalidatePath(`/seasons/${s.slug}`);
   revalidatePath("/winners");
   revalidatePath("/");
   return { ok: true };
@@ -838,6 +860,7 @@ export async function deleteSeason(id: string) {
   await db.season.delete({ where: { id } });
   await logAudit({ actorId: actor.id, action: "season.delete", targetType: "Season", targetId: id });
   revalidatePath("/portal/seasons");
+  revalidatePath("/seasons");
   revalidatePath("/winners");
 }
 

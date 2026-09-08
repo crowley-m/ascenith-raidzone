@@ -113,6 +113,26 @@ async function seasonLabel(): Promise<string> {
   }
 }
 
+async function seasonSummary(): Promise<
+  { series: string; count: number; latestSlug: string; champion: string | null }[]
+> {
+  try {
+    const rows = await db.season.findMany({
+      orderBy: [{ series: "asc" }, { number: "desc" }],
+      select: { series: true, slug: true, number: true, championName: true },
+    });
+    const map = new Map<string, { series: string; count: number; latestSlug: string; champion: string | null }>();
+    for (const r of rows) {
+      const cur = map.get(r.series);
+      if (cur) cur.count += 1;
+      else map.set(r.series, { series: r.series, count: 1, latestSlug: r.slug, champion: r.championName });
+    }
+    return [...map.values()];
+  } catch {
+    return [];
+  }
+}
+
 async function galleryImages(): Promise<GalleryImage[]> {
   try {
     return await db.mediaAsset.findMany({
@@ -127,12 +147,13 @@ async function galleryImages(): Promise<GalleryImage[]> {
 }
 
 export default async function HomePage() {
-  const [{ current, upcoming }, videos, gallery, settings, season] = await Promise.all([
+  const [{ current, upcoming }, videos, gallery, settings, season, seasons] = await Promise.all([
     eventData(),
     latestVideos(9),
     galleryImages(),
     getSettings(),
     seasonLabel(),
+    seasonSummary(),
   ]);
   return (
     <Landing
@@ -142,6 +163,7 @@ export default async function HomePage() {
       howToJoinVideo={current?.howToJoinVideoUrl || settings.howToJoinVideoUrl}
       gallery={gallery}
       seasonLabel={season}
+      seasons={seasons}
     />
   );
 }

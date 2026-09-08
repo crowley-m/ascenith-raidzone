@@ -104,7 +104,14 @@ export const rewardSchema = z.object({
 });
 
 export const seasonSchema = z.object({
+  series: z.string().trim().min(2).max(80),
   number: z.coerce.number().int().min(1).max(999),
+  slug: z
+    .string()
+    .trim()
+    .min(2)
+    .max(80)
+    .regex(/^[a-z0-9-]+$/, "Lowercase letters, numbers and dashes only"),
   name: z.string().max(80).nullable().optional(),
   status: z.enum(["UPCOMING", "ACTIVE", "ENDED"]).default("UPCOMING"),
   startsAt: z.string().nullable().optional(),
@@ -114,7 +121,22 @@ export const seasonSchema = z.object({
   championNote: z.string().max(200).nullable().optional(),
   posterUrl: z.string().max(500).nullable().optional(),
   blurb: z.string().max(600).nullable().optional(),
+  videosText: z.string().max(5000).nullable().optional(),
 });
+
+/** "url | optional title" per line → [{ url, title }] */
+export function parseSeasonVideos(text: string | null | undefined) {
+  if (!text) return [];
+  return text
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .map((l) => {
+      const [url, ...rest] = l.split("|");
+      return { url: url.trim(), title: rest.join("|").trim() || null };
+    })
+    .filter((v) => /^https?:\/\//.test(v.url));
+}
 
 export const factionSchema = z.object({
   name: z.string().min(1).max(80),

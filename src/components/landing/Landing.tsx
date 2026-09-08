@@ -30,14 +30,17 @@ const SOCIALS = [
 const NAV_PAGES = [
   { href: "/events", label: "Events" },
   { href: "/teams", label: "Teams" },
+  { href: "/seasons", label: "Seasons" },
   { href: "/winners", label: "Winners" },
   { href: "/rules", label: "Rules" },
   { href: "/about", label: "About" },
   { href: DISCORD, label: "Discord", external: true },
 ];
 const NAV_SECTIONS = [
+  { href: "#prereg", label: "Next event" },
   { href: "#event", label: "Current event" },
   { href: "#how", label: "How it works" },
+  { href: "#seasons", label: "Seasons" },
   { href: "#watch", label: "Watch" },
   { href: "#gallery", label: "The field" },
   { href: "#run", label: "Field manual" },
@@ -104,6 +107,40 @@ function PreRegister({ next }: { next: UpcomingOp }) {
   );
 }
 
+function SeasonHistory({
+  seasons,
+}: {
+  seasons: { series: string; count: number; latestSlug: string; champion: string | null }[];
+}) {
+  return (
+    <section className={`${s.seasons} ${s.wrap}`} id="seasons">
+      <div className={s.seasonsHead}>
+        <span className={s.mark} data-reveal>
+          The record
+        </span>
+        <h2 data-split>Every season.</h2>
+      </div>
+      <ul className={s.seasonsList}>
+        {seasons.map((sr) => (
+          <li key={sr.series} data-reveal>
+            <Link href={`/seasons/${sr.latestSlug}`} className={s.seasonRow}>
+              <span className={s.seasonName}>{sr.series}</span>
+              <span className={s.seasonMeta}>
+                {sr.count} season{sr.count === 1 ? "" : "s"}
+                {sr.champion ? ` · latest champ ${sr.champion}` : ""}
+              </span>
+              <span className={s.arw}>{"→"}</span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+      <Link href="/seasons" className={s.seasonsAll}>
+        Full history {"→"}
+      </Link>
+    </section>
+  );
+}
+
 function About() {
   return (
     <section className={s.about} id="about">
@@ -141,6 +178,7 @@ export function Landing({
   gallery = [],
   howToJoinVideo = "",
   seasonLabel = "",
+  seasons = [],
 }: {
   event?: OpEvent | null;
   upcoming?: UpcomingOp[];
@@ -148,6 +186,7 @@ export function Landing({
   gallery?: GalleryImage[];
   howToJoinVideo?: string;
   seasonLabel?: string;
+  seasons?: { series: string; count: number; latestSlug: string; champion: string | null }[];
 }) {
   const season = seasonLabel || "S1";
   const { data: session } = useSession();
@@ -331,6 +370,8 @@ export function Landing({
 
         <About />
 
+        {seasons.length > 0 && <SeasonHistory seasons={seasons} />}
+
         <Watch videos={videos} />
 
         <Gallery images={gallery} />
@@ -405,6 +446,7 @@ export function Landing({
           <nav>
             <Link href="/about">About</Link>
             <Link href="/events">Events</Link>
+            <Link href="/seasons">Seasons</Link>
             <Link href="/winners">Winners</Link>
             <Link href="/rules">Rules</Link>
             {user ? (

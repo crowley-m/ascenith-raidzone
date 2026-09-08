@@ -8,8 +8,8 @@ export const dynamic = "force-dynamic";
 export default async function NewEventPage() {
   await requirePermission("event:manage");
   const seasons = await db.season.findMany({
-    orderBy: { number: "desc" },
-    select: { id: true, number: true, name: true },
+    orderBy: [{ series: "asc" }, { number: "desc" }],
+    select: { id: true, series: true, number: true, name: true },
   });
   return (
     <div>

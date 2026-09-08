@@ -17,51 +17,172 @@ async function main() {
   }
   console.log(`Seeded ${factions.length} factions.`);
 
-  // Seasons run so far. Champion text/poster stay editable in the portal —
-  // this only guarantees the rows exist so the Hall of Winners isn't empty.
-  const seasons = [
+  // Tournament history. Text / posters / videos stay editable in the portal —
+  // this only guarantees the rows exist so the pages aren't empty.
+  type SeasonSeed = {
+    series: string;
+    number: number;
+    slug: string;
+    status: "ENDED" | "ACTIVE" | "UPCOMING";
+    prizePoolText?: string;
+    championName?: string;
+    posterUrl?: string;
+    videos?: string[];
+  };
+  const seasons: SeasonSeed[] = [
     {
+      series: "Duo-Squad Tournament",
       number: 1,
-      status: "ENDED" as const,
+      slug: "duo-squad-1",
+      status: "ENDED",
       prizePoolText: "67,410 Crystgin",
       championName: "FSQ Team",
       posterUrl: "/media/champion-season-1.webp",
+      videos: [
+        "https://youtu.be/nG-ImybZ8cA",
+        "https://youtu.be/8Bn2S15Grsw",
+        "https://youtu.be/IO6FH0H8-mg",
+        "https://youtu.be/rKZDbZiPURc",
+      ],
     },
     {
+      series: "Duo-Squad Tournament",
       number: 2,
-      status: "ENDED" as const,
+      slug: "duo-squad-2",
+      status: "ENDED",
       prizePoolText: "46,260 Crystgin",
       championName: "BT",
       posterUrl: "/media/champion-season-2.webp",
+      videos: [
+        "https://www.youtube.com/watch?v=F_biHQLsiFY",
+        "https://www.tiktok.com/@aiozakme/video/7576215463802309909",
+        "https://www.tiktok.com/@newbie_people/video/7569844387878817042",
+        "https://www.tiktok.com/@olympuzsss/video/7569789667931999509",
+        "https://www.tiktok.com/@flinchnoaim/video/7565937378892762389",
+        "https://www.tiktok.com/@flinchnoaim/video/7565555937822461192",
+      ],
     },
     {
+      series: "Duo-Squad Tournament",
       number: 3,
-      status: "ENDED" as const,
+      slug: "duo-squad-3",
+      status: "ENDED",
       prizePoolText: "101,450 Crystgin",
       championName: "SCUBACAT",
       posterUrl: "/media/champion-season-3.webp",
+      videos: [
+        "https://www.youtube.com/watch?v=2SR1Ut4tnaA",
+        "https://www.youtube.com/watch?v=umS8aGXUW3A",
+        "https://www.youtube.com/watch?v=kNYzfXJBKPM",
+        "https://www.youtube.com/watch?v=U5bYwtj_6-g",
+        "https://www.tiktok.com/@potatoziee1/video/7572933734228299029",
+        "https://www.tiktok.com/@potatoziee1/video/7572214604906908949",
+        "https://www.tiktok.com/@potatoziee1/video/7571463436287184135",
+      ],
     },
     {
+      series: "Duo-Squad Tournament",
       number: 4,
-      status: "ENDED" as const,
+      slug: "duo-squad-4",
+      status: "ENDED",
       prizePoolText: "47,390 Crystgin",
       championName: "CrumblyBread",
       posterUrl: "/media/champion-season-4.webp",
+      videos: [
+        "https://youtube.com/live/uNentpwIZLo",
+        "https://youtu.be/YzmEis28560",
+        "https://youtu.be/nZteW4GfHxA",
+      ],
     },
     {
+      series: "Duo-Squad Tournament",
       number: 5,
-      status: "ACTIVE" as const,
+      slug: "duo-squad-5",
+      status: "ACTIVE",
       prizePoolText: "120,425 Crystgin",
       championName: "ADBOT",
       posterUrl: "/media/champion-season-5.webp",
     },
+    {
+      series: "Faction War",
+      number: 1,
+      slug: "faction-war-1",
+      status: "ENDED",
+      videos: [
+        "https://youtube.com/live/qBr7j1-5Ui0",
+        "https://youtube.com/live/2PsAW_zjOac",
+        "https://youtube.com/live/816-cHYU7n0",
+        "https://youtube.com/live/TsyC2-GCEfk",
+        "https://youtube.com/live/xlhdg_S5fMU",
+        "https://youtube.com/live/WzxGxAnPdeQ",
+        "https://youtube.com/live/sZv1E62EruE",
+        "https://youtube.com/live/b25zv4v2XFg",
+        "https://youtube.com/live/1UknknxiGy0",
+      ],
+    },
+    {
+      series: "The Purge",
+      number: 1,
+      slug: "the-purge-1",
+      status: "ENDED",
+    },
+    {
+      series: "Hyperbrawl",
+      number: 1,
+      slug: "hyperbrawl-1",
+      status: "ENDED",
+      prizePoolText: "3,880 Crystgin",
+      videos: ["https://youtube.com/live/AiPgNkdZ1_8"],
+    },
+    {
+      series: "Solo Mode",
+      number: 1,
+      slug: "solo-mode-1",
+      status: "ENDED",
+      prizePoolText: "10,000 Crystgin",
+      posterUrl: "/media/promo-solo-season-1.webp",
+    },
+    {
+      series: "Solo / Duo Tournament",
+      number: 1,
+      slug: "solo-duo-1",
+      status: "ENDED",
+      videos: [
+        "https://youtube.com/live/oi327gB1lss",
+        "https://youtube.com/live/0WqJufEH26s",
+        "https://youtube.com/live/o1RUHiLSvHM",
+        "https://youtube.com/live/t_g58y7faPk",
+      ],
+    },
+    {
+      series: "Cash Tournament",
+      number: 1,
+      slug: "cash-1",
+      status: "ENDED",
+      videos: ["https://www.twitch.tv/videos/2836622232"],
+    },
+    {
+      series: "Cash Tournament",
+      number: 2,
+      slug: "cash-2",
+      status: "ENDED",
+    },
   ];
   for (const s of seasons) {
-    await db.season.upsert({
-      where: { number: s.number },
-      create: s,
+    const { videos, ...row } = s;
+    const created = await db.season.upsert({
+      where: { slug: s.slug },
+      create: row,
       update: {}, // never clobber portal edits
     });
+    if (videos?.length) {
+      const have = await db.seasonVideo.count({ where: { seasonId: created.id } });
+      if (have === 0) {
+        await db.seasonVideo.createMany({
+          data: videos.map((url, i) => ({ seasonId: created.id, url, sortOrder: i })),
+        });
+      }
+    }
   }
   console.log(`Seeded ${seasons.length} seasons.`);
 
