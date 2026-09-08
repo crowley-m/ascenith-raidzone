@@ -8,11 +8,7 @@ export const metadata: Metadata = {
 };
 export const dynamic = "force-dynamic";
 
-const STATUS_LABEL: Record<string, string> = {
-  ACTIVE: "Live",
-  UPCOMING: "Upcoming",
-  ENDED: "Ended",
-};
+const ROMAN = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
 
 export default async function SeasonsPage() {
   const seasons = await db.season
@@ -22,65 +18,91 @@ export default async function SeasonsPage() {
     })
     .catch(() => []);
 
-  // group by series
   const bySeries = new Map<string, typeof seasons>();
   for (const s of seasons) {
     const arr = bySeries.get(s.series) ?? [];
     arr.push(s);
     bySeries.set(s.series, arr);
   }
+  const series = [...bySeries.entries()];
 
   return (
     <div className="bg-void">
-      <div className="container-x py-16">
-        <h1 className="font-poster text-5xl uppercase leading-[0.95] text-white sm:text-6xl">
-          Seasons
-        </h1>
-        <p className="mt-4 max-w-2xl text-slate-300">
-          Every RAIDZONE tournament series and the seasons that ran under it — champions, prize
-          pools and match footage.
-        </p>
+      {/* masthead */}
+      <header className="border-b border-white/15">
+        <div className="mx-auto w-full max-w-6xl px-5 pt-14 pb-6">
+          <h1 className="font-poster text-[18vw] uppercase leading-[0.82] text-white sm:text-[10rem]">
+            Seasons
+          </h1>
+          <p className="mt-4 font-mono text-[0.7rem] font-bold uppercase tracking-[0.28em] text-slate-400">
+            The record — {seasons.length} season{seasons.length === 1 ? "" : "s"} · {series.length}{" "}
+            {series.length === 1 ? "series" : "series"}
+          </p>
+        </div>
+      </header>
 
-        {bySeries.size === 0 && (
-          <p className="mt-12 text-sm text-slate-400">No seasons recorded yet.</p>
+      <div className="mx-auto w-full max-w-6xl px-5 pb-24">
+        {series.length === 0 && (
+          <p className="mt-16 text-sm text-slate-400">No seasons recorded yet.</p>
         )}
 
-        {[...bySeries.entries()].map(([series, list]) => (
-          <section key={series} className="mt-14 border-t border-edge pt-6">
-            <h2 className="eyebrow">+ {series}</h2>
-            <ul className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {series.map(([name, list], i) => (
+          <section key={name} className="mt-16 first:mt-14">
+            {/* series masthead line */}
+            <div className="flex items-end justify-between gap-6 border-b-2 border-white/20 pb-3">
+              <div className="flex items-baseline gap-4">
+                <span className="font-mono text-sm text-slate-600">{ROMAN[i + 1] ?? i + 1}</span>
+                <h2 className="font-poster text-3xl uppercase leading-none text-white sm:text-5xl">
+                  {name}
+                </h2>
+              </div>
+              <span className="shrink-0 pb-1 font-mono text-[0.62rem] uppercase tracking-[0.2em] text-slate-500">
+                {list.length} season{list.length === 1 ? "" : "s"}
+              </span>
+            </div>
+
+            {/* season ledger */}
+            <ul>
               {list.map((s) => (
-                <li key={s.id}>
+                <li key={s.id} className="border-b border-white/10">
                   <Link
                     href={`/seasons/${s.slug}`}
-                    className="group block border border-edge bg-panel/30 p-5 transition hover:border-teal/60"
+                    className="group grid grid-cols-[2.5rem_1fr] items-baseline gap-x-4 gap-y-1 py-5 sm:grid-cols-[3.5rem_1fr_minmax(0,14rem)_2rem]"
                   >
-                    <div className="flex items-baseline justify-between gap-2">
-                      <span className="font-display text-lg font-bold text-white">
-                        Season {s.number}
+                    {/* season no. */}
+                    <span className="font-poster text-2xl leading-none text-slate-500 group-hover:text-teal sm:text-3xl">
+                      S{s.number}
+                    </span>
+
+                    {/* champion / meta */}
+                    <span className="min-w-0">
+                      <span className="block truncate font-display text-lg font-bold text-white sm:text-xl">
+                        {s.championName ?? (
+                          <span className="text-slate-600">— no champion —</span>
+                        )}
+                        {s.status === "ACTIVE" && (
+                          <span className="ml-3 align-middle font-mono text-[0.6rem] uppercase tracking-widest text-teal">
+                            ● live
+                          </span>
+                        )}
                       </span>
-                      <span
-                        className={`font-mono text-[0.6rem] uppercase tracking-widest ${
-                          s.status === "ACTIVE" ? "text-teal" : "text-slate-500"
-                        }`}
-                      >
-                        {STATUS_LABEL[s.status] ?? s.status}
+                      <span className="mt-0.5 block font-mono text-[0.62rem] uppercase tracking-[0.16em] text-slate-500">
+                        {s._count.events} event{s._count.events === 1 ? "" : "s"} ·{" "}
+                        {s._count.videos} video{s._count.videos === 1 ? "" : "s"}
+                        <span className="ml-2 sm:hidden">
+                          {s.prizePoolText ? `· ${s.prizePoolText}` : ""}
+                        </span>
                       </span>
-                    </div>
-                    {s.championName ? (
-                      <p className="mt-2 text-sm text-slate-200">
-                        🏆 {s.championName}
-                        {s.prizePoolText ? (
-                          <span className="text-slate-500"> · {s.prizePoolText}</span>
-                        ) : null}
-                      </p>
-                    ) : s.prizePoolText ? (
-                      <p className="mt-2 text-sm text-slate-400">{s.prizePoolText}</p>
-                    ) : null}
-                    <p className="mt-3 font-mono text-[0.62rem] uppercase tracking-widest text-slate-500">
-                      {s._count.events} event{s._count.events === 1 ? "" : "s"} ·{" "}
-                      {s._count.videos} video{s._count.videos === 1 ? "" : "s"}
-                    </p>
+                    </span>
+
+                    {/* prize — the figure */}
+                    <span className="col-start-2 hidden text-right font-poster text-2xl uppercase leading-none text-white tabular-nums sm:col-start-3 sm:block sm:text-3xl">
+                      {s.prizePoolText ?? ""}
+                    </span>
+
+                    <span className="hidden text-right font-mono text-slate-600 transition group-hover:translate-x-1 group-hover:text-teal sm:block">
+                      →
+                    </span>
                   </Link>
                 </li>
               ))}
