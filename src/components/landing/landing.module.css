@@ -1406,10 +1406,38 @@
   max-width: 54ch;
 }
 
+/* ---- shared section background image (about, close) ---- */
+.sectionBg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  opacity: 0.5;
+}
+.sectionBg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(5, 4, 4, 0.9) 0%,
+    rgba(6, 4, 4, 0.74) 45%,
+    rgba(5, 4, 4, 0.93) 100%
+  );
+}
+.aboutInner,
+.closeInner {
+  position: relative;
+  z-index: 1;
+}
+
 /* ---- close / enlist ---- */
 .close {
   position: relative;
   z-index: 10;
+  overflow: hidden;
   border-top: 1px solid var(--rule);
   text-align: center;
   padding: clamp(80px, 16vh, 190px) var(--pad);
@@ -1522,6 +1550,7 @@
 .about {
   position: relative;
   z-index: 10;
+  overflow: hidden;
   padding-block: clamp(56px, 11vh, 128px);
   scroll-margin-top: 90px;
 }

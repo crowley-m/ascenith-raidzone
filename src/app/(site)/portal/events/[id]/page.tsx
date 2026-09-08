@@ -15,6 +15,8 @@ import {
   SyncChannelsButton,
 } from "@/components/portal/build-space-button";
 import { ResultsForm, AttendeeRewardForm } from "@/components/portal/results-form";
+import { ConfirmButton } from "@/components/portal/confirm-button";
+import { deleteEvent } from "@/app/(site)/portal/actions";
 import type { RewardTier } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
@@ -389,6 +391,22 @@ export default async function PortalEventDetail({
                     rewardsMd: event.rewardsMd,
                   }}
                 />
+              </div>
+
+              <div className="mt-6 border-t border-edge pt-4">
+                <h3 className="font-display font-bold text-white">Danger zone</h3>
+                <p className="mt-1 text-xs text-slate-500">
+                  Deletes the event, its roster, attendance and placements. Player rewards and
+                  teams are kept. Any Discord space is archived first.
+                </p>
+                <div className="mt-3">
+                  <ConfirmButton
+                    action={deleteEvent.bind(null, event.id)}
+                    confirm={`Delete "${event.title}"? This cannot be undone.`}
+                  >
+                    Delete event
+                  </ConfirmButton>
+                </div>
               </div>
             </div>
           ) : (

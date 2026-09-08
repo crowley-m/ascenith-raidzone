@@ -18,10 +18,27 @@ const SLOTS: Slot[] = [
   { left: "72%", top: "53%", width: "24%", dur: "8.8s", rot: -3 },
 ];
 
+// Once Human atmosphere — shown until staff upload their own stills at /portal/media.
+const STILLS = [
+  "/media/still-lampman.webp",
+  "/media/still-raid.webp",
+  "/media/still-monolith.webp",
+  "/media/still-horde.webp",
+  "/media/still-vista.webp",
+];
+
+type Frame = { key: string; src: string; caption: string | null; tag: string | null };
+
 export function Gallery({ images = [] }: { images?: GalleryImage[] }) {
-  // No fabricated placeholders — the section only exists when there's something real.
-  if (images.length === 0) return null;
-  const shown = images.slice(0, SLOTS.length);
+  const shown: Frame[] = images.length
+    ? images.slice(0, SLOTS.length).map((img) => ({
+        key: img.id,
+        src: `/api/media/${img.id}`,
+        caption: img.caption,
+        tag: img.tag,
+      }))
+    : STILLS.slice(0, SLOTS.length).map((src) => ({ key: src, src, caption: null, tag: null }));
+  if (shown.length === 0) return null;
 
   return (
     <section className={s.gallery} id="gallery">
@@ -40,7 +57,7 @@ export function Gallery({ images = [] }: { images?: GalleryImage[] }) {
           const slot = SLOTS[i];
           return (
             <div
-              key={img.id}
+              key={img.key}
               className={s.shotPop}
               data-pop
               style={{ left: slot.left, top: slot.top, width: slot.width }}
@@ -58,7 +75,7 @@ export function Gallery({ images = [] }: { images?: GalleryImage[] }) {
                 <div className={s.shotImg}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={`/api/media/${img.id}`}
+                    src={img.src}
                     alt=""
                     loading="lazy"
                     style={{ width: "100%", height: "100%", objectFit: "cover" }}

@@ -62,8 +62,13 @@ function Box({
 
 function About() {
   return (
-    <section className={`${s.about} ${s.wrap}`} id="about">
-      <div className={s.aboutInner}>
+    <section className={s.about} id="about">
+      <div
+        className={s.sectionBg}
+        aria-hidden
+        style={{ backgroundImage: "url(/media/bg-redroot.webp)" }}
+      />
+      <div className={`${s.aboutInner} ${s.wrap}`}>
         <div className={s.aboutHead}>
           <span className={s.mark} data-reveal>
             Who we are
@@ -318,43 +323,50 @@ export function Landing({
 
         {/* CLOSE */}
         <section className={s.close} id="register">
-          {user ? (
-            <>
-              <h2 data-reveal>
-                You&apos;re in<span className={s.x}>.</span>
-              </h2>
-              <p className={s.sub} data-reveal>
-                Roster&apos;s set. Keep your raider details current and watch the current op for
-                the next drop.
-              </p>
-              <div className={s.acts} data-reveal>
-                <Box href={dashHref} k="Go" variant="solid">
-                  {staff ? "Open the portal" : "My raider"}
-                </Box>
-                <Box href="#event" k="·" variant="plain">
-                  Current op
-                </Box>
-              </div>
-            </>
-          ) : (
-            <>
-              <h2 data-split>
-                Register<span className={s.x}>.</span>
-              </h2>
-              <p className={s.sub} data-reveal>
-                New here &mdash; register your raider. Already on the roster &mdash; sign in. Either
-                way, you&apos;re in for the next one.
-              </p>
-              <div className={s.acts} data-reveal>
-                <Box href={REGISTER} k="New" variant="solid">
-                  Register your raider
-                </Box>
-                <Box href={LOGIN} k="·" variant="plain">
-                  Sign in
-                </Box>
-              </div>
-            </>
-          )}
+          <div
+            className={s.sectionBg}
+            aria-hidden
+            style={{ backgroundImage: "url(/media/bg-raidzone.webp)" }}
+          />
+          <div className={s.closeInner}>
+            {user ? (
+              <>
+                <h2 data-reveal>
+                  You&apos;re in<span className={s.x}>.</span>
+                </h2>
+                <p className={s.sub} data-reveal>
+                  Roster&apos;s set. Keep your raider details current and watch the current op for
+                  the next drop.
+                </p>
+                <div className={s.acts} data-reveal>
+                  <Box href={dashHref} k="Go" variant="solid">
+                    {staff ? "Open the portal" : "My raider"}
+                  </Box>
+                  <Box href="#event" k="·" variant="plain">
+                    Current op
+                  </Box>
+                </div>
+              </>
+            ) : (
+              <>
+                <h2 data-split>
+                  Register<span className={s.x}>.</span>
+                </h2>
+                <p className={s.sub} data-reveal>
+                  New here &mdash; register your raider. Already on the roster &mdash; sign in.
+                  Either way, you&apos;re in for the next one.
+                </p>
+                <div className={s.acts} data-reveal>
+                  <Box href={REGISTER} k="New" variant="solid">
+                    Register your raider
+                  </Box>
+                  <Box href={LOGIN} k="·" variant="plain">
+                    Sign in
+                  </Box>
+                </div>
+              </>
+            )}
+          </div>
         </section>
 
         <footer className={s.footer}>

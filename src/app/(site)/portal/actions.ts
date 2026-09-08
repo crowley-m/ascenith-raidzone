@@ -440,6 +440,36 @@ export async function archiveEventDiscord(eventId: string): Promise<FormState> {
   return { ok: true };
 }
 
+export async function deleteEvent(eventId: string): Promise<void> {
+  const actor = await assertPermission("event:manage");
+  const ev = await db.event.findUnique({ where: { id: eventId } });
+  if (!ev) redirect("/portal/events");
+
+  // Best-effort: sink the Discord space so no orphan category is left behind.
+  if (ev.discordCategoryId && !ev.discordArchivedAt) {
+    const channels = Object.values((ev.discordChannels as Record<string, string>) ?? {});
+    try {
+      await archiveEventSpace(ev.discordCategoryId, channels);
+    } catch (err) {
+      console.error("archiveEventSpace during delete failed", err);
+    }
+  }
+
+  // Signups / attendance / placements cascade; rewards & teams keep their rows
+  // (eventId set null) so player history and squads survive.
+  await db.event.delete({ where: { id: eventId } });
+  await logAudit({
+    actorId: actor.id,
+    action: "event.delete",
+    targetType: "Event",
+    targetId: eventId,
+    meta: { title: ev.title },
+  });
+  revalidatePath("/portal/events");
+  revalidatePath("/events");
+  redirect("/portal/events");
+}
+
 export async function markAttendance(eventId: string, playerId: string, attended: boolean) {
   const actor = await assertPermission("attendance:mark");
   await db.eventAttendance.upsert({
