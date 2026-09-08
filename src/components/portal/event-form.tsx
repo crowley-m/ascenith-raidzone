@@ -24,6 +24,7 @@ type EventInit = {
   bonusText: string | null;
   rulesMd: string | null;
   detailsMd: string | null;
+  howToJoinVideoUrl: string | null;
   announcementMd: string | null;
   howToJoinMd: string | null;
   gameplayMd: string | null;
@@ -188,6 +189,21 @@ export function EventForm({
           defaultValue={event?.detailsMd ?? ""}
           placeholder={"## Wipe & raid schedule\n\n- Start: 28 Aug 2026 09:30\n- End: 11 Sep 2026 21:29\n- Raid time: 15:30 – 21:29 (6 hrs/day)\n\n## Glory Points\n\n**Red Room** — 2 pts, spawns every 2h\n**Blue Room** — 1 pt, spawns every 1h"}
         />
+      </div>
+
+      <div>
+        <label className="label">How-to-join video (YouTube URL)</label>
+        <input
+          name="howToJoinVideoUrl"
+          type="url"
+          className="input font-mono text-xs"
+          defaultValue={event?.howToJoinVideoUrl ?? ""}
+          placeholder="https://youtu.be/…"
+        />
+        <p className="mt-1 text-xs text-slate-500">
+          Plays on this event&apos;s page, and in the landing &ldquo;How to join&rdquo; section
+          while this is the featured event.
+        </p>
       </div>
 
       <hr className="border-edge" />

@@ -7,6 +7,7 @@ import { fmtDateTime, relative } from "@/lib/format";
 import { SignupButton } from "@/components/signup-button";
 import { TeamSignup } from "@/components/team/team-signup";
 import { Markdown } from "@/components/markdown";
+import { VideoEmbed } from "@/components/video-embed";
 import { teamForPlayer } from "@/lib/team";
 import type { RewardTier } from "@/lib/validation";
 
@@ -162,6 +163,15 @@ export default async function EventDetailPage({
             <p className="mt-4 max-w-2xl font-mono text-sm uppercase leading-relaxed tracking-wide text-slate-300">
               {event.summary}
             </p>
+          )}
+
+          {event.howToJoinVideoUrl && (
+            <div className="mt-8 max-w-2xl">
+              <div className="eyebrow">How to join</div>
+              <div className="mt-3">
+                <VideoEmbed url={event.howToJoinVideoUrl} title={`How to join — ${event.title}`} />
+              </div>
+            </div>
           )}
 
           <dl className="mt-8 grid grid-cols-2 gap-px border border-edge bg-edge sm:grid-cols-3">

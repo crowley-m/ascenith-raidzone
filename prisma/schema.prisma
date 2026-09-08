@@ -294,10 +294,11 @@ model Event {
   mode        String? // e.g. "PURGE" — shown next to RAIDZONE
   wipeCycle   String? // e.g. "2 weeks"
   raidWindow  String? // e.g. "15:30 – 21:29 · 6 hrs/day"
-  rewardTiers Json? // [{ "place": "1st", "reward": "30K Crystgen" }, ...]
-  bonusText   String? // e.g. "20K Crystgen · hidden across airdrops, cards, alpha boss"
+  rewardTiers Json? // [{ "place": "1st", "reward": "30K Crystgin" }, ...]
+  bonusText   String? // e.g. "20K Crystgin · hidden across airdrops, cards, alpha boss"
   rulesMd     String? // markdown rules for this event (shown on the page + Discord)
   detailsMd   String? // full markdown brief shown on /events/[id]
+  howToJoinVideoUrl String? // YouTube link — plays on the event page + the landing (when featured)
 
   // per-Discord-channel content (posted to the event's channels)
   announcementMd String?

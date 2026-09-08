@@ -384,6 +384,7 @@ export default async function PortalEventDetail({
                     bonusText: event.bonusText,
                     rulesMd: event.rulesMd,
                     detailsMd: event.detailsMd,
+                    howToJoinVideoUrl: event.howToJoinVideoUrl,
                     announcementMd: event.announcementMd,
                     howToJoinMd: event.howToJoinMd,
                     gameplayMd: event.gameplayMd,

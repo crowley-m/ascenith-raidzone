@@ -36,10 +36,24 @@ async function main() {
     },
     {
       number: 3,
-      status: "ACTIVE" as const,
+      status: "ENDED" as const,
       prizePoolText: "101,450 Crystgin",
       championName: "SCUBACAT",
       posterUrl: "/media/champion-season-3.webp",
+    },
+    {
+      number: 4,
+      status: "ENDED" as const,
+      prizePoolText: "47,390 Crystgin",
+      championName: "CrumblyBread",
+      posterUrl: "/media/champion-season-4.webp",
+    },
+    {
+      number: 5,
+      status: "ACTIVE" as const,
+      prizePoolText: "120,425 Crystgin",
+      championName: "ADBOT",
+      posterUrl: "/media/champion-season-5.webp",
     },
   ];
   for (const s of seasons) {

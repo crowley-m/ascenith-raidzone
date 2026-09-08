@@ -16,6 +16,17 @@ export default async function PortalEventsPage() {
     },
   });
 
+  // Which event the landing page currently features (same rule as app/page.tsx):
+  // an ongoing published event, else the soonest upcoming published one.
+  const now = Date.now();
+  const published = events
+    .filter((e) => e.status === "PUBLISHED")
+    .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime());
+  const featuredId =
+    (published.find(
+      (e) => e.startsAt.getTime() <= now && (!e.endsAt || e.endsAt.getTime() >= now),
+    ) ?? published.find((e) => e.startsAt.getTime() > now))?.id ?? null;
+
   return (
     <div>
       <div className="flex items-center justify-between">
@@ -43,6 +54,9 @@ export default async function PortalEventsPage() {
                   <Link href={`/portal/events/${e.id}`} className="font-medium text-slate-100 hover:text-teal">
                     {e.title}
                   </Link>
+                  {e.id === featuredId && (
+                    <span className="ml-2 badge border-teal/40 text-teal">On landing</span>
+                  )}
                 </td>
                 <td className="py-3 text-slate-400">{fmtDateTime(e.startsAt)}</td>
                 <td className="py-3">

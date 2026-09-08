@@ -99,7 +99,6 @@ export function Landing({
   event = null,
   upcoming = [],
   videos = [],
-  discordOnline = null,
   gallery = [],
   howToJoinVideo = "",
   seasonLabel = "",
@@ -107,7 +106,6 @@ export function Landing({
   event?: OpEvent | null;
   upcoming?: UpcomingOp[];
   videos?: YtVideo[];
-  discordOnline?: number | null;
   gallery?: GalleryImage[];
   howToJoinVideo?: string;
   seasonLabel?: string;
@@ -259,12 +257,6 @@ export function Landing({
           <p className={s.heroSub} data-reveal>
             Run by POTATOZIE &mdash; Season {season.replace(/^S/, "")} roster open
           </p>
-          {typeof discordOnline === "number" && (
-            <p className={s.heroLive} data-reveal>
-              <span className={s.liveDot} />
-              {discordOnline.toLocaleString()} raiders online right now
-            </p>
-          )}
           <div className={s.heroActs} data-reveal>
             {user ? (
               <Box href={dashHref} k={staff ? "Staff" : "Roster"}>
@@ -287,7 +279,7 @@ export function Landing({
       </section>
 
       <div className={s.after}>
-        <EventBrief event={event} upcoming={upcoming} discordOnline={discordOnline} />
+        <EventBrief event={event} upcoming={upcoming} />
 
         {howToJoinVideo ? <HowToJoinVideo url={howToJoinVideo} /> : null}
 

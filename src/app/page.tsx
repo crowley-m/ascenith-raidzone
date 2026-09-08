@@ -3,7 +3,6 @@ import type { OpEvent, UpcomingOp } from "@/components/landing/EventBrief";
 import type { GalleryImage } from "@/components/landing/Gallery";
 import { db } from "@/lib/db";
 import { latestVideos } from "@/lib/youtube";
-import { guildPresence } from "@/lib/discord";
 import { getSettings } from "@/lib/settings";
 
 /** Shown when the DB has no published event yet (local dev, or before staff add one). */
@@ -27,6 +26,7 @@ const FALLBACK_EVENT: OpEvent = {
     { place: "3rd", reward: "15K Crystgin" },
   ],
   bonusText: "20K Crystgin · hidden across airdrops, cards & alpha boss",
+  howToJoinVideoUrl: null,
 };
 
 // re-fetch the current op at most once a minute; the client ticker handles seconds
@@ -85,6 +85,7 @@ async function eventData(): Promise<{ current: OpEvent | null; upcoming: Upcomin
         ? (current.rewardTiers as Array<{ place: string; reward: string }>)
         : [],
       bonusText: current.bonusText,
+      howToJoinVideoUrl: current.howToJoinVideoUrl,
     },
     upcoming,
   };
@@ -116,10 +117,9 @@ async function galleryImages(): Promise<GalleryImage[]> {
 }
 
 export default async function HomePage() {
-  const [{ current, upcoming }, videos, presence, gallery, settings, season] = await Promise.all([
+  const [{ current, upcoming }, videos, gallery, settings, season] = await Promise.all([
     eventData(),
     latestVideos(9),
-    guildPresence(),
     galleryImages(),
     getSettings(),
     seasonLabel(),
@@ -129,8 +129,7 @@ export default async function HomePage() {
       event={current ?? FALLBACK_EVENT}
       upcoming={upcoming}
       videos={videos}
-      howToJoinVideo={settings.howToJoinVideoUrl}
-      discordOnline={presence?.online ?? null}
+      howToJoinVideo={current?.howToJoinVideoUrl || settings.howToJoinVideoUrl}
       gallery={gallery}
       seasonLabel={season}
     />

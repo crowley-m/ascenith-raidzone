@@ -29,6 +29,7 @@ export type OpEvent = {
   raidWindow: string | null;
   rewardTiers: RewardTier[];
   bonusText: string | null;
+  howToJoinVideoUrl: string | null;
 };
 
 const DISCORD =
@@ -46,22 +47,6 @@ function split(ms: number) {
   };
 }
 
-// viewer's own timezone — client only (never render on the server → hydration-safe)
-function fmtLocal(iso: string) {
-  try {
-    return new Date(iso)
-      .toLocaleString(undefined, {
-        weekday: "short",
-        day: "numeric",
-        month: "short",
-        hour: "numeric",
-        minute: "2-digit",
-      })
-      .toUpperCase();
-  } catch {
-    return "";
-  }
-}
 // canonical Philippines time — deterministic on server + client
 function fmtManila(iso: string, withTime = true) {
   try {
@@ -81,11 +66,9 @@ function fmtManila(iso: string, withTime = true) {
 export function EventBrief({
   event,
   upcoming = [],
-  discordOnline = null,
 }: {
   event: OpEvent | null;
   upcoming?: UpcomingOp[];
-  discordOnline?: number | null;
 }) {
   const [now, setNow] = useState<number | null>(null);
   useEffect(() => {
@@ -100,27 +83,15 @@ export function EventBrief({
   // phase is only meaningful once the clock is running (client); server renders neutral
   let phase: "standby" | "upcoming" | "live" = "standby";
   let target: number | null = null;
-  let capLabel = "Wipe";
-  let whenIso = "";
-  let whenVerb = "";
   if (event && now !== null) {
     if (now < start) {
       phase = "upcoming";
       target = start;
-      capLabel = "Wipe starts in";
-      whenIso = event.startsAt;
-      whenVerb = "Starts";
     } else if (end && now < end) {
       phase = "live";
       target = end;
-      capLabel = "Wipe ends in";
-      whenIso = event.endsAt as string;
-      whenVerb = "Ends";
     } else {
       phase = "live";
-      capLabel = "Op is live";
-      whenIso = event.startsAt;
-      whenVerb = "Started";
     }
   } else if (event) {
     // pre-mount: point the (hidden) grid at the end date so it doesn't jump
@@ -172,27 +143,7 @@ export function EventBrief({
                   </span>
                 ))}
               </div>
-              <div className={s.clockSide}>
-                <span className={s.clockCap}>{capLabel}</span>
-                {whenIso ? (
-                  <span className={s.clockWhen} data-tl>
-                    {whenVerb} {fmtLocal(whenIso)}
-                    <span className={s.clockBase}>
-                      {" "}
-                      your time &middot; {fmtManila(whenIso)} GMT+8
-                    </span>
-                  </span>
-                ) : (
-                  event.endsAt && (
-                    <span className={s.clockWhen}>
-                      Ends {fmtManila(event.endsAt)} GMT+8
-                    </span>
-                  )
-                )}
-              </div>
             </div>
-
-            {event.summary && <p className={s.eventSummary}>{event.summary}</p>}
 
             <div className={s.eventGrid}>
               <div className={s.eventFacts}>
@@ -214,12 +165,6 @@ export function EventBrief({
                     {event.raidWindow}
                   </div>
                 )}
-                {typeof discordOnline === "number" && (
-                  <div>
-                    <b>Discord</b>
-                    <span className={s.onlineDot} /> {discordOnline.toLocaleString()} online
-                  </div>
-                )}
                 {event.maxSlots ? (
                   <div>
                     <b>Roster</b>
@@ -230,6 +175,12 @@ export function EventBrief({
 
               <div className={`${s.card2} ${s.card2Hot} ${s.rewardsCard}`} id="rewards">
                 <div className={s.card2Head}>Rewards</div>
+                {event.rewardPoolText && (
+                  <div className={s.rewardTotal}>
+                    <span className={s.rewardTotalLbl}>Prize pool</span>
+                    <span className={s.rewardTotalVal}>{event.rewardPoolText}</span>
+                  </div>
+                )}
                 {tiers.length >= 3 ? (
                   <>
                     <div className={s.podium} aria-hidden>
@@ -253,11 +204,9 @@ export function EventBrief({
                       ))}
                     </ul>
                   </>
-                ) : event.rewardPoolText ? (
-                  <p className={s.eventSummary}>{event.rewardPoolText}</p>
-                ) : (
+                ) : !event.rewardPoolText ? (
                   <p className={s.rewardNote}>Reward pool announced in Discord.</p>
-                )}
+                ) : null}
                 {event.bonusText && (
                   <p className={s.bonusLine}>
                     <span className={s.bonusTag}>Bonus</span>

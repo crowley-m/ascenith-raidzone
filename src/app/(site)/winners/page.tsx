@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { fmtDate } from "@/lib/format";
 import { topRaiders } from "@/lib/leaderboard";
 import { TopRaiders } from "@/components/top-raiders";
-import { ProofGallery } from "@/components/winners/proof-gallery";
+import { FloatingGallery, type FloatItem } from "@/components/winners/floating-gallery";
 import type { RewardTier } from "@/lib/validation";
 
 export const metadata: Metadata = {
@@ -30,6 +30,20 @@ export default async function WinnersPage() {
     .findMany({ orderBy: { number: "desc" } })
     .catch(() => []);
   const champions = seasons.filter((s) => s.championName);
+  const championItems: FloatItem[] = champions
+    .filter((c) => c.posterUrl)
+    .map((c) => ({
+      key: c.id,
+      src: c.posterUrl as string,
+      alt: `Season ${c.number} champion — ${c.championName}`,
+      eyebrow: `Season ${c.number}${c.name ? ` · ${c.name}` : ""}`,
+      badge: c.status === "ACTIVE" ? "Reigning" : null,
+      title: c.championName,
+      sub: [c.prizePoolText ? `Prize pool ${c.prizePoolText}` : null, c.championNote]
+        .filter(Boolean)
+        .join(" · ") || null,
+    }));
+
   const proofImages = await db.mediaAsset
     .findMany({
       where: { kind: "proof" },
@@ -37,6 +51,20 @@ export default async function WinnersPage() {
       select: { id: true, caption: true, tag: true },
     })
     .catch(() => []);
+  const proofItems: FloatItem[] = proofImages.map((img) => ({
+    key: img.id,
+    src: `/api/media/${img.id}`,
+    alt: img.caption ?? "",
+    eyebrow: img.caption,
+    sub: img.tag,
+  }));
+
+  const campaignItems: FloatItem[] = CAMPAIGN_POSTERS.map((p) => ({
+    key: p.img,
+    src: p.img,
+    alt: p.label,
+    sub: p.label,
+  }));
 
   let events: Awaited<ReturnType<typeof db.event.findMany>> = [];
   let looseRewards: Awaited<ReturnType<typeof db.reward.findMany>> = [];
@@ -78,45 +106,13 @@ export default async function WinnersPage() {
         Every RAIDZONE event, who placed, and what they took home. Real events, real payouts.
       </p>
 
-      {champions.length > 0 && (
+      {championItems.length > 0 && (
         <section className="mt-12 border-t border-edge pt-8">
           <h2 className="font-display text-xl font-bold text-white">Season champions</h2>
           <p className="mt-1 text-sm text-slate-500">
             One bracket, one prize pool, one name that takes it all.
           </p>
-          <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {champions.map((c) => (
-              <figure key={c.id} className="border border-edge bg-black">
-                {c.posterUrl && (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img
-                    src={c.posterUrl}
-                    alt={`Season ${c.number} champion — ${c.championName}`}
-                    loading="lazy"
-                    className="aspect-video w-full object-contain"
-                  />
-                )}
-                <figcaption className="flex flex-wrap items-baseline gap-x-2 gap-y-1 px-3 py-3">
-                  <span className="font-mono text-xs uppercase tracking-wide text-teal">
-                    Season {c.number}
-                    {c.name ? ` · ${c.name}` : ""}
-                  </span>
-                  {c.status === "ACTIVE" && (
-                    <span className="border border-teal/40 px-1.5 py-0.5 text-[0.62rem] uppercase tracking-wide text-teal">
-                      Reigning
-                    </span>
-                  )}
-                  <span className="w-full font-display font-bold text-white">{c.championName}</span>
-                  {c.prizePoolText && (
-                    <span className="text-sm text-slate-400">Prize pool {c.prizePoolText}</span>
-                  )}
-                  {c.championNote && (
-                    <span className="w-full text-xs text-slate-500">{c.championNote}</span>
-                  )}
-                </figcaption>
-              </figure>
-            ))}
-          </div>
+          <FloatingGallery items={championItems} fit="contain" />
         </section>
       )}
 
@@ -132,25 +128,20 @@ export default async function WinnersPage() {
         </section>
       )}
 
-      <ProofGallery images={proofImages} />
+      {proofItems.length > 0 && (
+        <section className="mt-12 border-t border-edge pt-8">
+          <h2 className="font-display text-xl font-bold text-white">Proof</h2>
+          <p className="mt-1 text-sm text-slate-500">
+            Payout screenshots, straight from the winners.
+          </p>
+          <FloatingGallery items={proofItems} />
+        </section>
+      )}
 
       <section className="mt-12 border-t border-edge pt-8">
         <h2 className="font-display text-xl font-bold text-white">From the campaign</h2>
         <p className="mt-1 text-sm text-slate-500">Posters from past seasons and events.</p>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {CAMPAIGN_POSTERS.map((p) => (
-            <figure key={p.img} className="border border-edge bg-black">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={p.img}
-                alt={p.label}
-                loading="lazy"
-                className="aspect-video w-full object-contain"
-              />
-              <figcaption className="px-3 py-2 text-xs text-slate-400">{p.label}</figcaption>
-            </figure>
-          ))}
-        </div>
+        <FloatingGallery items={campaignItems} fit="contain" />
       </section>
 
       {events.length === 0 &&

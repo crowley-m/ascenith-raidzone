@@ -35,14 +35,6 @@ export const metadata: Metadata = {
     description:
       "A custom Once Human server, weekly RaidZone tournaments, and sponsored prizes for winning squads.",
     type: "website",
-    images: [{ url: "/media/key-art-ascenith.webp", width: 1600, height: 900, alt: "ASCENITH RAIDZONE" }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "ASCENITH RAIDZONE",
-    description:
-      "A custom Once Human server, weekly RaidZone tournaments, and sponsored prizes for winning squads.",
-    images: ["/media/key-art-ascenith.webp"],
   },
 };
 
