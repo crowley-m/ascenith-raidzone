@@ -223,9 +223,11 @@ export async function saveEvent(_prev: FormState, formData: FormData): Promise<F
     try {
       if (ev.discordCategoryId) {
         // full space exists — resync every channel (announcement included)
+        const chans = (ev.discordChannels as Record<string, string>) ?? {};
+        await lockReadonlyChannels(chans);
         await pushEventChannelContent(
           ev.id,
-          (ev.discordChannels as Record<string, string>) ?? {},
+          chans,
           (ev.discordSeedMessages as Record<string, string>) ?? {},
         );
       } else {
@@ -383,8 +385,10 @@ export async function syncEventChannels(eventId: string): Promise<FormState> {
   const channels = (ev.discordChannels as Record<string, string>) ?? {};
   const seed = (ev.discordSeedMessages as Record<string, string>) ?? {};
   try {
-    await pushEventChannelContent(eventId, channels, seed);
+    // lock first — it grants the bot a send override so posts to the
+    // read-only channels (announcement / how-to-join / rules / wipe-info) land
     await lockReadonlyChannels(channels);
+    await pushEventChannelContent(eventId, channels, seed);
   } catch (err) {
     return { error: `Discord: ${err instanceof Error ? err.message : "sync failed"}` };
   }
@@ -430,6 +434,8 @@ export async function buildEventSpace(eventId: string): Promise<FormState> {
   });
 
   try {
+    // lock first — it also grants the bot a send override so the seed posts land
+    await lockReadonlyChannels(space.channels);
     await pushEventChannelContent(ev.id, space.channels, {});
   } catch (err) {
     console.error("event space seed failed", err);
@@ -1143,4 +1149,51 @@ export async function moveGalleryImage(id: string, dir: "up" | "down") {
   await logAudit({ actorId: actor.id, action: "media.reorder", targetType: "MediaAsset", targetId: id });
   revalidatePath("/portal/media");
   revalidatePath(mediaRevalidate(self.kind));
+}
+
+// --------------------------------------------------------------------------
+// Broadcast — free-form server announcements posted by the bot
+// --------------------------------------------------------------------------
+
+export async function postBroadcast(_prev: FormState, formData: FormData): Promise<FormState> {
+  const actor = await assertPermission("event:manage");
+
+  const channelId = ((formData.get("channelId") as string) || "").trim();
+  const title = ((formData.get("title") as string) || "").trim();
+  const body = ((formData.get("body") as string) || "").trim();
+  const asEmbed = formData.get("asEmbed") === "on";
+  const mentionEveryone = formData.get("mentionEveryone") === "on";
+
+  if (!channelId) return { error: "Pick a channel to post to." };
+  if (!body) return { error: "Write something to announce." };
+
+  try {
+    const payload = asEmbed
+      ? {
+          content: mentionEveryone ? "@everyone" : undefined,
+          embed: { title: title || undefined, description: body.slice(0, 4000) },
+          mentionEveryone,
+        }
+      : {
+          content: `${mentionEveryone ? "@everyone\n" : ""}${title ? `**${title}**\n` : ""}${body}`.slice(
+            0,
+            1990,
+          ),
+          mentionEveryone,
+        };
+    const msg = await postToChannel(channelId, payload);
+    if (!msg) return { error: "Discord isn't configured (bot token / guild id)." };
+  } catch (err) {
+    return { error: `Discord: ${err instanceof Error ? err.message : "post failed"}` };
+  }
+
+  await logAudit({
+    actorId: actor.id,
+    action: "broadcast.post",
+    targetType: "Discord",
+    targetId: channelId,
+    meta: { title: title || null, preview: body.slice(0, 160), embed: asEmbed, everyone: mentionEveryone },
+  });
+  revalidatePath("/portal/broadcast");
+  return { ok: true };
 }

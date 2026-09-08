@@ -256,6 +256,20 @@ export const READONLY_CHANNELS = new Set(["announcement", "how-to-join", "rules"
 const PERM_VIEW_CHANNEL = (1n << 10n).toString();
 const PERM_SEND_MESSAGES = (1n << 11n).toString();
 
+// The bot's own user id — needed so read-only channels can still deny @everyone
+// while letting the bot post the seed content. Cached for the process lifetime.
+let _botUserId: string | null | undefined;
+async function botUserId(): Promise<string | null> {
+  if (_botUserId !== undefined) return _botUserId;
+  try {
+    const me = (await discordFetch("/users/@me", { method: "GET" })) as { id?: string };
+    _botUserId = me.id ?? null;
+  } catch {
+    _botUserId = null;
+  }
+  return _botUserId;
+}
+
 /**
  * Create `<emoji> BOLD NAME <emoji>` category + the channel set under it.
  * Read-only channels get a @everyone SEND_MESSAGES deny (needs Manage Roles on
@@ -275,38 +289,40 @@ export async function createEventSpace(opts: {
     body: JSON.stringify({ name: catName, type: 4 }),
   })) as { id: string };
 
+  // Create every channel WITHOUT the send lock — the bot has to post the seed
+  // content first. lockReadonlyChannels() applies the @everyone deny afterwards.
   const channels: Record<string, string> = {};
   for (const name of opts.channels ?? EVENT_CHANNELS) {
-    const readonly = READONLY_CHANNELS.has(name);
     const ch = (await discordFetch(`/guilds/${gid}/channels`, {
       method: "POST",
       body: JSON.stringify({
-        ...(readonly
-          ? { permission_overwrites: [{ id: gid, type: 0, deny: PERM_SEND_MESSAGES }] }
-          : {}),
         name: `${opts.emoji}\u30FB${name}`, // emoji・name
         type: 0,
         parent_id: category.id,
       }),
     })) as { id: string };
     channels[name] = ch.id;
-    if (readonly) {
-      await discordFetch(`/channels/${ch.id}/permissions/${gid}`, {
-        method: "PUT",
-        body: JSON.stringify({ type: 0, deny: PERM_SEND_MESSAGES }),
-      }).catch(() => {});
-    }
   }
 
   return { categoryId: category.id, channels };
 }
 
-/** (Re)apply the @everyone SEND_MESSAGES deny on the read-only channels. */
+/**
+ * (Re)apply the read-only lock: deny @everyone SEND_MESSAGES, but explicitly
+ * allow the bot so it can still post / repost the channel's seed content.
+ */
 export async function lockReadonlyChannels(channels: Record<string, string>): Promise<void> {
   const gid = process.env.DISCORD_GUILD_ID;
   if (!gid || !process.env.DISCORD_BOT_TOKEN) return;
+  const botId = await botUserId();
   for (const [name, id] of Object.entries(channels)) {
     if (!READONLY_CHANNELS.has(name)) continue;
+    if (botId) {
+      await discordFetch(`/channels/${id}/permissions/${botId}`, {
+        method: "PUT",
+        body: JSON.stringify({ type: 1, allow: PERM_SEND_MESSAGES }),
+      }).catch(() => {});
+    }
     await discordFetch(`/channels/${id}/permissions/${gid}`, {
       method: "PUT",
       body: JSON.stringify({ type: 0, deny: PERM_SEND_MESSAGES }),
@@ -346,18 +362,44 @@ export async function archiveEventSpace(categoryId: string, channelIds: string[]
 /** Plain message (optionally with an embed / components) to a channel. */
 export async function postToChannel(
   channelId: string,
-  payload: { content?: string; embed?: Embed; components?: ButtonRow[] },
+  payload: {
+    content?: string;
+    embed?: Embed;
+    components?: ButtonRow[];
+    mentionEveryone?: boolean;
+  },
 ): Promise<{ id: string } | null> {
   if (!process.env.DISCORD_BOT_TOKEN) return null;
+  const parse = payload.mentionEveryone ? ["roles", "everyone"] : ["roles"];
   return (await discordFetch(`/channels/${channelId}/messages`, {
     method: "POST",
     body: JSON.stringify({
       content: payload.content,
       embeds: payload.embed ? [{ color: 0x2fd4c7, ...payload.embed }] : [],
       components: payload.components ?? [],
-      allowed_mentions: { parse: ["roles"] },
+      allowed_mentions: { parse },
     }),
   })) as { id: string };
+}
+
+/** Text channels (type 0) in the guild, for channel-picker dropdowns. */
+export async function listGuildTextChannels(): Promise<{ id: string; name: string }[]> {
+  const gid = process.env.DISCORD_GUILD_ID;
+  if (!gid || !process.env.DISCORD_BOT_TOKEN) return [];
+  try {
+    const rows = (await discordFetch(`/guilds/${gid}/channels`, { method: "GET" })) as {
+      id: string;
+      name: string;
+      type: number;
+      position: number;
+    }[];
+    return rows
+      .filter((c) => c.type === 0)
+      .sort((a, b) => a.position - b.position)
+      .map((c) => ({ id: c.id, name: c.name }));
+  } catch {
+    return [];
+  }
 }
 
 /** Edit one of the bot's own messages (no Manage Messages needed). */
