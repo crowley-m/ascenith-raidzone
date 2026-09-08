@@ -27,6 +27,19 @@ export function ResultsForm({
   const router = useRouter();
   const ranks = [1, 2, 3];
 
+  if (entrants.length === 0) {
+    return (
+      <div className="card space-y-2">
+        <h3 className="font-display font-bold text-white">Results</h3>
+        <p className="text-sm text-slate-400">
+          Nothing to place yet — the dropdowns list whoever is on the roster. Solo events
+          need confirmed sign-ups; team events need <span className="text-slate-200">teams
+          registered</span> for this event by their leader.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="card space-y-4">
       <h3 className="font-display font-bold text-white">Results</h3>
