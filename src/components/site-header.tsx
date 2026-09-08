@@ -2,6 +2,13 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import { isStaff } from "@/lib/rbac";
 import { site } from "@/lib/site";
+import { AccountMenu } from "@/components/account-menu";
+
+const NAV = [
+  { href: "/events", label: "Events" },
+  { href: "/proof", label: "Results" },
+  { href: "/rules", label: "Rules" },
+];
 
 export async function SiteHeader() {
   const session = await auth();
@@ -19,15 +26,11 @@ export async function SiteHeader() {
         </Link>
 
         <nav className="hidden items-center gap-6 font-mono text-[0.68rem] uppercase tracking-[0.14em] text-slate-300 md:flex">
-          <Link href="/events" className="hover:text-white">
-            Events
-          </Link>
-          <Link href="/proof" className="hover:text-white">
-            Results
-          </Link>
-          <Link href="/rules" className="hover:text-white">
-            Rules
-          </Link>
+          {NAV.map((n) => (
+            <Link key={n.href} href={n.href} className="hover:text-white">
+              {n.label}
+            </Link>
+          ))}
           <a
             href={site.discordInvite}
             target="_blank"
@@ -40,16 +43,11 @@ export async function SiteHeader() {
 
         <div className="flex items-center gap-2">
           {user ? (
-            <>
-              {isStaff(user.role) && (
-                <Link href="/portal" className="btn-ghost hidden sm:inline-flex">
-                  Portal
-                </Link>
-              )}
-              <Link href="/me" className="btn-primary">
-                My profile
-              </Link>
-            </>
+            <AccountMenu
+              name={user.name ?? user.email ?? "Account"}
+              isStaff={isStaff(user.role)}
+              nav={NAV}
+            />
           ) : (
             <>
               <Link

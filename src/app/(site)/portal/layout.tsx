@@ -1,9 +1,6 @@
-import Link from "next/link";
 import { requireStaff } from "@/lib/session";
-import { can } from "@/lib/rbac";
-import { roleLabel } from "@/lib/rbac";
+import { can, roleLabel } from "@/lib/rbac";
 import { SubNav } from "@/components/sub-nav";
-import { SignOutButton } from "@/components/sign-out-button";
 
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
   const user = await requireStaff();
@@ -19,20 +16,13 @@ export default async function PortalLayout({ children }: { children: React.React
   ].filter((i) => i.show);
 
   return (
-    <div className="container-x py-12">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-xs uppercase tracking-widest text-teal">Staff portal</p>
-          <h1 className="font-display text-2xl font-extrabold text-white">ASCENITH RAIDZONE</h1>
-        </div>
-        <div className="flex items-center gap-3 text-sm text-slate-400">
-          <span className="badge border-teal/40 text-teal">{roleLabel(user.role)}</span>
-          <Link href="/me" className="hover:text-white">My profile</Link>
-          <SignOutButton />
-        </div>
+    <div className="container-x py-10">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <h1 className="font-display text-2xl font-extrabold text-white">Staff portal</h1>
+        <span className="badge border-teal/40 text-teal">{roleLabel(user.role)}</span>
       </div>
 
-      <div className="mt-6">
+      <div className="mt-5">
         <SubNav items={items} />
       </div>
 

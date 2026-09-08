@@ -172,11 +172,12 @@ export function Landing({
           ASCENITH&middot;RAIDZONE
         </span>
         <div className={s.navMid}>
-          <a href="#event">The op</a>
-          <Link href="/events">All events</Link>
-          <a href="#how">How it works</a>
-          <a href="#watch">Watch</a>
-          <a href="#run">Field manual</a>
+          <Link href="/events">Events</Link>
+          <Link href="/proof">Results</Link>
+          <Link href="/rules">Rules</Link>
+          <a href={DISCORD} target="_blank" rel="noreferrer">
+            Discord
+          </a>
         </div>
         <span className={s.navStatus}>
           <span className={s.liveDot} />
@@ -187,11 +188,13 @@ export function Landing({
         </span>
         {user ? (
           <>
-            <a className={s.navSignin} href="/me">
+            {staff && (
+              <a className={s.navSignin} href="/portal">
+                Portal
+              </a>
+            )}
+            <Box href="/me" variant="solid">
               My profile
-            </a>
-            <Box href={dashHref} variant="solid">
-              {staff ? "Portal" : "My raider"}
             </Box>
           </>
         ) : (
