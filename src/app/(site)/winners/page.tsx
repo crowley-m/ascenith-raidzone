@@ -36,12 +36,6 @@ export default async function WinnersPage() {
       key: c.id,
       src: c.posterUrl as string,
       alt: `Season ${c.number} champion — ${c.championName}`,
-      eyebrow: `Season ${c.number}${c.name ? ` · ${c.name}` : ""}`,
-      badge: c.status === "ACTIVE" ? "Reigning" : null,
-      title: c.championName,
-      sub: [c.prizePoolText ? `Prize pool ${c.prizePoolText}` : null, c.championNote]
-        .filter(Boolean)
-        .join(" · ") || null,
     }));
 
   const proofImages = await db.mediaAsset
@@ -55,15 +49,12 @@ export default async function WinnersPage() {
     key: img.id,
     src: `/api/media/${img.id}`,
     alt: img.caption ?? "",
-    eyebrow: img.caption,
-    sub: img.tag,
   }));
 
   const campaignItems: FloatItem[] = CAMPAIGN_POSTERS.map((p) => ({
     key: p.img,
     src: p.img,
     alt: p.label,
-    sub: p.label,
   }));
 
   let events: Awaited<ReturnType<typeof db.event.findMany>> = [];
@@ -107,12 +98,9 @@ export default async function WinnersPage() {
       </p>
 
       {championItems.length > 0 && (
-        <section className="mt-12 border-t border-edge pt-8">
-          <h2 className="font-display text-xl font-bold text-white">Season champions</h2>
-          <p className="mt-1 text-sm text-slate-500">
-            One bracket, one prize pool, one name that takes it all.
-          </p>
-          <FloatingGallery items={championItems} fit="contain" />
+        <section className="mt-14 border-t border-edge pt-6">
+          <h2 className="eyebrow">+ Season champions</h2>
+          <FloatingGallery items={championItems} watermark="Champions" />
         </section>
       )}
 
@@ -129,19 +117,15 @@ export default async function WinnersPage() {
       )}
 
       {proofItems.length > 0 && (
-        <section className="mt-12 border-t border-edge pt-8">
-          <h2 className="font-display text-xl font-bold text-white">Proof</h2>
-          <p className="mt-1 text-sm text-slate-500">
-            Payout screenshots, straight from the winners.
-          </p>
-          <FloatingGallery items={proofItems} />
+        <section className="mt-14 border-t border-edge pt-6">
+          <h2 className="eyebrow">+ Proof</h2>
+          <FloatingGallery items={proofItems} watermark="Proof" />
         </section>
       )}
 
-      <section className="mt-12 border-t border-edge pt-8">
-        <h2 className="font-display text-xl font-bold text-white">From the campaign</h2>
-        <p className="mt-1 text-sm text-slate-500">Posters from past seasons and events.</p>
-        <FloatingGallery items={campaignItems} fit="contain" />
+      <section className="mt-14 border-t border-edge pt-6">
+        <h2 className="eyebrow">+ From the campaign</h2>
+        <FloatingGallery items={campaignItems} watermark="Campaign" />
       </section>
 
       {events.length === 0 &&

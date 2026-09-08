@@ -68,28 +68,6 @@ body {
   }
 }
 
-/* Floating art gallery — scattered tiles that drift; still at rest for
-   reduced-motion. Each tile sets --rot inline. */
-@keyframes floatDrift {
-  0%,
-  100% {
-    transform: translateY(0) rotate(var(--rot, 0deg));
-  }
-  50% {
-    transform: translateY(-12px) rotate(calc(var(--rot, 0deg) * -0.5));
-  }
-}
-.float-tile {
-  animation: floatDrift 8s ease-in-out infinite;
-  will-change: transform;
-}
-@media (prefers-reduced-motion: reduce) {
-  .float-tile {
-    animation: none;
-    transform: rotate(var(--rot, 0deg));
-  }
-}
-
 /* One display face (Anton) for every heading — condensed, uppercase, tight. */
 .font-display,
 .font-poster {
