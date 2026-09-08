@@ -7,12 +7,34 @@ type PlayerInit = {
   characterName: string | null;
   platform: string | null;
   region: string | null;
-  powerLevel: number | null;
   timezone: string | null;
   playHours: string | null;
   languages: string | null;
   factionId: string | null;
 };
+
+const REGIONS = [
+  "North America",
+  "South America",
+  "Europe",
+  "Asia",
+  "Oceania",
+  "Middle East",
+  "Africa",
+];
+
+const TIMEZONES = [
+  "GMT-12", "GMT-11", "GMT-10", "GMT-9:30", "GMT-9", "GMT-8", "GMT-7", "GMT-6",
+  "GMT-5", "GMT-4", "GMT-3:30", "GMT-3", "GMT-2", "GMT-1", "GMT+0", "GMT+1",
+  "GMT+2", "GMT+3", "GMT+3:30", "GMT+4", "GMT+4:30", "GMT+5", "GMT+5:30",
+  "GMT+5:45", "GMT+6", "GMT+6:30", "GMT+7", "GMT+8", "GMT+9", "GMT+9:30",
+  "GMT+10", "GMT+10:30", "GMT+11", "GMT+12", "GMT+13", "GMT+14",
+];
+
+/** Keep a player's previously-saved free-text value selectable. */
+function withCurrent(list: string[], current: string | null) {
+  return current && !list.includes(current) ? [current, ...list] : list;
+}
 
 const initial: ProfileState = {};
 
@@ -58,34 +80,36 @@ export function ProfileForm({
         </div>
         <div>
           <label className="label" htmlFor="region">Server / region</label>
-          <input id="region" name="region" className="input" maxLength={80}
-            defaultValue={player?.region ?? ""} placeholder="e.g. NA-East, Asia" />
+          <select id="region" name="region" className="input" defaultValue={player?.region ?? ""}>
+            <option value="">—</option>
+            {withCurrent(REGIONS, player?.region ?? null).map((r) => (
+              <option key={r} value={r}>{r}</option>
+            ))}
+          </select>
         </div>
       </div>
 
       <div className="grid gap-5 sm:grid-cols-2">
         <div>
-          <label className="label" htmlFor="powerLevel">In-game power / level</label>
-          <input id="powerLevel" name="powerLevel" type="number" className="input" min={0}
-            defaultValue={player?.powerLevel ?? ""} />
+          <label className="label" htmlFor="timezone">Timezone</label>
+          <select id="timezone" name="timezone" className="input" defaultValue={player?.timezone ?? ""}>
+            <option value="">—</option>
+            {withCurrent(TIMEZONES, player?.timezone ?? null).map((t) => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
         </div>
         <div>
-          <label className="label" htmlFor="timezone">Timezone</label>
-          <input id="timezone" name="timezone" className="input" maxLength={60}
-            defaultValue={player?.timezone ?? ""} placeholder="e.g. GMT+5:30" />
+          <label className="label" htmlFor="playHours">Typical play hours</label>
+          <input id="playHours" name="playHours" className="input" maxLength={200}
+            defaultValue={player?.playHours ?? ""} placeholder="e.g. Weeknights 8pm–midnight" />
         </div>
-      </div>
-
-      <div>
-        <label className="label" htmlFor="playHours">Typical play hours</label>
-        <input id="playHours" name="playHours" className="input" maxLength={200}
-          defaultValue={player?.playHours ?? ""} placeholder="e.g. Weeknights 8pm–midnight" />
       </div>
 
       <div>
         <label className="label" htmlFor="languages">Languages</label>
         <input id="languages" name="languages" className="input" maxLength={200}
-          defaultValue={player?.languages ?? ""} placeholder="e.g. English, Sinhala" />
+          defaultValue={player?.languages ?? ""} placeholder="e.g. English" />
       </div>
 
       <div>

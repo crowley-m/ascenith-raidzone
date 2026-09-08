@@ -43,7 +43,6 @@ export default async function PlayerDetailPage({
     ["Character", player.characterName ?? "—"],
     ["Platform", player.platform ?? "—"],
     ["Region", player.region ?? "—"],
-    ["Power", player.powerLevel ?? "—"],
     ["Timezone", player.timezone ?? "—"],
     ["Play hours", player.playHours ?? "—"],
     ["Languages", player.languages ?? "—"],

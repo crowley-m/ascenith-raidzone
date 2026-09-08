@@ -41,7 +41,6 @@ export default async function MeOverviewPage() {
     ["Character", player.characterName],
     ["Platform", player.platform],
     ["Region", player.region],
-    ["Power", player.powerLevel],
     ["Timezone", player.timezone],
     ["Faction", player.faction?.name],
   ].filter(([, v]) => v);

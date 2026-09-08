@@ -16,7 +16,6 @@ export const profileSchema = z.object({
   characterName: z.string().min(1).max(60),
   platform: z.enum(["PC", "PLAYSTATION", "XBOX"]).nullable().optional(),
   region: z.string().max(80).nullable().optional(),
-  powerLevel: z.coerce.number().int().min(0).max(100000).nullable().optional(),
   timezone: z.string().max(60).nullable().optional(),
   playHours: z.string().max(200).nullable().optional(),
   languages: z.string().max(200).nullable().optional(),

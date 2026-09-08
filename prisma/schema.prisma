@@ -103,7 +103,6 @@ model Player {
   characterName String?
   platform      Platform?
   region        String? // server / world / region
-  powerLevel    Int?
 
   // Contact & scheduling
   timezone  String?
