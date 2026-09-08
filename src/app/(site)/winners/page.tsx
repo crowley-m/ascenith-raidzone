@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { fmtDate } from "@/lib/format";
 import { topRaiders } from "@/lib/leaderboard";
 import { TopRaiders } from "@/components/top-raiders";
+import { ProofGallery } from "@/components/winners/proof-gallery";
 import type { RewardTier } from "@/lib/validation";
 
 export const metadata: Metadata = {
@@ -131,30 +132,7 @@ export default async function WinnersPage() {
         </section>
       )}
 
-      {proofImages.length > 0 && (
-        <section className="mt-12 border-t border-edge pt-8">
-          <h2 className="font-display text-xl font-bold text-white">Proof</h2>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {proofImages.map((img) => (
-              <figure key={img.id} className="border border-edge">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={`/api/media/${img.id}`}
-                  alt={img.caption ?? ""}
-                  loading="lazy"
-                  className="aspect-video w-full object-cover"
-                />
-                {(img.caption || img.tag) && (
-                  <figcaption className="px-3 py-2 text-xs text-slate-400">
-                    {img.caption}
-                    {img.tag ? ` · ${img.tag}` : ""}
-                  </figcaption>
-                )}
-              </figure>
-            ))}
-          </div>
-        </section>
-      )}
+      <ProofGallery images={proofImages} />
 
       <section className="mt-12 border-t border-edge pt-8">
         <h2 className="font-display text-xl font-bold text-white">From the campaign</h2>

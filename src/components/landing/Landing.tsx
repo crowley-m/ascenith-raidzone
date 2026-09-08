@@ -183,20 +183,6 @@ export function Landing({
           <span className={s.dot} />
           ASCENITH&middot;RAIDZONE
         </span>
-        <div className={s.navMid}>
-          <Link href="/events">Events</Link>
-          <Link href="/teams">Teams</Link>
-          <Link href="/winners">Winners</Link>
-          <Link href="/rules">Rules</Link>
-          <Link href="/about">About</Link>
-        </div>
-        <span className={s.navStatus}>
-          <span className={s.liveDot} />
-          {typeof discordOnline === "number"
-            ? `${discordOnline.toLocaleString()} online`
-            : "Server live"}{" "}
-          &mdash; {season} {new Date().getFullYear()}
-        </span>
         <NavOverlay
           pages={NAV_PAGES}
           sections={NAV_SECTIONS}
