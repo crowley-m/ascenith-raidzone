@@ -14,31 +14,6 @@ export const dynamic = "force-dynamic";
 
 const MEDAL = ["1st", "2nd", "3rd", "4th", "5th"];
 
-// Season champion posters (static art in /public/media). Newest first.
-const CHAMPIONS = [
-  {
-    season: 3,
-    name: "SCUBACAT",
-    prize: "101,450 Crystgin",
-    img: "/media/champion-season-3.webp",
-    reigning: true,
-  },
-  {
-    season: 2,
-    name: "BT",
-    prize: "46,260 Crystgin",
-    img: "/media/champion-season-2.webp",
-    reigning: false,
-  },
-  {
-    season: 1,
-    name: "FSQ Team",
-    prize: "67,410 Crystgin",
-    img: "/media/champion-season-1.webp",
-    reigning: false,
-  },
-];
-
 // Event / campaign posters (static art in /public/media).
 const CAMPAIGN_POSTERS = [
   { img: "/media/key-art-ascenith.webp", label: "ASCENITH — Rise. Conquer. Ascend." },
@@ -50,6 +25,10 @@ const CAMPAIGN_POSTERS = [
 
 export default async function WinnersPage() {
   const raiders = await topRaiders(15);
+  const seasons = await db.season
+    .findMany({ orderBy: { number: "desc" } })
+    .catch(() => []);
+  const champions = seasons.filter((s) => s.championName);
   const proofImages = await db.mediaAsset
     .findMany({
       where: { kind: "proof" },
@@ -98,37 +77,47 @@ export default async function WinnersPage() {
         Every RAIDZONE event, who placed, and what they took home. Real events, real payouts.
       </p>
 
-      <section className="mt-12 border-t border-edge pt-8">
-        <h2 className="font-display text-xl font-bold text-white">Season champions</h2>
-        <p className="mt-1 text-sm text-slate-500">
-          One bracket, one prize pool, one name that takes it all.
-        </p>
-        <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {CHAMPIONS.map((c) => (
-            <figure key={c.season} className="border border-edge bg-black">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={c.img}
-                alt={`Season ${c.season} champion — ${c.name}, prize pool ${c.prize}`}
-                loading="lazy"
-                className="aspect-video w-full object-contain"
-              />
-              <figcaption className="flex flex-wrap items-baseline gap-x-2 gap-y-1 px-3 py-3">
-                <span className="font-mono text-xs uppercase tracking-wide text-teal">
-                  Season {c.season}
-                </span>
-                {c.reigning && (
-                  <span className="border border-teal/40 px-1.5 py-0.5 text-[0.62rem] uppercase tracking-wide text-teal">
-                    Reigning
-                  </span>
+      {champions.length > 0 && (
+        <section className="mt-12 border-t border-edge pt-8">
+          <h2 className="font-display text-xl font-bold text-white">Season champions</h2>
+          <p className="mt-1 text-sm text-slate-500">
+            One bracket, one prize pool, one name that takes it all.
+          </p>
+          <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {champions.map((c) => (
+              <figure key={c.id} className="border border-edge bg-black">
+                {c.posterUrl && (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img
+                    src={c.posterUrl}
+                    alt={`Season ${c.number} champion — ${c.championName}`}
+                    loading="lazy"
+                    className="aspect-video w-full object-contain"
+                  />
                 )}
-                <span className="w-full font-display font-bold text-white">{c.name}</span>
-                <span className="text-sm text-slate-400">Prize pool {c.prize}</span>
-              </figcaption>
-            </figure>
-          ))}
-        </div>
-      </section>
+                <figcaption className="flex flex-wrap items-baseline gap-x-2 gap-y-1 px-3 py-3">
+                  <span className="font-mono text-xs uppercase tracking-wide text-teal">
+                    Season {c.number}
+                    {c.name ? ` · ${c.name}` : ""}
+                  </span>
+                  {c.status === "ACTIVE" && (
+                    <span className="border border-teal/40 px-1.5 py-0.5 text-[0.62rem] uppercase tracking-wide text-teal">
+                      Reigning
+                    </span>
+                  )}
+                  <span className="w-full font-display font-bold text-white">{c.championName}</span>
+                  {c.prizePoolText && (
+                    <span className="text-sm text-slate-400">Prize pool {c.prizePoolText}</span>
+                  )}
+                  {c.championNote && (
+                    <span className="w-full text-xs text-slate-500">{c.championNote}</span>
+                  )}
+                </figcaption>
+              </figure>
+            ))}
+          </div>
+        </section>
+      )}
 
       {raiders.length > 0 && (
         <section className="mt-12 border-t border-edge pt-8">
@@ -189,6 +178,7 @@ export default async function WinnersPage() {
       {events.length === 0 &&
       looseRewards.length === 0 &&
       raiders.length === 0 &&
+      champions.length === 0 &&
       proofImages.length === 0 ? (
         <p className="mt-12 text-sm text-slate-400">
           No results logged yet — check back after the next event.

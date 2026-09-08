@@ -15,6 +15,7 @@ type EventInit = {
   teamSize: number | null;
   rewardPoolText: string | null;
   status: string;
+  seasonId: string | null;
   summary: string | null;
   mode: string | null;
   wipeCycle: string | null;
@@ -30,7 +31,15 @@ type EventInit = {
   rewardsMd: string | null;
 };
 
-export function EventForm({ event }: { event?: EventInit }) {
+export type SeasonOption = { id: string; number: number; name: string | null };
+
+export function EventForm({
+  event,
+  seasons = [],
+}: {
+  event?: EventInit;
+  seasons?: SeasonOption[];
+}) {
   const [state, action, pending] = useActionState(saveEvent, {});
 
   return (
@@ -85,14 +94,28 @@ export function EventForm({ event }: { event?: EventInit }) {
         </div>
       </div>
 
-      <div>
-        <label className="label">Status</label>
-        <select name="status" className="input max-w-[16rem]" defaultValue={event?.status ?? "DRAFT"}>
-          <option value="DRAFT">Draft</option>
-          <option value="PUBLISHED">Published (announces to Discord)</option>
-          <option value="COMPLETED">Completed</option>
-          <option value="CANCELLED">Cancelled</option>
-        </select>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label className="label">Status</label>
+          <select name="status" className="input" defaultValue={event?.status ?? "DRAFT"}>
+            <option value="DRAFT">Draft</option>
+            <option value="PUBLISHED">Published (announces to Discord)</option>
+            <option value="COMPLETED">Completed</option>
+            <option value="CANCELLED">Cancelled</option>
+          </select>
+        </div>
+        <div>
+          <label className="label">Season</label>
+          <select name="seasonId" className="input" defaultValue={event?.seasonId ?? ""}>
+            <option value="">— none —</option>
+            {seasons.map((s) => (
+              <option key={s.id} value={s.id}>
+                Season {s.number}
+                {s.name ? ` · ${s.name}` : ""}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <hr className="border-edge" />

@@ -12,6 +12,7 @@ import {
   noteSchema,
   parseRewardTiers,
   rewardSchema,
+  seasonSchema,
 } from "@/lib/validation";
 import {
   postAnnouncement,
@@ -125,6 +126,7 @@ export async function saveEvent(_prev: FormState, formData: FormData): Promise<F
     teamSize: str("teamSize"),
     rewardPoolText: str("rewardPoolText"),
     status: formData.get("status"),
+    seasonId: str("seasonId"),
     summary: str("summary"),
     mode: str("mode"),
     wipeCycle: str("wipeCycle"),
@@ -154,6 +156,7 @@ export async function saveEvent(_prev: FormState, formData: FormData): Promise<F
     teamSize: d.teamSize ?? null,
     rewardPoolText: d.rewardPoolText ?? null,
     status: d.status,
+    seasonId: d.seasonId ? d.seasonId : null,
     summary: d.summary ?? null,
     mode: d.mode ?? null,
     wipeCycle: d.wipeCycle ?? null,
@@ -734,6 +737,76 @@ export async function deleteFaction(id: string) {
   await db.faction.delete({ where: { id } });
   await logAudit({ actorId: actor.id, action: "faction.delete", targetType: "Faction", targetId: id });
   revalidatePath("/portal/factions");
+}
+
+// --------------------------------------------------------------------------
+// Seasons
+// --------------------------------------------------------------------------
+
+export async function saveSeason(_prev: FormState, formData: FormData): Promise<FormState> {
+  const actor = await assertPermission("event:manage");
+  const id = (formData.get("id") as string) || null;
+  const str = (k: string) => ((formData.get(k) as string) || "").trim() || null;
+
+  const parsed = seasonSchema.safeParse({
+    number: formData.get("number"),
+    name: str("name"),
+    status: formData.get("status") ?? "UPCOMING",
+    startsAt: str("startsAt"),
+    endsAt: str("endsAt"),
+    prizePoolText: str("prizePoolText"),
+    championName: str("championName"),
+    championNote: str("championNote"),
+    posterUrl: str("posterUrl"),
+    blurb: str("blurb"),
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Check the season fields." };
+  }
+  const s = parsed.data;
+  const data = {
+    number: s.number,
+    name: s.name ?? null,
+    status: s.status,
+    startsAt: s.startsAt ? new Date(s.startsAt) : null,
+    endsAt: s.endsAt ? new Date(s.endsAt) : null,
+    prizePoolText: s.prizePoolText ?? null,
+    championName: s.championName ?? null,
+    championNote: s.championNote ?? null,
+    posterUrl: s.posterUrl ?? null,
+    blurb: s.blurb ?? null,
+  };
+
+  try {
+    if (id) {
+      await db.season.update({ where: { id }, data });
+    } else {
+      await db.season.create({ data });
+    }
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      return { error: `Season ${s.number} already exists.` };
+    }
+    throw err;
+  }
+  await logAudit({
+    actorId: actor.id,
+    action: id ? "season.update" : "season.create",
+    targetType: "Season",
+    targetId: id ?? undefined,
+  });
+  revalidatePath("/portal/seasons");
+  revalidatePath("/winners");
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function deleteSeason(id: string) {
+  const actor = await assertPermission("event:manage");
+  await db.season.delete({ where: { id } });
+  await logAudit({ actorId: actor.id, action: "season.delete", targetType: "Season", targetId: id });
+  revalidatePath("/portal/seasons");
+  revalidatePath("/winners");
 }
 
 // --------------------------------------------------------------------------

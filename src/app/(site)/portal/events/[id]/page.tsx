@@ -50,6 +50,11 @@ export default async function PortalEventDetail({
   });
   if (!event) notFound();
 
+  const seasons = await db.season.findMany({
+    orderBy: { number: "desc" },
+    select: { id: true, number: true, name: true },
+  });
+
   const attMap = new Map(event.attendance.map((a) => [a.playerId, a.attended]));
   const canManage = can(user.role, "event:manage");
   const canMark = can(user.role, "attendance:mark");
@@ -355,6 +360,7 @@ export default async function PortalEventDetail({
               <h3 className="font-display font-bold text-white">Edit</h3>
               <div className="mt-3">
                 <EventForm
+                  seasons={seasons}
                   event={{
                     id: event.id,
                     title: event.title,
@@ -367,6 +373,7 @@ export default async function PortalEventDetail({
                     teamSize: event.teamSize,
                     rewardPoolText: event.rewardPoolText,
                     status: event.status,
+                    seasonId: event.seasonId,
                     summary: event.summary,
                     mode: event.mode,
                     wipeCycle: event.wipeCycle,

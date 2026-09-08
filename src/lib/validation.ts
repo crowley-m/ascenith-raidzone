@@ -49,6 +49,7 @@ export const eventSchema = z.object({
   teamSize: z.coerce.number().int().min(0).max(100).nullable().optional(),
   rewardPoolText: z.string().max(2000).nullable().optional(),
   status: z.enum(["DRAFT", "PUBLISHED", "COMPLETED", "CANCELLED"]),
+  seasonId: z.string().trim().nullable().optional().or(z.literal("")),
   // landing / public brief
   summary: z.string().max(400).nullable().optional(),
   mode: z.string().max(40).nullable().optional(),
@@ -99,6 +100,19 @@ export const rewardSchema = z.object({
   reason: z.string().min(1).max(1000),
   isPublic: z.coerce.boolean().optional(),
   proofImageUrl: z.string().url().max(500).nullable().optional(),
+});
+
+export const seasonSchema = z.object({
+  number: z.coerce.number().int().min(1).max(999),
+  name: z.string().max(80).nullable().optional(),
+  status: z.enum(["UPCOMING", "ACTIVE", "ENDED"]).default("UPCOMING"),
+  startsAt: z.string().nullable().optional(),
+  endsAt: z.string().nullable().optional(),
+  prizePoolText: z.string().max(120).nullable().optional(),
+  championName: z.string().max(120).nullable().optional(),
+  championNote: z.string().max(200).nullable().optional(),
+  posterUrl: z.string().max(500).nullable().optional(),
+  blurb: z.string().max(600).nullable().optional(),
 });
 
 export const factionSchema = z.object({

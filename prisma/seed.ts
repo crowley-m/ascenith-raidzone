@@ -17,6 +17,40 @@ async function main() {
   }
   console.log(`Seeded ${factions.length} factions.`);
 
+  // Seasons run so far. Champion text/poster stay editable in the portal —
+  // this only guarantees the rows exist so the Hall of Winners isn't empty.
+  const seasons = [
+    {
+      number: 1,
+      status: "ENDED" as const,
+      prizePoolText: "67,410 Crystgin",
+      championName: "FSQ Team",
+      posterUrl: "/media/champion-season-1.webp",
+    },
+    {
+      number: 2,
+      status: "ENDED" as const,
+      prizePoolText: "46,260 Crystgin",
+      championName: "BT",
+      posterUrl: "/media/champion-season-2.webp",
+    },
+    {
+      number: 3,
+      status: "ACTIVE" as const,
+      prizePoolText: "101,450 Crystgin",
+      championName: "SCUBACAT",
+      posterUrl: "/media/champion-season-3.webp",
+    },
+  ];
+  for (const s of seasons) {
+    await db.season.upsert({
+      where: { number: s.number },
+      create: s,
+      update: {}, // never clobber portal edits
+    });
+  }
+  console.log(`Seeded ${seasons.length} seasons.`);
+
   const ownerId = process.env.OWNER_DISCORD_ID;
   const ownerName = process.env.OWNER_DISCORD_USERNAME;
   if (ownerId || ownerName) {

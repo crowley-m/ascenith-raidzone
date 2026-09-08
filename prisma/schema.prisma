@@ -226,6 +226,35 @@ model Flag {
 // Events
 // ---------------------------------------------------------------------------
 
+enum SeasonStatus {
+  UPCOMING
+  ACTIVE
+  ENDED
+}
+
+// A competitive season — events roll up into one, and the Hall of Winners
+// shows its champion. Editable in the portal (no deploy to crown a winner).
+model Season {
+  id            String       @id @default(cuid())
+  number        Int          @unique
+  name          String? // e.g. "Ascension"
+  status        SeasonStatus @default(UPCOMING)
+  startsAt      DateTime?
+  endsAt        DateTime?
+  prizePoolText String? // "101,450 Crystgin"
+  championName  String? // "SCUBACAT" / "FSQ Team" — blank until crowned
+  championNote  String? // free line under the name, optional
+  posterUrl     String? // /media/champion-season-3.webp or /api/media/<id>
+  blurb         String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  events Event[]
+
+  @@index([status])
+}
+
 enum EventStatus {
   DRAFT
   PUBLISHED
@@ -256,6 +285,9 @@ model Event {
   teamSize       Int? // TEAM: players counted per team (optional cap)
   rewardPoolText String?
   status         EventStatus @default(DRAFT)
+
+  seasonId String?
+  season   Season? @relation(fields: [seasonId], references: [id], onDelete: SetNull)
 
   // landing / public brief
   summary     String? // 1-2 line teaser for the landing card
@@ -295,6 +327,7 @@ model Event {
   teamsFor   Team[]           @relation("TeamsForEvent")
 
   @@index([status, startsAt])
+  @@index([seasonId])
 }
 
 model EventPlacement {

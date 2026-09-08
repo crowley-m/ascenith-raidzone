@@ -90,6 +90,18 @@ async function eventData(): Promise<{ current: OpEvent | null; upcoming: Upcomin
   };
 }
 
+/** "S3" for the nav tag / hero line — active season, else the highest-numbered. */
+async function seasonLabel(): Promise<string> {
+  try {
+    const s =
+      (await db.season.findFirst({ where: { status: "ACTIVE" }, orderBy: { number: "desc" } })) ??
+      (await db.season.findFirst({ orderBy: { number: "desc" } }));
+    return s ? `S${s.number}` : "";
+  } catch {
+    return "";
+  }
+}
+
 async function galleryImages(): Promise<GalleryImage[]> {
   try {
     return await db.mediaAsset.findMany({
@@ -104,12 +116,13 @@ async function galleryImages(): Promise<GalleryImage[]> {
 }
 
 export default async function HomePage() {
-  const [{ current, upcoming }, videos, presence, gallery, settings] = await Promise.all([
+  const [{ current, upcoming }, videos, presence, gallery, settings, season] = await Promise.all([
     eventData(),
     latestVideos(9),
     guildPresence(),
     galleryImages(),
     getSettings(),
+    seasonLabel(),
   ]);
   return (
     <Landing
@@ -119,6 +132,7 @@ export default async function HomePage() {
       howToJoinVideo={settings.howToJoinVideoUrl}
       discordOnline={presence?.online ?? null}
       gallery={gallery}
+      seasonLabel={season}
     />
   );
 }

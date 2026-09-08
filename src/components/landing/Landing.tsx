@@ -97,6 +97,7 @@ export function Landing({
   discordOnline = null,
   gallery = [],
   howToJoinVideo = "",
+  seasonLabel = "",
 }: {
   event?: OpEvent | null;
   upcoming?: UpcomingOp[];
@@ -104,7 +105,9 @@ export function Landing({
   discordOnline?: number | null;
   gallery?: GalleryImage[];
   howToJoinVideo?: string;
+  seasonLabel?: string;
 }) {
+  const season = seasonLabel || "S1";
   const { data: session } = useSession();
   const user = session?.user ?? null;
   const staff = isStaff(user?.role);
@@ -192,7 +195,7 @@ export function Landing({
           {typeof discordOnline === "number"
             ? `${discordOnline.toLocaleString()} online`
             : "Server live"}{" "}
-          &mdash; S1 2026
+          &mdash; {season} {new Date().getFullYear()}
         </span>
         <NavOverlay
           pages={NAV_PAGES}
@@ -263,7 +266,7 @@ export function Landing({
             <span className={s.x}>Sponsored prizes for the squads that take it.</span>
           </p>
           <p className={s.heroSub} data-reveal>
-            Run by POTATOZIE &mdash; Season 1 roster open
+            Run by POTATOZIE &mdash; Season {season.replace(/^S/, "")} roster open
           </p>
           {typeof discordOnline === "number" && (
             <p className={s.heroLive} data-reveal>
