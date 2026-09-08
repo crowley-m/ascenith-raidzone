@@ -68,11 +68,13 @@ body {
   }
 }
 
-/* headings across the app pick up the condensed poster face */
-h1.font-display,
-h2.font-display,
-.font-display {
-  letter-spacing: 0.005em;
+/* One display face (Anton) for every heading — condensed, uppercase, tight. */
+.font-display,
+.font-poster {
+  text-transform: uppercase;
+  letter-spacing: 0.012em;
+  line-height: 1.04;
+  font-weight: 400;
 }
 
 /* staff-authored markdown (event briefs, etc.) */

@@ -35,8 +35,9 @@ export default {
         ember: "#e0a13a",
       },
       fontFamily: {
-        poster: ["var(--font-anton)", "Arial Narrow", "Oswald", "sans-serif"],
-        display: ["var(--font-display)", "system-ui", "sans-serif"],
+        // `poster` and `display` both resolve to Anton — one display face app-wide.
+        poster: ["var(--font-anton)", "Oswald", "Arial Narrow", "sans-serif"],
+        display: ["var(--font-anton)", "Oswald", "Arial Narrow", "sans-serif"],
         sans: ["var(--font-sans)", "system-ui", "sans-serif"],
         mono: ["var(--font-space-mono)", "ui-monospace", "SFMono-Regular", "monospace"],
       },

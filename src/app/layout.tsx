@@ -1,16 +1,11 @@
 import type { Metadata } from "next";
-import { Inter, Oxanium, Anton, Space_Mono } from "next/font/google";
+import { Inter, Anton, Space_Mono } from "next/font/google";
 import { SessionProvider } from "@/components/session-provider";
 import "./globals.css";
 
+// Three faces, one job each: Inter (body), Anton (all display headings),
+// Space Mono (labels / eyebrows / buttons / code).
 const sans = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
-const display = Oxanium({
-  subsets: ["latin"],
-  weight: ["500", "600", "700", "800"],
-  variable: "--font-display",
-  display: "swap",
-});
-// landing faces — poster condensed + a characterful monospace
 const anton = Anton({
   subsets: ["latin"],
   weight: ["400"],
@@ -44,7 +39,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="en"
-      className={`${sans.variable} ${display.variable} ${anton.variable} ${spaceMono.variable}`}
+      className={`${sans.variable} ${anton.variable} ${spaceMono.variable}`}
     >
       <body className="min-h-screen font-sans">
         <SessionProvider>{children}</SessionProvider>

@@ -182,6 +182,7 @@ export function Landing({
         </span>
         <div className={s.navMid}>
           <Link href="/events">Events</Link>
+          <Link href="/teams">Teams</Link>
           <Link href="/winners">Winners</Link>
           <Link href="/rules">Rules</Link>
           <Link href="/about">About</Link>
