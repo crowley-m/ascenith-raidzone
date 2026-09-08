@@ -462,7 +462,6 @@ export async function archiveEventDiscord(eventId: string): Promise<FormState> {
   const actor = await assertPermission("event:manage");
   const ev = await db.event.findUnique({ where: { id: eventId } });
   if (!ev?.discordCategoryId) return { error: "This event has no Discord space." };
-  if (ev.discordArchivedAt) return { error: "Already archived." };
 
   const channels = Object.values((ev.discordChannels as Record<string, string>) ?? {});
   let result: { renamed: boolean; hidden: boolean };
@@ -472,14 +471,21 @@ export async function archiveEventDiscord(eventId: string): Promise<FormState> {
     console.error("archiveEventSpace failed", err);
     return { error: `Discord: ${err instanceof Error ? err.message : "archive failed"}` };
   }
-  await db.event.update({ where: { id: ev.id }, data: { discordArchivedAt: new Date() } });
-  await logAudit({ actorId: actor.id, action: "event.discord_archive", targetType: "Event", targetId: ev.id });
+  if (!ev.discordArchivedAt) {
+    await db.event.update({ where: { id: ev.id }, data: { discordArchivedAt: new Date() } });
+  }
+  await logAudit({
+    actorId: actor.id,
+    action: ev.discordArchivedAt ? "event.discord_relock" : "event.discord_archive",
+    targetType: "Event",
+    targetId: ev.id,
+  });
   revalidatePath(`/portal/events/${ev.id}`);
   if (!result.hidden) {
     return {
       ok: true,
       error:
-        "Archived, but couldn't lock every channel private — give the bot the Manage Roles + Manage Channels permissions and archive again.",
+        "Locked what it could, but not every channel — the bot needs Manage Roles + Manage Channels. Grant those and click again.",
     };
   }
   return { ok: true };

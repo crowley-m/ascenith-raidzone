@@ -346,9 +346,10 @@ const PERM_CONNECT = (1n << 20n).toString();
 
 /**
  * Archive an event's space: rename the category to mark it done, sink it to the
- * bottom, and make it fully private — deny @everyone VIEW_CHANNEL on the
- * category and every channel, and strip VIEW_CHANNEL from any other overwrite
- * that granted it (so no lingering role can see it). Non-destructive.
+ * bottom, and make it fully private. Every channel (and the category) has its
+ * permission overwrites *replaced* with a single pair — @everyone denied
+ * VIEW/SEND/CONNECT, the bot explicitly allowed — so nothing a member (or a
+ * left-over role/channel override) can see survives. Non-destructive otherwise.
  * Returns which steps succeeded so the caller can warn about missing bot perms.
  */
 export async function archiveEventSpace(
@@ -357,6 +358,34 @@ export async function archiveEventSpace(
 ): Promise<{ renamed: boolean; hidden: boolean }> {
   const gid = process.env.DISCORD_GUILD_ID;
   if (!gid || !process.env.DISCORD_BOT_TOKEN) return { renamed: false, hidden: false };
+
+  const botId = await botUserId();
+  const hideDeny = (
+    BigInt(PERM_VIEW_CHANNEL) |
+    BigInt(PERM_SEND_MESSAGES) |
+    BigInt(PERM_CONNECT)
+  ).toString();
+  const botAllow = (BigInt(PERM_VIEW_CHANNEL) | BigInt(PERM_SEND_MESSAGES)).toString();
+
+  const overwrites = [
+    { id: gid, type: 0, deny: hideDeny, allow: "0" },
+    ...(botId ? [{ id: botId, type: 1, allow: botAllow, deny: "0" }] : []),
+  ];
+
+  let hidden = true;
+  // channels first, category last — so the bot keeps inherited access while it
+  // still needs to edit the children
+  for (const id of [...channelIds, categoryId]) {
+    try {
+      await discordFetch(`/channels/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ permission_overwrites: overwrites }),
+      });
+    } catch (err) {
+      console.error(`archive hide failed for ${id}`, err);
+      hidden = false;
+    }
+  }
 
   const cat = (await discordFetch(`/channels/${categoryId}`, { method: "GET" }).catch(
     () => null,
@@ -374,42 +403,18 @@ export async function archiveEventSpace(
     console.error("archive rename failed", err);
   }
 
-  const view = BigInt(PERM_VIEW_CHANNEL);
-  const hideDeny = (view | BigInt(PERM_SEND_MESSAGES) | BigInt(PERM_CONNECT)).toString();
-  let hidden = true;
-
-  for (const id of [categoryId, ...channelIds]) {
-    // 1. deny @everyone view / send / connect
-    try {
-      await discordFetch(`/channels/${id}/permissions/${gid}`, {
-        method: "PUT",
-        body: JSON.stringify({ type: 0, deny: hideDeny }),
-      });
-    } catch (err) {
-      console.error(`archive hide failed for ${id}`, err);
-      hidden = false;
-      continue;
-    }
-    // 2. strip VIEW_CHANNEL from any other overwrite that allowed it
-    try {
-      const ch = (await discordFetch(`/channels/${id}`, { method: "GET" })) as {
-        permission_overwrites?: { id: string; type: number; allow: string; deny: string }[];
-      };
-      for (const ow of ch.permission_overwrites ?? []) {
-        if (ow.id === gid) continue;
-        if ((BigInt(ow.allow) & view) === 0n) continue;
-        const allow = (BigInt(ow.allow) & ~view).toString();
-        await discordFetch(`/channels/${id}/permissions/${ow.id}`, {
-          method: "PUT",
-          body: JSON.stringify({ type: ow.type, allow, deny: ow.deny }),
-        }).catch(() => {});
-      }
-    } catch {
-      /* couldn't read overwrites — the @everyone deny above still applies */
-    }
-  }
-
   return { renamed, hidden };
+}
+
+/**
+ * Re-run the archive lockdown on a space that's already flagged archived —
+ * used to retry after the bot is given the right permissions.
+ */
+export async function relockArchivedSpace(
+  categoryId: string,
+  channelIds: string[],
+): Promise<{ renamed: boolean; hidden: boolean }> {
+  return archiveEventSpace(categoryId, channelIds);
 }
 
 /** Plain message (optionally with an embed / components) to a channel. */
@@ -424,10 +429,13 @@ export async function postToChannel(
 ): Promise<{ id: string } | null> {
   if (!process.env.DISCORD_BOT_TOKEN) return null;
   const parse = payload.mentionEveryone ? ["roles", "everyone"] : ["roles"];
+  const content = payload.mentionEveryone
+    ? `@everyone${payload.content ? `\n${payload.content}` : ""}`
+    : payload.content;
   return (await discordFetch(`/channels/${channelId}/messages`, {
     method: "POST",
     body: JSON.stringify({
-      content: payload.content,
+      content,
       embeds: payload.embed ? [{ color: 0x2fd4c7, ...payload.embed }] : [],
       components: payload.components ?? [],
       allowed_mentions: { parse },
@@ -463,10 +471,13 @@ export async function editChannelMessage(
 ): Promise<void> {
   if (!process.env.DISCORD_BOT_TOKEN) return;
   const parse = payload.mentionEveryone ? ["roles", "everyone"] : ["roles"];
+  const content = payload.mentionEveryone
+    ? `@everyone${payload.content ? `\n${payload.content}` : ""}`
+    : (payload.content ?? "");
   await discordFetch(`/channels/${channelId}/messages/${messageId}`, {
     method: "PATCH",
     body: JSON.stringify({
-      content: payload.content ?? "",
+      content,
       embeds: payload.embed ? [{ color: 0x2fd4c7, ...payload.embed }] : [],
       allowed_mentions: { parse },
       ...(payload.components ? { components: payload.components } : {}),

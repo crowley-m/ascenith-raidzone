@@ -345,13 +345,13 @@ export function EventForm({
         <input
           type="checkbox"
           name="announcePing"
-          defaultChecked={event?.announcePing ?? false}
+          defaultChecked={event?.announcePing ?? true}
           className="mt-0.5 accent-teal"
         />
         <span>
-          Ping <span className="font-mono">@everyone</span> when the announcement first posts
+          Ping <span className="font-mono">@everyone</span> when the announcement posts
           <span className="mt-0.5 block text-xs text-slate-500">
-            Only fires on the first post — editing the announcement later won&apos;t re-ping.
+            On by default. Editing the announcement afterwards won&apos;t re-ping.
           </span>
         </span>
       </label>

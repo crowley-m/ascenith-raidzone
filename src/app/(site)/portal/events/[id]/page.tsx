@@ -158,7 +158,10 @@ export default async function PortalEventDetail({
           {canManage &&
             (event.discordCategoryId ? (
               event.discordArchivedAt ? (
-                <span className="badge border-edge text-slate-500">Discord archived</span>
+                <>
+                  <span className="badge border-edge text-slate-500">Discord archived</span>
+                  <ArchiveSpaceButton eventId={event.id} relock />
+                </>
               ) : (
                 <>
                   <span className="badge border-teal/40 text-teal">

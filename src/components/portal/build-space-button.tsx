@@ -33,7 +33,13 @@ export function SyncChannelsButton({ eventId }: { eventId: string }) {
   );
 }
 
-export function ArchiveSpaceButton({ eventId }: { eventId: string }) {
+export function ArchiveSpaceButton({
+  eventId,
+  relock = false,
+}: {
+  eventId: string;
+  relock?: boolean;
+}) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [err, setErr] = useState<string | null>(null);
@@ -44,7 +50,12 @@ export function ArchiveSpaceButton({ eventId }: { eventId: string }) {
         className="btn-ghost text-xs"
         disabled={pending}
         onClick={() => {
-          if (!window.confirm("Archive this event's Discord space? Renames the category, sinks it to the bottom, and locks the channels. Nothing is deleted."))
+          if (
+            !relock &&
+            !window.confirm(
+              "Archive this event's Discord space? Renames the category, sinks it to the bottom, and locks every channel private. Nothing is deleted.",
+            )
+          )
             return;
           setErr(null);
           start(async () => {
@@ -54,7 +65,13 @@ export function ArchiveSpaceButton({ eventId }: { eventId: string }) {
           });
         }}
       >
-        {pending ? "Archiving…" : "Archive Discord space"}
+        {pending
+          ? relock
+            ? "Locking…"
+            : "Archiving…"
+          : relock
+            ? "Re-lock private"
+            : "Archive Discord space"}
       </button>
       {err && <span className="text-[0.66rem] text-ember">{err}</span>}
     </span>
