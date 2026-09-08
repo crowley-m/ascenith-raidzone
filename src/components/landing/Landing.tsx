@@ -82,18 +82,6 @@ function About() {
   );
 }
 
-const MARQUEE = [
-  "One custom server",
-  "Weekly tournaments",
-  "Sponsored prizes",
-  "Custom scenarios",
-  "Purge nights",
-  "Prime raids",
-  "Deviant sweeps",
-  "Fair play",
-  "Roster tracked",
-];
-
 const RUN: [string, string, string][] = [
   ["Register", "Once. Link your Discord.", "One time"],
   ["Get the call", "Op drops in Discord — time, target, slots.", "In Discord"],
@@ -311,20 +299,6 @@ export function Landing({
         <HowItWorks />
 
         <About />
-
-        {/* marquee */}
-        <div className={s.marquee} aria-hidden>
-          {[0, 1].map((row) => (
-            <div className={s.marqueeRow} key={row}>
-              {MARQUEE.map((m) => (
-                <span key={m}>
-                  <i />
-                  {m}
-                </span>
-              ))}
-            </div>
-          ))}
-        </div>
 
         <Watch videos={videos} />
 

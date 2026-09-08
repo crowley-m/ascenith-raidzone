@@ -6,30 +6,23 @@ export type GalleryImage = {
   tag: string | null;
 };
 
-type Slot = {
-  left: string;
-  top: string;
-  width: string;
-  dur: string;
-  rot: number;
-  fallbackId: string;
-  fallbackTag: string;
-};
+type Slot = { left: string; top: string; width: string; dur: string; rot: number };
 
-/**
- * Floating gallery of raid stills. Slots are art-directed; staff fill them from
- * /portal/media. Empty slots fall back to a "signal pending" placeholder.
- */
+// Art-directed positions; staff fill them from /portal/media.
 const SLOTS: Slot[] = [
-  { left: "2%", top: "4%", width: "27%", dur: "7s", rot: -2.5, fallbackId: "PURGE 04", fallbackTag: "base hold" },
-  { left: "37%", top: "0%", width: "31%", dur: "9s", rot: 1.5, fallbackId: "PRIME 02", fallbackTag: "war target" },
-  { left: "73%", top: "9%", width: "25%", dur: "7.6s", rot: 3, fallbackId: "SWEEP 11", fallbackTag: "deviant run" },
-  { left: "8%", top: "46%", width: "29%", dur: "10s", rot: 2, fallbackId: "PURGE 03", fallbackTag: "night ops" },
-  { left: "42%", top: "42%", width: "27%", dur: "6.6s", rot: -1.5, fallbackId: "PRIME 01", fallbackTag: "first blood" },
-  { left: "72%", top: "53%", width: "24%", dur: "8.8s", rot: -3, fallbackId: "SWEEP 08", fallbackTag: "extraction" },
+  { left: "2%", top: "4%", width: "27%", dur: "7s", rot: -2.5 },
+  { left: "37%", top: "0%", width: "31%", dur: "9s", rot: 1.5 },
+  { left: "73%", top: "9%", width: "25%", dur: "7.6s", rot: 3 },
+  { left: "8%", top: "46%", width: "29%", dur: "10s", rot: 2 },
+  { left: "42%", top: "42%", width: "27%", dur: "6.6s", rot: -1.5 },
+  { left: "72%", top: "53%", width: "24%", dur: "8.8s", rot: -3 },
 ];
 
 export function Gallery({ images = [] }: { images?: GalleryImage[] }) {
+  // No fabricated placeholders — the section only exists when there's something real.
+  if (images.length === 0) return null;
+  const shown = images.slice(0, SLOTS.length);
+
   return (
     <section className={s.gallery} id="gallery">
       <div className={`${s.galleryHead} ${s.wrap}`}>
@@ -43,13 +36,11 @@ export function Gallery({ images = [] }: { images?: GalleryImage[] }) {
       </div>
 
       <div className={s.galleryField} data-parallax aria-hidden>
-        {SLOTS.map((slot, i) => {
-          const img = images[i];
-          const id = img?.caption || slot.fallbackId;
-          const tag = img?.tag || slot.fallbackTag;
+        {shown.map((img, i) => {
+          const slot = SLOTS[i];
           return (
             <div
-              key={i}
+              key={img.id}
               className={s.shotPop}
               data-pop
               style={{ left: slot.left, top: slot.top, width: slot.width }}
@@ -64,27 +55,22 @@ export function Gallery({ images = [] }: { images?: GalleryImage[] }) {
                   } as React.CSSProperties
                 }
               >
-                {img ? (
-                  <div className={s.shotImg}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={`/api/media/${img.id}`}
-                      alt=""
-                      loading="lazy"
-                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                    />
-                    <span className={s.shotCorner} />
-                  </div>
-                ) : (
-                  <div className={s.shotImg}>
-                    <span className={s.shotCorner} />
-                    <span className={s.shotSig}>{"// signal pending"}</span>
-                  </div>
+                <div className={s.shotImg}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={`/api/media/${img.id}`}
+                    alt=""
+                    loading="lazy"
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                  <span className={s.shotCorner} />
+                </div>
+                {(img.caption || img.tag) && (
+                  <figcaption>
+                    {img.caption && <span className={s.shotId}>{img.caption}</span>}
+                    {img.tag && <span className={s.shotTag}>{img.tag}</span>}
+                  </figcaption>
                 )}
-                <figcaption>
-                  <span className={s.shotId}>{id}</span>
-                  <span className={s.shotTag}>{tag}</span>
-                </figcaption>
               </figure>
             </div>
           );

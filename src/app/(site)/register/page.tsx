@@ -13,20 +13,14 @@ export default function RegisterPage() {
   return (
     <div className="container-x flex min-h-[80vh] items-center justify-center py-16">
       <div className="w-full max-w-md">
-        <p className="eyebrow">{"// new raider"}</p>
-        <h1 className="mt-2 font-poster text-5xl uppercase leading-none text-white">
+        <h1 className="font-poster text-5xl uppercase leading-none text-white">
           Register<span className="text-teal">.</span>
         </h1>
-        <p className="mt-3 font-mono text-[0.78rem] uppercase tracking-wide text-slate-400">
-          One profile &mdash; sign up for ops, take your cut, get on the roster.
+        <p className="mt-3 text-sm text-slate-400">
+          One profile — sign up for events, get your rewards, get on the roster.
         </p>
 
         <div className="mt-6 border border-edge bg-panel/70">
-          <div className="flex items-center gap-3 border-b border-edge px-4 py-3 font-mono text-[0.62rem] font-bold uppercase tracking-[0.18em] text-slate-400">
-            <span className="text-white">AUTH</span>
-            <span className="text-teal">{"//"}</span>
-            <span>NEW-ACCOUNT</span>
-          </div>
 
           <div className="p-5">
             <DiscordButton callbackUrl="/me/profile?new=1" />

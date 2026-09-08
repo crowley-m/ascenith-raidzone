@@ -64,8 +64,7 @@ const STEPS = [
 export default function AboutPage() {
   return (
     <div className="container-x py-16">
-      <p className="eyebrow">{"// about"}</p>
-      <h1 className="mt-2 font-poster text-5xl uppercase leading-[0.95] text-white sm:text-6xl">
+      <h1 className="font-poster text-5xl uppercase leading-[0.95] text-white sm:text-6xl">
         Competitive survival,
         <br />
         run properly<span className="text-teal">.</span>

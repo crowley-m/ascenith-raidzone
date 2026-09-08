@@ -57,8 +57,7 @@ export default async function WinnersPage() {
 
   return (
     <div className="container-x py-16">
-      <p className="eyebrow">{"// winners"}</p>
-      <h1 className="mt-2 font-poster text-5xl uppercase leading-[0.95] text-white sm:text-6xl">
+      <h1 className="font-poster text-5xl uppercase leading-[0.95] text-white sm:text-6xl">
         Hall of winners
       </h1>
       <p className="mt-4 max-w-2xl text-slate-300">

@@ -80,8 +80,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 export default function RulesPage() {
   return (
     <div className="container-x py-16">
-      <p className="eyebrow">{"// rules"}</p>
-      <h1 className="mt-2 font-poster text-5xl uppercase leading-[0.95] text-white sm:text-6xl">
+      <h1 className="font-poster text-5xl uppercase leading-[0.95] text-white sm:text-6xl">
         Rules &amp; how to join
       </h1>
       <p className="mt-4 max-w-2xl text-slate-300">
