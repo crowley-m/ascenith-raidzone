@@ -17,6 +17,8 @@ export default async function MeOverviewPage() {
     where: { userId: user.id },
     include: {
       faction: true,
+      teamLed: { select: { name: true } },
+      teamMembership: { select: { team: { select: { name: true } } } },
       signups: {
         where: { state: { in: ["SIGNED_UP", "WAITLIST"] }, event: { startsAt: { gte: new Date() } } },
         include: { event: true },
@@ -37,12 +39,14 @@ export default async function MeOverviewPage() {
     );
   }
 
+  const teamName = player.teamLed?.name ?? player.teamMembership?.team.name ?? null;
   const fields = [
     ["Character", player.characterName],
     ["In-game ID", player.gameUid],
     ["Platform", player.platform],
     ["Region", player.region],
     ["Timezone", player.timezone],
+    ["Team", teamName],
     ["Faction", player.faction?.name],
   ].filter(([, v]) => v);
   const missing =

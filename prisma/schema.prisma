@@ -125,8 +125,40 @@ model Player {
   notes       StaffNote[]
   flags       Flag[]
 
+  teamLed        Team?       @relation("TeamLeader")
+  teamMembership TeamMember?
+
   @@index([status])
   @@index([factionId])
+}
+
+// ---------------------------------------------------------------------------
+// Teams — player-made squads for team events (distinct from staff Factions)
+// ---------------------------------------------------------------------------
+
+model Team {
+  id         String   @id @default(cuid())
+  name       String   @unique
+  tag        String?
+  inviteCode String   @unique
+  leaderId   String   @unique
+  leader     Player   @relation("TeamLeader", fields: [leaderId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  members TeamMember[]
+  signups EventSignup[]
+}
+
+model TeamMember {
+  id       String   @id @default(cuid())
+  teamId   String
+  team     Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  playerId String   @unique
+  player   Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  joinedAt DateTime @default(now())
+
+  @@index([teamId])
 }
 
 model Faction {
@@ -203,6 +235,11 @@ enum SignupState {
   WITHDRAWN
 }
 
+enum EventFormat {
+  SOLO
+  TEAM
+}
+
 model Event {
   id             String      @id @default(cuid())
   title          String
@@ -210,7 +247,9 @@ model Event {
   startsAt       DateTime
   endsAt         DateTime?
   server         String? // which custom server / world
-  maxSlots       Int?
+  format         EventFormat @default(SOLO)
+  maxSlots       Int? // SOLO: max players · TEAM: max teams
+  teamSize       Int? // TEAM: players counted per team (optional cap)
   rewardPoolText String?
   status         EventStatus @default(DRAFT)
 
@@ -245,11 +284,14 @@ model EventSignup {
   event     Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
   playerId  String
   player    Player      @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  teamId    String? // set on TEAM-format events
+  team      Team?       @relation(fields: [teamId], references: [id], onDelete: SetNull)
   state     SignupState @default(SIGNED_UP)
   createdAt DateTime    @default(now())
 
   @@unique([eventId, playerId])
   @@index([eventId])
+  @@index([eventId, teamId])
 }
 
 model EventAttendance {

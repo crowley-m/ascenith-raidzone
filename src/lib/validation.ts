@@ -23,13 +23,30 @@ export const profileSchema = z.object({
   factionId: z.string().nullable().optional(),
 });
 
+export const teamCreateSchema = z.object({
+  name: z.string().trim().min(2, "At least 2 characters").max(40),
+  tag: z
+    .string()
+    .trim()
+    .max(6, "Max 6 characters")
+    .regex(/^[A-Za-z0-9]*$/, "Letters and numbers only")
+    .optional()
+    .or(z.literal("")),
+});
+
+export const teamJoinSchema = z.object({
+  code: z.string().trim().min(4).max(12).toUpperCase(),
+});
+
 export const eventSchema = z.object({
   title: z.string().min(3).max(140),
   description: z.string().max(4000).nullable().optional(),
   startsAt: z.string().min(1),
   endsAt: z.string().nullable().optional(),
   server: z.string().max(120).nullable().optional(),
+  format: z.enum(["SOLO", "TEAM"]).default("SOLO"),
   maxSlots: z.coerce.number().int().min(0).max(10000).nullable().optional(),
+  teamSize: z.coerce.number().int().min(0).max(100).nullable().optional(),
   rewardPoolText: z.string().max(2000).nullable().optional(),
   status: z.enum(["DRAFT", "PUBLISHED", "COMPLETED", "CANCELLED"]),
   // landing / public brief

@@ -21,6 +21,7 @@ const LOGIN = "/login";
 
 const NAV_PAGES = [
   { href: "/events", label: "Events" },
+  { href: "/teams", label: "Teams" },
   { href: "/proof", label: "Results" },
   { href: "/rules", label: "Rules" },
   { href: "/about", label: "About" },

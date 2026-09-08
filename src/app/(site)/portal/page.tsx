@@ -11,41 +11,76 @@ export default async function PortalOverview() {
 
   const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
-  const [recentPlayers, newThisWeek, activePlayers, upcoming, recentAudit, rewardCount, hidden] =
-    await Promise.all([
-      db.player.findMany({
-        orderBy: { joinedAt: "desc" },
-        take: 8,
-        include: { user: { select: { email: true, discordUsername: true } } },
-      }),
-      db.player.count({ where: { joinedAt: { gte: weekAgo } } }),
-      db.player.count({ where: { status: "ACTIVE" } }),
-      db.event.findMany({
-        where: { status: "PUBLISHED", startsAt: { gte: new Date() } },
-        orderBy: { startsAt: "asc" },
-        take: 5,
-        include: { _count: { select: { signups: true } } },
-      }),
-      db.auditLog.findMany({
-        orderBy: { createdAt: "desc" },
-        take: 12,
-        include: { actor: { select: { name: true, email: true } } },
-      }),
-      db.reward.count(),
-      hiddenActorIds(me.role),
-    ]);
+  const [
+    recentPlayers,
+    newThisWeek,
+    activePlayers,
+    teamCount,
+    teamMemberCount,
+    upcoming,
+    recentAudit,
+    rewardCount,
+    lastCompleted,
+    hidden,
+  ] = await Promise.all([
+    db.player.findMany({
+      orderBy: { joinedAt: "desc" },
+      take: 8,
+      include: { user: { select: { email: true, discordUsername: true } } },
+    }),
+    db.player.count({ where: { joinedAt: { gte: weekAgo } } }),
+    db.player.count({ where: { status: "ACTIVE" } }),
+    db.team.count(),
+    db.teamMember.count(),
+    db.event.findMany({
+      where: { status: "PUBLISHED", startsAt: { gte: new Date() } },
+      orderBy: { startsAt: "asc" },
+      take: 5,
+      include: {
+        _count: { select: { signups: { where: { state: "SIGNED_UP" } } } },
+      },
+    }),
+    db.auditLog.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 12,
+      include: { actor: { select: { name: true, email: true } } },
+    }),
+    db.reward.count(),
+    db.event.findFirst({
+      where: { status: { in: ["PUBLISHED", "COMPLETED"] }, endsAt: { lt: new Date() } },
+      orderBy: { startsAt: "desc" },
+      include: {
+        signups: { where: { state: "SIGNED_UP" }, select: { playerId: true } },
+        attendance: { where: { attended: true }, select: { playerId: true } },
+      },
+    }),
+    hiddenActorIds(me.role),
+  ]);
+
+  const avgTeamSize = teamCount ? (teamMemberCount / teamCount).toFixed(1) : "0";
+  const lastRate =
+    lastCompleted && lastCompleted.signups.length
+      ? Math.round((lastCompleted.attendance.length / lastCompleted.signups.length) * 100)
+      : null;
 
   return (
     <div className="grid gap-6 lg:grid-cols-3">
       <div className="space-y-6 lg:col-span-2">
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
           {[
-            { k: "New this week", v: newThisWeek, href: "/portal/players" },
             { k: "Active players", v: activePlayers, href: "/portal/players" },
+            { k: "New this week", v: newThisWeek, href: "/portal/players" },
+            { k: "Teams", v: teamCount, href: "/teams" },
+            { k: "Avg team size", v: avgTeamSize, href: "/teams" },
             { k: "Rewards logged", v: rewardCount, href: "/portal/rewards" },
+            {
+              k: "Last event turnout",
+              v: lastRate === null ? "—" : `${lastRate}%`,
+              href: lastCompleted ? `/portal/events/${lastCompleted.id}` : "/portal/events",
+            },
           ].map((s) => (
             <Link key={s.k} href={s.href} className="card text-center hover:border-teal/50">
-              <div className="font-display text-3xl font-bold text-white">{s.v}</div>
+              <div className="font-display text-2xl font-bold text-white">{s.v}</div>
               <div className="text-xs text-slate-500">{s.k}</div>
             </Link>
           ))}
@@ -78,9 +113,13 @@ export default async function PortalOverview() {
               <li key={e.id} className="flex items-center justify-between py-3 text-sm">
                 <Link href={`/portal/events/${e.id}`} className="text-slate-200 hover:text-teal">
                   {e.title}
+                  <span className="ml-2 text-[0.6rem] uppercase tracking-wide text-slate-500">
+                    {e.format === "TEAM" ? "team" : "solo"}
+                  </span>
                 </Link>
                 <span className="text-slate-500">
-                  {fmtDateTime(e.startsAt)} · {e._count.signups} signed up
+                  {fmtDateTime(e.startsAt)} · {e._count.signups} in
+                  {e.maxSlots ? ` / ${e.maxSlots}` : ""}
                 </span>
               </li>
             ))}

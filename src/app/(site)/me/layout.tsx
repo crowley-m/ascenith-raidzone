@@ -19,6 +19,7 @@ export default async function MeLayout({ children }: { children: React.ReactNode
           items={[
             { href: "/me", label: "Overview" },
             { href: "/me/profile", label: "Profile" },
+            { href: "/me/team", label: "Team" },
             { href: "/me/events", label: "My events" },
             { href: "/me/rewards", label: "My rewards" },
           ]}

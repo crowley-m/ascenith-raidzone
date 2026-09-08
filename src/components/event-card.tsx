@@ -8,6 +8,7 @@ export type EventCardData = {
   startsAt: Date;
   endsAt?: Date | null;
   server?: string | null;
+  format?: string | null;
   maxSlots?: number | null;
   status: string;
   _count?: { signups: number };
@@ -40,6 +41,11 @@ export function EventCard({ event, href }: { event: EventCardData; href?: string
       </div>
       <h3 className="mt-3 font-display text-lg font-bold text-white group-hover:text-teal">
         {event.title}
+        {event.format === "TEAM" && (
+          <span className="ml-2 align-middle text-[0.6rem] uppercase tracking-wide text-slate-500">
+            team event
+          </span>
+        )}
       </h3>
       {event.description && (
         <p className="mt-1 line-clamp-2 text-sm text-slate-400">{event.description}</p>

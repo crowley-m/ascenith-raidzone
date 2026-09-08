@@ -10,7 +10,9 @@ type EventInit = {
   startsAt: string; // datetime-local value
   endsAt: string;
   server: string | null;
+  format: string;
   maxSlots: number | null;
+  teamSize: number | null;
   rewardPoolText: string | null;
   status: string;
   summary: string | null;
@@ -56,8 +58,24 @@ export function EventForm({ event }: { event?: EventInit }) {
           <input name="server" className="input" defaultValue={event?.server ?? ""} />
         </div>
         <div>
-          <label className="label">Max slots (blank = unlimited)</label>
+          <label className="label">Format</label>
+          <select name="format" className="input" defaultValue={event?.format ?? "SOLO"}>
+            <option value="SOLO">Solo — players sign up individually</option>
+            <option value="TEAM">Team — a leader registers the whole team</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label className="label">
+            Max <span className="lowercase">slots / teams</span> (blank = unlimited)
+          </label>
           <input type="number" name="maxSlots" min={0} className="input" defaultValue={event?.maxSlots ?? ""} />
+        </div>
+        <div>
+          <label className="label">Team size cap (team events, optional)</label>
+          <input type="number" name="teamSize" min={0} className="input" defaultValue={event?.teamSize ?? ""} />
         </div>
       </div>
 

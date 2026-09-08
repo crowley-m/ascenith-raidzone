@@ -5,7 +5,9 @@ import { db } from "@/lib/db";
 import { auth } from "@/auth";
 import { fmtDateTime, relative } from "@/lib/format";
 import { SignupButton } from "@/components/signup-button";
+import { TeamSignup } from "@/components/team/team-signup";
 import { Markdown } from "@/components/markdown";
+import { teamForPlayer } from "@/lib/team";
 import type { RewardTier } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
@@ -40,7 +42,10 @@ export default async function EventDetailPage({
     include: {
       signups: {
         where: { state: { in: ["SIGNED_UP", "WAITLIST"] } },
-        include: { player: { select: { characterName: true, region: true } } },
+        include: {
+          player: { select: { id: true, characterName: true, region: true } },
+          team: { select: { id: true, name: true, tag: true, leaderId: true } },
+        },
         orderBy: { createdAt: "asc" },
       },
     },
@@ -50,12 +55,60 @@ export default async function EventDetailPage({
     notFound();
   }
 
-  const mySignup = session?.user?.playerId
-    ? event.signups.find((s) => s.playerId === session.user.playerId)
+  const isTeamEvent = event.format === "TEAM";
+
+  // caller's player + team
+  let myPlayerId: string | null = session?.user?.playerId ?? null;
+  if (session?.user && !myPlayerId) {
+    const p = await db.player.findUnique({
+      where: { userId: session.user.id },
+      select: { id: true },
+    });
+    myPlayerId = p?.id ?? null;
+  }
+  const myTeam = isTeamEvent && myPlayerId ? await teamForPlayer(myPlayerId) : null;
+
+  const mySignup = myPlayerId
+    ? event.signups.find((s) => s.playerId === myPlayerId)
     : undefined;
 
   const confirmed = event.signups.filter((s) => s.state === "SIGNED_UP");
   const waitlist = event.signups.filter((s) => s.state === "WAITLIST");
+
+  // team-event roster, grouped by team
+  const teamGroups = new Map<string, { name: string; tag: string | null; members: typeof confirmed }>();
+  if (isTeamEvent) {
+    for (const s of confirmed) {
+      const key = s.teamId ?? "none";
+      if (!teamGroups.has(key)) {
+        teamGroups.set(key, { name: s.team?.name ?? "—", tag: s.team?.tag ?? null, members: [] });
+      }
+      teamGroups.get(key)!.members.push(s);
+    }
+  }
+
+  const myTeamRegisteredCount = myTeam
+    ? confirmed.filter((s) => s.teamId === myTeam.id).length
+    : 0;
+
+  const teamSignupState = (() => {
+    if (!session?.user) return { kind: "no-account" as const };
+    if (!myPlayerId) return { kind: "no-player" as const };
+    if (!myTeam) return { kind: "no-team" as const };
+    if (myTeam.leaderId === myPlayerId) {
+      return {
+        kind: "leader" as const,
+        teamName: myTeam.name,
+        memberCount: myTeam.members.length,
+        registeredCount: myTeamRegisteredCount,
+      };
+    }
+    return {
+      kind: "member" as const,
+      teamName: myTeam.name,
+      registered: myTeamRegisteredCount > 0,
+    };
+  })();
   const now = Date.now();
   const open = event.status === "PUBLISHED" && event.startsAt.getTime() > now;
   const live =
@@ -78,9 +131,11 @@ export default async function EventDetailPage({
   if (event.wipeCycle) facts.push(["Cycle", event.wipeCycle]);
   if (event.raidWindow) facts.push(["Raid window", event.raidWindow]);
   if (event.server) facts.push(["Server", event.server]);
+  facts.push(["Format", isTeamEvent ? "Team event" : "Solo event"]);
+  if (isTeamEvent && event.teamSize) facts.push(["Team size", `up to ${event.teamSize}`]);
   facts.push([
-    "Slots",
-    `${confirmed.length}${event.maxSlots ? ` / ${event.maxSlots}` : ""}`,
+    isTeamEvent ? "Teams" : "Slots",
+    `${isTeamEvent ? teamGroups.size : confirmed.length}${event.maxSlots ? ` / ${event.maxSlots}` : ""}`,
   ]);
 
   return (
@@ -160,31 +215,64 @@ export default async function EventDetailPage({
           )}
 
           <div className="mt-12">
-            <h2 className="font-poster text-2xl uppercase text-white">
-              Roster <span className="text-slate-500">({confirmed.length})</span>
-            </h2>
-            <ul className="mt-3 flex flex-wrap gap-2">
-              {confirmed.length === 0 && (
-                <li className="font-mono text-xs uppercase text-slate-500">
-                  No sign-ups yet. Be first.
-                </li>
-              )}
-              {confirmed.map((s) => (
-                <li key={s.id} className="badge">
-                  {s.player.characterName ?? "Unnamed"}
-                  {s.player.region ? ` · ${s.player.region}` : ""}
-                </li>
-              ))}
-            </ul>
+            {isTeamEvent ? (
+              <>
+                <h2 className="font-poster text-2xl uppercase text-white">
+                  Teams <span className="text-slate-500">({teamGroups.size})</span>
+                </h2>
+                {teamGroups.size === 0 ? (
+                  <p className="mt-3 font-mono text-xs uppercase text-slate-500">
+                    No teams registered yet.
+                  </p>
+                ) : (
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    {[...teamGroups.values()].map((g) => (
+                      <div key={g.name} className="border border-edge bg-panel/50 p-4">
+                        <div className="font-display font-bold text-white">
+                          {g.tag && <span className="text-teal">[{g.tag}] </span>}
+                          {g.name}
+                        </div>
+                        <ul className="mt-2 flex flex-wrap gap-1.5">
+                          {g.members.map((s) => (
+                            <li key={s.id} className="badge text-xs">
+                              {s.player.characterName ?? "Unnamed"}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <h2 className="font-poster text-2xl uppercase text-white">
+                  Roster <span className="text-slate-500">({confirmed.length})</span>
+                </h2>
+                <ul className="mt-3 flex flex-wrap gap-2">
+                  {confirmed.length === 0 && (
+                    <li className="font-mono text-xs uppercase text-slate-500">
+                      No sign-ups yet. Be first.
+                    </li>
+                  )}
+                  {confirmed.map((s) => (
+                    <li key={s.id} className="badge">
+                      {s.player.characterName ?? "Unnamed"}
+                      {s.player.region ? ` · ${s.player.region}` : ""}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
             {waitlist.length > 0 && (
               <>
                 <h3 className="mt-5 font-mono text-xs font-bold uppercase tracking-wide text-slate-400">
-                  Waitlist ({waitlist.length})
+                  Waitlist ({isTeamEvent ? "teams" : waitlist.length})
                 </h3>
                 <ul className="mt-2 flex flex-wrap gap-2">
                   {waitlist.map((s) => (
                     <li key={s.id} className="badge opacity-70">
-                      {s.player.characterName ?? "Unnamed"}
+                      {isTeamEvent && s.team ? s.team.name : s.player.characterName ?? "Unnamed"}
                     </li>
                   ))}
                 </ul>
@@ -215,15 +303,21 @@ export default async function EventDetailPage({
             </p>
             <div className="mt-4">
               {open ? (
-                <SignupButton
-                  eventId={event.id}
-                  signedUp={!!mySignup}
-                  state={mySignup?.state}
-                  loggedIn={!!session?.user}
-                />
+                isTeamEvent ? (
+                  <TeamSignup eventId={event.id} state={teamSignupState} />
+                ) : (
+                  <SignupButton
+                    eventId={event.id}
+                    signedUp={!!mySignup}
+                    state={mySignup?.state}
+                    loggedIn={!!session?.user}
+                  />
+                )
               ) : (
                 mySignup && (
-                  <span className="badge border-teal/40 text-teal">You were signed up</span>
+                  <span className="badge border-teal/40 text-teal">
+                    {isTeamEvent ? "Your team was registered" : "You were signed up"}
+                  </span>
                 )
               )}
             </div>
