@@ -13,7 +13,11 @@ type Embed = {
   fields?: { name: string; value: string; inline?: boolean }[];
   timestamp?: string;
   footer?: { text: string };
+  author?: { name: string; url?: string };
 };
+
+const BRAND = 0xe5484d; // crimson accent
+
 
 async function discordFetch(path: string, init: RequestInit, attempt = 0): Promise<unknown> {
   const token = process.env.DISCORD_BOT_TOKEN;
@@ -109,7 +113,7 @@ export async function postAnnouncement(opts: {
     method: "POST",
     body: JSON.stringify({
       content,
-      embeds: [{ color: 0x2fd4c7, ...opts.embed }],
+      embeds: [{ color: BRAND, ...opts.embed }],
       components: opts.components ?? [],
       allowed_mentions: { parse },
     }),
@@ -133,44 +137,109 @@ export async function editAnnouncement(
     method: "PATCH",
     body: JSON.stringify({
       content: body ?? "",
-      embeds: [{ color: 0x2fd4c7, ...embed }],
+      embeds: [{ color: BRAND, ...embed }],
       allowed_mentions: { parse },
       ...(components ? { components } : {}),
     }),
   });
 }
 
+const lines = (s: string | null | undefined) =>
+  (s ?? "")
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
+
+/** Rich, auto-composed announcement embed built from the event's structured fields. */
 export function eventEmbed(e: {
   title: string;
+  summary?: string | null;
   description?: string | null;
   startsAt: Date;
+  endsAt?: Date | null;
+  format?: string | null;
+  teamSize?: number | null;
   server?: string | null;
-  maxSlots?: number | null;
+  mode?: string | null;
+  wipeCycle?: string | null;
+  raidWindow?: string | null;
+  rewardTiers?: unknown;
+  bonusText?: string | null;
   rewardPoolText?: string | null;
+  maxSlots?: number | null;
   signupCount?: number;
+  seasonNumber?: number | null;
   url: string;
 }): Embed {
-  const fields: Embed["fields"] = [
-    { name: "When", value: `<t:${Math.floor(e.startsAt.getTime() / 1000)}:F>`, inline: false },
-  ];
-  if (e.server) fields.push({ name: "Server", value: e.server, inline: true });
-  if (e.maxSlots)
+  const start = Math.floor(e.startsAt.getTime() / 1000);
+  const tiers = Array.isArray(e.rewardTiers)
+    ? (e.rewardTiers as Array<{ place: string; reward: string }>)
+    : [];
+  const medals = ["🥇", "🥈", "🥉"];
+
+  const fields: NonNullable<Embed["fields"]> = [];
+
+  const when = [`<t:${start}:F>`];
+  if (e.endsAt) when.push(`Wipe <t:${Math.floor(e.endsAt.getTime() / 1000)}:R>`);
+  fields.push({ name: "🗓 When", value: when.join("\n"), inline: true });
+
+  fields.push({
+    name: "⚔ Format",
+    value:
+      e.format === "TEAM"
+        ? `Team${e.teamSize ? ` · up to ${e.teamSize}` : ""}`
+        : "Solo",
+    inline: true,
+  });
+
+  if (e.maxSlots) {
     fields.push({
-      name: "Slots",
+      name: e.format === "TEAM" ? "👥 Teams" : "🎟 Slots",
       value: `${e.signupCount ?? 0} / ${e.maxSlots}`,
       inline: true,
     });
-  if (e.rewardPoolText) fields.push({ name: "Rewards", value: e.rewardPoolText, inline: false });
-  fields.push({ name: "Sign up", value: `[On the website](${e.url})`, inline: false });
+  }
+  if (e.server) fields.push({ name: "🌐 Server", value: e.server, inline: true });
+  if (e.wipeCycle) fields.push({ name: "♻ Wipe cycle", value: e.wipeCycle, inline: true });
 
+  const windows = lines(e.raidWindow);
+  if (windows.length) {
+    fields.push({
+      name: "🕐 Raid window",
+      value: windows.map((w) => `• ${w}`).join("\n"),
+      inline: false,
+    });
+  }
+
+  const reward: string[] = [];
+  if (tiers.length) {
+    tiers.forEach((t, i) => reward.push(`${medals[i] ?? `#${i + 1}`} **${t.place}** — ${t.reward}`));
+  } else if (e.rewardPoolText) {
+    reward.push(e.rewardPoolText);
+  }
+  for (const b of lines(e.bonusText)) reward.push(`✨ ${b}`);
+  if (reward.length) {
+    fields.push({ name: "🏆 Rewards", value: reward.join("\n").slice(0, 1024), inline: false });
+  }
+
+  fields.push({ name: "​", value: `**[▶ Sign up on the website](${e.url})**`, inline: false });
+
+  const emoji = eventEmoji(e.mode);
   return {
-    title: `🏴‍☠️ ${e.title}`,
-    description: e.description ?? undefined,
+    author: { name: e.mode ? `RAIDZONE · ${e.mode}` : "ASCENITH RAIDZONE" },
+    title: `${emoji} ${e.title}`,
+    description: e.summary || e.description || undefined,
     url: e.url,
+    color: BRAND,
     fields,
-    timestamp: new Date().toISOString(),
-    footer: { text: "ASCENITH RAIDZONE" },
+    timestamp: e.startsAt.toISOString(),
+    footer: { text: e.seasonNumber ? `Season ${e.seasonNumber}` : "ASCENITH RAIDZONE" },
   };
+}
+
+/** A plain titled embed for the per-channel content posts. */
+export function contentEmbed(title: string, body: string): Embed {
+  return { title, description: body.slice(0, 4000), color: BRAND };
 }
 
 /**
@@ -554,7 +623,7 @@ export async function postToChannel(
     method: "POST",
     body: JSON.stringify({
       content,
-      embeds: payload.embed ? [{ color: 0x2fd4c7, ...payload.embed }] : [],
+      embeds: payload.embed ? [{ color: BRAND, ...payload.embed }] : [],
       components: payload.components ?? [],
       allowed_mentions: { parse },
     }),
@@ -614,7 +683,7 @@ export async function editChannelMessage(
     method: "PATCH",
     body: JSON.stringify({
       content: content ?? "",
-      embeds: payload.embed ? [{ color: 0x2fd4c7, ...payload.embed }] : [],
+      embeds: payload.embed ? [{ color: BRAND, ...payload.embed }] : [],
       allowed_mentions: { parse },
       ...(payload.components ? { components: payload.components } : {}),
     }),

@@ -19,6 +19,7 @@ import {
   postAnnouncement,
   editAnnouncement,
   eventEmbed,
+  contentEmbed,
   signupButtonRow,
   createEventSpace,
   archiveEventSpace,
@@ -252,6 +253,7 @@ export async function saveEvent(_prev: FormState, formData: FormData): Promise<F
       } else {
         const embed = eventEmbed({
           ...ev,
+          summary: ev.announcementMd || ev.summary,
           signupCount: ev._count.signups,
           url: `${APP_URL}/events/${ev.id}`,
         });
@@ -309,73 +311,74 @@ function eventChannelPayloads(ev: FullEvent): Record<string, ChannelPayload> {
   const tiers = Array.isArray(ev.rewardTiers)
     ? (ev.rewardTiers as Array<{ place: string; reward: string }>)
     : [];
-  const clip = (s: string) => s.slice(0, 1990);
+  const bullets = (s: string | null | undefined) =>
+    (s ?? "")
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean);
   const out: Record<string, ChannelPayload> = {};
 
+  // #announcement — the rich auto-composed card only, no raw text dump.
+  // A custom announcementMd (if the staffer wrote one) becomes the card's intro.
   out.announcement = {
-    content: ev.announcementMd ? clip(ev.announcementMd) : undefined,
-    embed: eventEmbed({ ...ev, signupCount: 0, url }),
+    embed: eventEmbed({
+      ...ev,
+      summary: ev.announcementMd || ev.summary,
+      signupCount: 0,
+      url,
+    }),
     components: [signupButtonRow(url, "Sign up on the website")],
     mentionEveryone: ev.announcePing || ev.announcePingAll,
   };
 
   out["how-to-join"] = {
-    content: clip(
+    embed: contentEmbed(
+      "🧭 How to join",
       ev.howToJoinMd ??
-        `**How to join**\n` +
-          `1. Register once at ${APP_URL}/register (Discord login links automatically)\n` +
-          `2. Fill your in-game UID on your profile — that's where rewards go\n` +
+        `**1.** Register once at ${APP_URL}/register — Discord login links automatically.\n` +
+          `**2.** Add your in-game UID on your profile — that's where rewards go.\n` +
           (ev.format === "TEAM"
-            ? `3. Team event: your team leader registers the whole team at ${url}`
-            : `3. Sign up at ${url}`),
+            ? `**3.** Team event — your team leader registers the whole team on the event page.`
+            : `**3.** Claim your slot on the event page.`),
     ),
+    components: [signupButtonRow(url, "Open the event page")],
   };
 
   out.registration = {
-    content: clip(
-      `**Register — ${ev.title}**\n` +
-        (ev.registrationMd ??
-          (ev.format === "TEAM"
-            ? "Your team leader signs the whole team up on the website. Everyone else needs a profile with an in-game UID."
-            : "Open to everyone. Register once, add your in-game UID, then claim your slot below.")),
+    embed: contentEmbed(
+      `📝 Registration — ${ev.title}`,
+      ev.registrationMd ??
+        (ev.format === "TEAM"
+          ? "Your team leader signs the whole team up on the website. Everyone else needs a profile with an in-game UID set."
+          : "Open to everyone. Register once, add your in-game UID, then claim your slot below."),
     ),
     components: [signupButtonRow(url, "Sign up on the website")],
   };
 
-  if (ev.rulesMd) out.rules = { content: clip(`**Rules — ${ev.title}**\n\n${ev.rulesMd}`) };
-  if (ev.gameplayMd) out.gameplay = { content: clip(ev.gameplayMd) };
+  if (ev.rulesMd) out.rules = { embed: contentEmbed(`📜 Rules — ${ev.title}`, ev.rulesMd) };
+  if (ev.gameplayMd) out.gameplay = { embed: contentEmbed("🎮 Gameplay", ev.gameplayMd) };
 
   if (ev.wipeInfoMd || ev.wipeCycle || ev.raidWindow) {
-    const lines: string[] = ["**Wipe info**"];
-    if (ev.wipeCycle) lines.push(`Cycle: ${ev.wipeCycle}`);
-    const windows = (ev.raidWindow ?? "")
-      .split("\n")
-      .map((l) => l.trim())
-      .filter(Boolean);
-    if (windows.length === 1) lines.push(`Raid window: ${windows[0]}`);
-    else if (windows.length > 1) {
-      lines.push("Raid window:");
-      for (const w of windows) lines.push(`• ${w}`);
-    }
-    if (ev.wipeInfoMd) lines.push("", ev.wipeInfoMd);
-    out["wipe-info"] = { content: clip(lines.join("\n")) };
+    const parts: string[] = [];
+    if (ev.wipeCycle) parts.push(`**Wipe cycle** — ${ev.wipeCycle}`);
+    const windows = bullets(ev.raidWindow);
+    if (windows.length === 1) parts.push(`**Raid window** — ${windows[0]}`);
+    else if (windows.length > 1)
+      parts.push(`**Raid window**\n${windows.map((w) => `• ${w}`).join("\n")}`);
+    if (ev.wipeInfoMd) parts.push(ev.wipeInfoMd);
+    out["wipe-info"] = { embed: contentEmbed("♻ Wipe info", parts.join("\n\n")) };
   }
 
   if (ev.rewardsMd) {
-    out.rewards = { content: clip(ev.rewardsMd) };
+    out.rewards = { embed: contentEmbed("🏆 Rewards", ev.rewardsMd) };
   } else if (tiers.length || ev.bonusText || ev.rewardPoolText) {
-    const lines = ["**Rewards**"];
-    for (const t of tiers) lines.push(`${t.place} — ${t.reward}`);
-    if (!tiers.length && ev.rewardPoolText) lines.push(ev.rewardPoolText);
-    const bonus = (ev.bonusText ?? "")
-      .split("\n")
-      .map((l) => l.trim())
-      .filter(Boolean);
-    if (bonus.length) {
-      lines.push("", "**Bonus**");
-      for (const b of bonus) lines.push(`• ${b}`);
-    }
-    out.rewards = { content: clip(lines.join("\n")) };
+    const medals = ["🥇", "🥈", "🥉"];
+    const parts: string[] = [];
+    tiers.forEach((t, i) => parts.push(`${medals[i] ?? `#${i + 1}`} **${t.place}** — ${t.reward}`));
+    if (!tiers.length && ev.rewardPoolText) parts.push(ev.rewardPoolText);
+    const bonus = bullets(ev.bonusText);
+    if (bonus.length) parts.push("", "**Bonus**", ...bonus.map((b) => `✨ ${b}`));
+    out.rewards = { embed: contentEmbed("🏆 Rewards", parts.join("\n")) };
   }
 
   if (ev.announcePingAll) {
@@ -466,7 +469,12 @@ export async function reannounceEvent(eventId: string): Promise<FormState> {
 
   const settings = await getSettings();
   const url = `${APP_URL}/events/${ev.id}`;
-  const embed = eventEmbed({ ...ev, signupCount: ev._count.signups, url });
+  const embed = eventEmbed({
+    ...ev,
+    summary: ev.announcementMd || ev.summary,
+    signupCount: ev._count.signups,
+    url,
+  });
   const components = [signupButtonRow(url, "Sign up on the website")];
 
   if (ev.discordMessageId && ev.discordChannelId) {
