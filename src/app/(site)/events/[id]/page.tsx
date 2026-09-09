@@ -150,7 +150,7 @@ export default async function EventDetailPage({
   if (event.server) facts.push(["Server", event.server]);
   facts.push(["Format", isTeamEvent ? "Team event" : "Solo event"]);
   if (isTeamEvent && event.teamSize)
-    facts.push(["Team size cap", `${event.teamSize} players / team`]);
+    facts.push(["Players per team", `up to ${event.teamSize}`]);
   facts.push([
     isTeamEvent ? "Teams registered" : "Players signed up",
     String(isTeamEvent ? teamGroups.size : confirmed.length),
