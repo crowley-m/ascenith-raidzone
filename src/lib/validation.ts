@@ -47,7 +47,7 @@ export const eventSchema = z.object({
   wipeCycle: z.string().max(80).nullable().optional(),
   raidWindow: z.string().max(120).nullable().optional(),
   rewardTiersText: z.string().max(2000).nullable().optional(),
-  bonusText: z.string().max(400).nullable().optional(),
+  bonusText: z.string().max(1500).nullable().optional(),
   rulesMd: z.string().max(20000).nullable().optional(),
   detailsMd: z.string().max(20000).nullable().optional(),
   howToJoinVideoUrl: z.string().trim().max(500).nullable().optional().or(z.literal("")),

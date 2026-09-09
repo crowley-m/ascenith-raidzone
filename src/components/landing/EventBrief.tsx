@@ -189,10 +189,18 @@ export function EventBrief({ event }: { event: OpEvent | null }) {
                   <p className={s.rewardNote}>Reward pool announced in Discord.</p>
                 ) : null}
                 {event.bonusText && (
-                  <p className={s.bonusLine}>
+                  <div className={s.bonusLine}>
                     <span className={s.bonusTag}>Bonus</span>
-                    {event.bonusText}
-                  </p>
+                    <div className={s.bonusItems}>
+                      {event.bonusText
+                        .split("\n")
+                        .map((l) => l.trim())
+                        .filter(Boolean)
+                        .map((l, i) => (
+                          <span key={i}>{l}</span>
+                        ))}
+                    </div>
+                  </div>
                 )}
             </div>
 

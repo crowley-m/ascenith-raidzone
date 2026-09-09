@@ -86,7 +86,10 @@ export function EventForm({
     set("wipeCycle", "2 weeks");
     set("raidWindow", "15:30 – 21:29 · 6 hrs/day");
     set("rewardTiersText", "1st | 30K Crystgin\n2nd | 20K Crystgin\n3rd | 10K Crystgin");
-    set("bonusText", "20K Crystgin · hidden across airdrops, cards, alpha boss");
+    set(
+      "bonusText",
+      "20K Crystgin — hidden across airdrops, cards and the alpha boss\nEarly-bird: first 10 sign-ups get a starter cache",
+    );
     set("rewardPoolText", "");
     set(
       "rulesMd",
@@ -303,8 +306,14 @@ export function EventForm({
       </div>
 
       <div>
-        <label className="label">Bonus line</label>
-        <input name="bonusText" className="input" defaultValue={event?.bonusText ?? ""} placeholder="20K Crystgin · hidden across airdrops, cards, alpha boss" />
+        <label className="label">Bonus lines — one per line</label>
+        <textarea
+          name="bonusText"
+          rows={3}
+          className="input"
+          defaultValue={event?.bonusText ?? ""}
+          placeholder={"Meteor bonus — 5,000 Crystgin (shared by the team that secures the car)\nRandom Crystgin airdrops — unannounced timing"}
+        />
       </div>
 
       <div>

@@ -339,7 +339,14 @@ function eventChannelPayloads(ev: FullEvent): Record<string, ChannelPayload> {
     const lines = ["**Rewards**"];
     for (const t of tiers) lines.push(`${t.place} — ${t.reward}`);
     if (!tiers.length && ev.rewardPoolText) lines.push(ev.rewardPoolText);
-    if (ev.bonusText) lines.push(`\n**Bonus:** ${ev.bonusText}`);
+    const bonus = (ev.bonusText ?? "")
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean);
+    if (bonus.length) {
+      lines.push("", "**Bonus**");
+      for (const b of bonus) lines.push(`• ${b}`);
+    }
     out.rewards = { content: clip(lines.join("\n")) };
   }
 

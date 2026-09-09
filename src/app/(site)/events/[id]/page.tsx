@@ -209,12 +209,20 @@ export default async function EventDetailPage({
                 </ul>
               )}
               {event.bonusText && (
-                <p className="mt-3 border-t border-edge pt-3 font-mono text-xs uppercase tracking-wide text-slate-300">
-                  <span className="mr-2 border border-teal px-1.5 py-0.5 font-bold text-teal">
+                <div className="mt-3 border-t border-edge pt-3">
+                  <span className="border border-teal px-1.5 py-0.5 font-mono text-xs font-bold uppercase text-teal">
                     Bonus
                   </span>
-                  {event.bonusText}
-                </p>
+                  <ul className="mt-2 space-y-1 font-mono text-xs uppercase tracking-wide text-slate-300">
+                    {event.bonusText
+                      .split("\n")
+                      .map((l) => l.trim())
+                      .filter(Boolean)
+                      .map((l, i) => (
+                        <li key={i}>{l}</li>
+                      ))}
+                  </ul>
+                </div>
               )}
               {event.rewardPoolText && !tiers.length && (
                 <p className="mt-2 whitespace-pre-wrap font-mono text-sm text-slate-200">
