@@ -1332,17 +1332,15 @@ export async function postBroadcast(_prev: FormState, formData: FormData): Promi
   if (!body) return { error: "Write something to announce." };
 
   try {
+    // postToChannel adds the @everyone prefix when mentionEveryone is set —
+    // don't add it here too.
     const payload = asEmbed
       ? {
-          content: mentionEveryone ? "@everyone" : undefined,
           embed: { title: title || undefined, description: body.slice(0, 4000) },
           mentionEveryone,
         }
       : {
-          content: `${mentionEveryone ? "@everyone\n" : ""}${title ? `**${title}**\n` : ""}${body}`.slice(
-            0,
-            1990,
-          ),
+          content: `${title ? `**${title}**\n` : ""}${body}`.slice(0, 1980),
           mentionEveryone,
         };
     const msg = await postToChannel(channelId, payload);

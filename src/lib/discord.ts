@@ -74,6 +74,24 @@ export function signupButtonRow(url: string, label = "Open the event page"): But
   };
 }
 
+/**
+ * Resolve the final content + allowed_mentions for a possible @everyone ping.
+ * Prepends "@everyone" only if the text doesn't already contain it — so a
+ * hand-typed @everyone plus the ping toggle don't stack.
+ */
+function everyonePing(
+  content: string | undefined,
+  on: boolean | undefined,
+): { content: string | undefined; parse: string[] } {
+  if (!on) return { content, parse: ["roles"] };
+  const c = (content ?? "").trim();
+  const already = /(^|\s)@(everyone|here)\b/.test(c);
+  return {
+    content: already ? c : `@everyone${c ? `\n${c}` : ""}`,
+    parse: ["roles", "everyone"],
+  };
+}
+
 /** Post a message with an embed to a channel. Returns the message id. */
 export async function postAnnouncement(opts: {
   channelId?: string;
@@ -85,10 +103,7 @@ export async function postAnnouncement(opts: {
   const channelId = opts.channelId ?? process.env.DISCORD_ANNOUNCE_CHANNEL_ID;
   if (!channelId || !process.env.DISCORD_BOT_TOKEN) return null;
 
-  const parse = opts.mentionEveryone ? ["roles", "everyone"] : ["roles"];
-  const content = opts.mentionEveryone
-    ? `@everyone${opts.content ? `\n${opts.content}` : ""}`
-    : opts.content;
+  const { content, parse } = everyonePing(opts.content, opts.mentionEveryone);
 
   const msg = (await discordFetch(`/channels/${channelId}/messages`, {
     method: "POST",
@@ -113,14 +128,11 @@ export async function editAnnouncement(
   mentionEveryone?: boolean,
 ): Promise<void> {
   if (!process.env.DISCORD_BOT_TOKEN) return;
-  const parse = mentionEveryone ? ["roles", "everyone"] : ["roles"];
-  const body = mentionEveryone
-    ? `@everyone${content ? `\n${content}` : ""}`
-    : content;
+  const { content: body, parse } = everyonePing(content, mentionEveryone);
   await discordFetch(`/channels/${channelId}/messages/${messageId}`, {
     method: "PATCH",
     body: JSON.stringify({
-      content: body,
+      content: body ?? "",
       embeds: [{ color: 0x2fd4c7, ...embed }],
       allowed_mentions: { parse },
       ...(components ? { components } : {}),
@@ -442,10 +454,7 @@ export async function postToChannel(
   },
 ): Promise<{ id: string } | null> {
   if (!process.env.DISCORD_BOT_TOKEN) return null;
-  const parse = payload.mentionEveryone ? ["roles", "everyone"] : ["roles"];
-  const content = payload.mentionEveryone
-    ? `@everyone${payload.content ? `\n${payload.content}` : ""}`
-    : payload.content;
+  const { content, parse } = everyonePing(payload.content, payload.mentionEveryone);
   return (await discordFetch(`/channels/${channelId}/messages`, {
     method: "POST",
     body: JSON.stringify({
@@ -505,14 +514,11 @@ export async function editChannelMessage(
   payload: { content?: string; embed?: Embed; components?: ButtonRow[]; mentionEveryone?: boolean },
 ): Promise<void> {
   if (!process.env.DISCORD_BOT_TOKEN) return;
-  const parse = payload.mentionEveryone ? ["roles", "everyone"] : ["roles"];
-  const content = payload.mentionEveryone
-    ? `@everyone${payload.content ? `\n${payload.content}` : ""}`
-    : (payload.content ?? "");
+  const { content, parse } = everyonePing(payload.content, payload.mentionEveryone);
   await discordFetch(`/channels/${channelId}/messages/${messageId}`, {
     method: "PATCH",
     body: JSON.stringify({
-      content,
+      content: content ?? "",
       embeds: payload.embed ? [{ color: 0x2fd4c7, ...payload.embed }] : [],
       allowed_mentions: { parse },
       ...(payload.components ? { components: payload.components } : {}),
