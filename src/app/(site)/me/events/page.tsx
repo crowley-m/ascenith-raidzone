@@ -37,7 +37,13 @@ export default async function MyEventsPage() {
                   {s.state === "WAITLIST" && <span className="ml-2 text-ember">waitlist</span>}
                 </p>
               </div>
-              <WithdrawButton eventId={s.eventId} />
+              {s.teamId ? (
+                <Link href="/me/team" className="btn-ghost text-xs">
+                  Manage in team
+                </Link>
+              ) : (
+                <WithdrawButton eventId={s.eventId} />
+              )}
             </li>
           ))}
         </ul>

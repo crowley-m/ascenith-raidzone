@@ -65,6 +65,16 @@ export async function signUpForEvent(eventId: string) {
 
 export async function withdrawFromEvent(eventId: string) {
   const playerId = await callerPlayerId(eventId);
+  const existing = await db.eventSignup.findUnique({
+    where: { eventId_playerId: { eventId, playerId } },
+    select: { teamId: true },
+  });
+  if (existing?.teamId) {
+    return {
+      error:
+        "You're on a team for this event — leave the team, or your leader withdraws the whole team.",
+    };
+  }
   await db.eventSignup.updateMany({
     where: { eventId, playerId },
     data: { state: "WITHDRAWN" },
