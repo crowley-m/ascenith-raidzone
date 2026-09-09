@@ -6,7 +6,7 @@ import {
   buildEventSpace,
   archiveEventDiscord,
   syncEventChannels,
-  reannounceEventChannels,
+  reannounceEvent,
 } from "@/app/(site)/portal/actions";
 
 export function SyncChannelsButton({ eventId }: { eventId: string }) {
@@ -51,19 +51,19 @@ export function ReannounceButton({ eventId }: { eventId: string }) {
         onClick={() => {
           if (
             !window.confirm(
-              "Delete the current channel messages and repost them? This re-fires the @everyone pings (per this event's ping settings).",
+              "Delete the current announcement and repost it to the configured announce channel? This re-fires the @everyone ping.",
             )
           )
             return;
           setMsg(null);
           start(async () => {
-            const res = await reannounceEventChannels(eventId);
+            const res = await reannounceEvent(eventId);
             setMsg(res?.error ?? "Reposted.");
             router.refresh();
           });
         }}
       >
-        {pending ? "Reposting…" : "Repost + ping"}
+        {pending ? "Reposting…" : "Repost announcement"}
       </button>
       {msg && <span className="text-[0.66rem] text-slate-400">{msg}</span>}
     </span>

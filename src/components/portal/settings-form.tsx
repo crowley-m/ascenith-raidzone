@@ -4,8 +4,52 @@ import { useActionState } from "react";
 import { saveSettings } from "@/app/(site)/portal/actions";
 import type { Settings } from "@/lib/settings";
 
-export function SettingsForm({ settings }: { settings: Settings }) {
+type Opt = { id: string; name: string };
+
+export function SettingsForm({
+  settings,
+  channels = [],
+  roles = [],
+}: {
+  settings: Settings;
+  channels?: Opt[];
+  roles?: Opt[];
+}) {
   const [state, action, pending] = useActionState(saveSettings, {});
+
+  const chanField = (name: string, value: string) =>
+    channels.length > 0 ? (
+      <select name={name} className="input" defaultValue={value}>
+        <option value="">— none —</option>
+        {channels.map((c) => (
+          <option key={c.id} value={c.id}>
+            #{c.name}
+          </option>
+        ))}
+        {value && !channels.some((c) => c.id === value) && (
+          <option value={value}>(unknown channel {value})</option>
+        )}
+      </select>
+    ) : (
+      <input name={name} className="input font-mono" defaultValue={value} placeholder="1234567890" />
+    );
+
+  const roleField = (name: string, value: string) =>
+    roles.length > 0 ? (
+      <select name={name} className="input" defaultValue={value}>
+        <option value="">— none —</option>
+        {roles.map((r) => (
+          <option key={r.id} value={r.id}>
+            {r.name}
+          </option>
+        ))}
+        {value && !roles.some((r) => r.id === value) && (
+          <option value={value}>(unknown role {value})</option>
+        )}
+      </select>
+    ) : (
+      <input name={name} className="input font-mono" defaultValue={value} placeholder="1234567890" />
+    );
 
   return (
     <form action={action} className="grid gap-5">
@@ -23,15 +67,11 @@ export function SettingsForm({ settings }: { settings: Settings }) {
       </div>
 
       <div>
-        <label className="label">Announcement channel ID</label>
-        <input
-          name="announceChannelId"
-          className="input font-mono"
-          defaultValue={settings.announceChannelId}
-          placeholder="1234567890"
-        />
+        <label className="label">Announcement channel</label>
+        {chanField("announceChannelId", settings.announceChannelId)}
         <p className="mt-1 text-xs text-slate-500">
-          Where a published event announces if it has no Discord space of its own.
+          Where a published event announces if it has no Discord space of its own. Changing this
+          only affects the <em>next</em> announcement — messages already posted stay put.
         </p>
       </div>
 
@@ -83,25 +123,15 @@ export function SettingsForm({ settings }: { settings: Settings }) {
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <label className="label">&ldquo;Registered&rdquo; role ID</label>
-          <input
-            name="registeredRoleId"
-            className="input font-mono"
-            defaultValue={settings.registeredRoleId}
-            placeholder="1234567890"
-          />
+          <label className="label">&ldquo;Registered&rdquo; role</label>
+          {roleField("registeredRoleId", settings.registeredRoleId)}
           <p className="mt-1 text-xs text-slate-500">
             Given to anyone with a player profile. Blank = off.
           </p>
         </div>
         <div>
-          <label className="label">&ldquo;Team leader&rdquo; role ID</label>
-          <input
-            name="teamLeaderRoleId"
-            className="input font-mono"
-            defaultValue={settings.teamLeaderRoleId}
-            placeholder="1234567890"
-          />
+          <label className="label">&ldquo;Team leader&rdquo; role</label>
+          {roleField("teamLeaderRoleId", settings.teamLeaderRoleId)}
           <p className="mt-1 text-xs text-slate-500">
             Given to team leaders. The bot&apos;s role must sit above these in the role list.
           </p>

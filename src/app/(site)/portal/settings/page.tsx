@@ -1,12 +1,17 @@
 import { requirePermission } from "@/lib/session";
 import { getSettings } from "@/lib/settings";
+import { listGuildTextChannels, listGuildRoles } from "@/lib/discord";
 import { SettingsForm } from "@/components/portal/settings-form";
 
 export const dynamic = "force-dynamic";
 
 export default async function PortalSettingsPage() {
   await requirePermission("settings:manage");
-  const settings = await getSettings();
+  const [settings, channels, roles] = await Promise.all([
+    getSettings(),
+    listGuildTextChannels(),
+    listGuildRoles(),
+  ]);
 
   return (
     <div className="max-w-2xl">
@@ -15,7 +20,7 @@ export default async function PortalSettingsPage() {
         Bot behaviour and the Discord invite. These override the values baked in at deploy time.
       </p>
       <div className="mt-6">
-        <SettingsForm settings={settings} />
+        <SettingsForm settings={settings} channels={channels} roles={roles} />
       </div>
     </div>
   );

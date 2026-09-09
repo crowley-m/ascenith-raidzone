@@ -416,6 +416,50 @@ export async function syncEventChannels(eventId: string): Promise<FormState> {
 }
 
 /**
+ * Re-post the standalone announcement embed (event with no Discord space) —
+ * deletes the old message and posts fresh to the currently-configured
+ * announcement channel. Use after changing the announce channel in Settings.
+ */
+export async function reannounceEvent(eventId: string): Promise<FormState> {
+  const actor = await assertPermission("event:manage");
+  const ev = await db.event.findUnique({
+    where: { id: eventId },
+    include: { _count: { select: { signups: { where: { state: "SIGNED_UP" } } } } },
+  });
+  if (!ev) return { error: "Event not found." };
+  if (ev.status !== "PUBLISHED") return { error: "Publish the event first." };
+  if (ev.discordCategoryId) return reannounceEventChannels(eventId);
+
+  const settings = await getSettings();
+  const url = `${APP_URL}/events/${ev.id}`;
+  const embed = eventEmbed({ ...ev, signupCount: ev._count.signups, url });
+  const components = [signupButtonRow(url, "Sign up on the website")];
+
+  if (ev.discordMessageId && ev.discordChannelId) {
+    await deleteChannelMessage(ev.discordChannelId, ev.discordMessageId);
+  }
+  try {
+    const posted = await postAnnouncement({
+      embed,
+      components,
+      channelId: settings.announceChannelId || undefined,
+      mentionEveryone: ev.announcePing || ev.announcePingAll,
+    });
+    if (!posted) return { error: "Discord isn't configured, or no announce channel is set." };
+    await db.event.update({
+      where: { id: ev.id },
+      data: { discordMessageId: posted.id, discordChannelId: posted.channelId },
+    });
+  } catch (err) {
+    return { error: `Discord: ${err instanceof Error ? err.message : "post failed"}` };
+  }
+
+  await logAudit({ actorId: actor.id, action: "event.reannounce", targetType: "Event", targetId: eventId });
+  revalidatePath(`/portal/events/${eventId}`);
+  return { ok: true };
+}
+
+/**
  * Delete the current channel messages and post fresh ones — so the pings fire
  * again (edits never re-notify). Honours the event's @everyone ping settings.
  */

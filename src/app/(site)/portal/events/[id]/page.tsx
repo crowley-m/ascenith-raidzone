@@ -183,7 +183,10 @@ export default async function PortalEventDetail({
                 </>
               )
             ) : (
-              <BuildSpaceButton eventId={event.id} />
+              <>
+                {event.status === "PUBLISHED" && <ReannounceButton eventId={event.id} />}
+                <BuildSpaceButton eventId={event.id} />
+              </>
             ))}
         </div>
       </div>
