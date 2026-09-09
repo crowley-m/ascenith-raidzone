@@ -204,7 +204,6 @@ export function Landing({
   const rootRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
   const [heroVideo, setHeroVideo] = useState(false);
-  const cursorRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -212,45 +211,6 @@ export function Landing({
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const bigEnough = window.matchMedia("(min-width: 820px)").matches;
     if (!reduce && bigEnough) setHeroVideo(true);
-
-    // custom cursor
-    const fine = window.matchMedia("(pointer: fine)").matches;
-    let raf = 0;
-    let cx = 0;
-    let cy = 0;
-    let tx = 0;
-    let ty = 0;
-    const cur = cursorRef.current;
-    const move = (e: PointerEvent) => {
-      tx = e.clientX;
-      ty = e.clientY;
-    };
-    const loop = () => {
-      cx += (tx - cx) * 0.2;
-      cy += (ty - cy) * 0.2;
-      if (cur) cur.style.transform = `translate(${cx}px, ${cy}px)`;
-      raf = requestAnimationFrame(loop);
-    };
-    if (fine && !reduce && cur) {
-      window.addEventListener("pointermove", move, { passive: true });
-      raf = requestAnimationFrame(loop);
-      const hot = () => cur.classList.add(s.hot);
-      const cold = () => cur.classList.remove(s.hot);
-      const targets = rootRef.current?.querySelectorAll("a, button, [data-wm]") ?? [];
-      targets.forEach((t) => {
-        t.addEventListener("pointerenter", hot);
-        t.addEventListener("pointerleave", cold);
-      });
-      return () => {
-        window.removeEventListener("pointermove", move);
-        cancelAnimationFrame(raf);
-        targets.forEach((t) => {
-          t.removeEventListener("pointerenter", hot);
-          t.removeEventListener("pointerleave", cold);
-        });
-      };
-    }
-    return () => cancelAnimationFrame(raf);
   }, []);
 
   useEffect(() => {
@@ -263,7 +223,6 @@ export function Landing({
     <div className={s.root} ref={rootRef}>
       <div className={s.grain} aria-hidden />
       <div className={s.vignette} aria-hidden />
-      <div className={s.cursor} ref={cursorRef} aria-hidden />
       {mounted && <SparkleField />}
 
       <nav className={s.nav}>

@@ -102,7 +102,7 @@ export default async function SeasonPage({
         )}
 
         {season.videos.length > 0 && (
-          <section className="mt-14 border-t border-edge pt-6">
+          <section data-reveal className="mt-14 border-t border-edge pt-6">
             <h2 className="eyebrow">+ Match footage</h2>
             <div className="mt-5 max-w-3xl">
               <SeasonVideos
@@ -113,7 +113,7 @@ export default async function SeasonPage({
         )}
 
         {season.events.length > 0 && (
-          <section className="mt-14 border-t border-edge pt-6">
+          <section data-reveal className="mt-14 border-t border-edge pt-6">
             <h2 className="eyebrow">+ Events</h2>
             <div className="mt-5 space-y-10">
               {season.events.map((e) => {

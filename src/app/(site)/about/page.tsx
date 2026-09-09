@@ -85,7 +85,7 @@ export default function AboutPage() {
       />
 
       <div className="mx-auto w-full max-w-6xl px-5 pb-24">
-      <section className="mt-14 grid gap-8 md:grid-cols-2">
+      <section data-reveal className="mt-14 grid gap-8 md:grid-cols-2">
         <div className="card">
           <h2 className="font-display text-lg font-bold text-teal">RAIDZONE is</h2>
           <ul className="mt-4 space-y-2 text-sm text-slate-300">
@@ -110,7 +110,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="mt-16">
+      <section data-reveal className="mt-16">
         <h2 className="font-display text-xl font-bold text-white">How to get in</h2>
         <ol className="mt-6 grid gap-6 md:grid-cols-3">
           {STEPS.map((s) => (

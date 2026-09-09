@@ -69,7 +69,7 @@ export default async function WinnersPage() {
       />
       <div className="mx-auto w-full max-w-6xl px-5 pb-24 pt-10">
         {raiders.length > 0 && (
-          <section className="mt-14 border-t border-edge pt-6">
+          <section data-reveal className="mt-14 border-t border-edge pt-6">
             <h2 className="eyebrow">+ Top raiders</h2>
             <div className="mt-5 max-w-xl">
               <TopRaiders raiders={raiders} />
@@ -78,7 +78,7 @@ export default async function WinnersPage() {
         )}
 
         {sections.map((s) => (
-          <section key={s.slug} className="mt-14 border-t border-edge pt-6">
+          <section key={s.slug} data-reveal className="mt-14 border-t border-edge pt-6">
             <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
               <h2 className="eyebrow">+ {s.title}</h2>
               {s.items.length > WINNERS_SECTION_LIMIT && (
@@ -104,7 +104,7 @@ export default async function WinnersPage() {
             No results logged yet — check back after the next event.
           </p>
         ) : (
-          <div className="mt-14 space-y-12 border-t border-edge pt-6">
+          <div data-reveal className="mt-14 space-y-12 border-t border-edge pt-6">
             <h2 className="eyebrow">+ Event results</h2>
             {events.map((e) => {
               const ev = e as typeof e & {

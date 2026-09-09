@@ -44,7 +44,7 @@ export default async function TeamsPage() {
       {teams.length === 0 ? (
         <p className="mt-12 text-sm text-slate-400">No teams yet. Be the first.</p>
       ) : (
-        <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div data-reveal className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {teams.map((t) => {
             const tt = t as typeof t & {
               leader: { characterName: string | null };

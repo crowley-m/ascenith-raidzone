@@ -65,7 +65,7 @@ const STEPS = [
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="mt-14">
+    <section data-reveal className="mt-14">
       <h2 className="font-display text-xl font-bold text-white">{title}</h2>
       {children}
     </section>

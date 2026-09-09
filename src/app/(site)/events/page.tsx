@@ -42,7 +42,7 @@ export default async function EventsPage() {
 
       <div className="mx-auto w-full max-w-6xl px-5 pb-24">
         {live.length > 0 && (
-          <section className="mt-14 border-t border-edge pt-6">
+          <section data-reveal className="mt-14 border-t border-edge pt-6">
             <h2 className="eyebrow">
               <span className="mr-2 inline-block h-2 w-2 rounded-full bg-teal align-middle" />
               Running now
@@ -55,7 +55,7 @@ export default async function EventsPage() {
           </section>
         )}
 
-        <section className="mt-14 border-t border-edge pt-6">
+        <section data-reveal className="mt-14 border-t border-edge pt-6">
           <h2 className="eyebrow">+ Upcoming</h2>
           {upcoming.length === 0 ? (
             <p className="mt-4 text-sm text-slate-400">
@@ -71,7 +71,7 @@ export default async function EventsPage() {
         </section>
 
         {past.length > 0 && (
-          <section className="mt-14 border-t border-edge pt-6">
+          <section data-reveal className="mt-14 border-t border-edge pt-6">
             <h2 className="eyebrow">+ Past events</h2>
             <div className="mt-6 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
               {past.map((e) => (

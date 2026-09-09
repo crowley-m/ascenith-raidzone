@@ -47,7 +47,7 @@ export default async function SeasonsPage() {
         )}
 
         {series.map(([name, list], i) => (
-          <section key={name} className="mt-16 first:mt-14">
+          <section key={name} data-reveal className="mt-16 first:mt-14">
             {/* series masthead line */}
             <div className="flex items-end justify-between gap-6 border-b-2 border-white/20 pb-3">
               <div className="flex items-baseline gap-4">

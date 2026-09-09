@@ -39,7 +39,9 @@ export default async function WinnersSectionPage({
         >
           ← Hall of winners
         </Link>
-        <GalleryGrid items={s.items} />
+        <div data-reveal>
+          <GalleryGrid items={s.items} />
+        </div>
       </div>
     </div>
   );

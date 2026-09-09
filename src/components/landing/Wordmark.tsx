@@ -1,6 +1,3 @@
-"use client";
-
-import { useEffect, useRef } from "react";
 import s from "./landing.module.css";
 
 const FONT =
@@ -9,49 +6,11 @@ const FONT =
 /**
  * RAIDZONE hero wordmark — an SVG halftone dot-screen render of the word.
  * Calm treatment: wipes in on load, the dot field drifts slowly (SMIL),
- * and it leans away from the cursor. Pure SVG + CSS + one tiny rAF; no WebGL.
+ * and it drifts up on scroll. Pure SVG + CSS; no JS, no WebGL.
  */
 export function Wordmark() {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    if (
-      window.matchMedia("(pointer: coarse), (prefers-reduced-motion: reduce)").matches
-    ) {
-      return;
-    }
-    let raf = 0;
-    let tx = 0;
-    let ty = 0;
-    let cx = 0;
-    let cy = 0;
-    const onMove = (e: PointerEvent) => {
-      const r = el.getBoundingClientRect();
-      const dx = (e.clientX - (r.left + r.width / 2)) / (r.width / 2);
-      const dy = (e.clientY - (r.top + r.height / 2)) / (r.height / 2);
-      const near = Math.max(0, 1 - Math.hypot(dx, dy) * 0.85);
-      tx = -dx * 16 * near;
-      ty = -dy * 11 * near;
-    };
-    const loop = () => {
-      cx += (tx - cx) * 0.07;
-      cy += (ty - cy) * 0.07;
-      el.style.setProperty("--wmx", `${cx.toFixed(2)}px`);
-      el.style.setProperty("--wmy", `${cy.toFixed(2)}px`);
-      raf = requestAnimationFrame(loop);
-    };
-    window.addEventListener("pointermove", onMove, { passive: true });
-    raf = requestAnimationFrame(loop);
-    return () => {
-      window.removeEventListener("pointermove", onMove);
-      cancelAnimationFrame(raf);
-    };
-  }, []);
-
   return (
-    <div className={s.wm} ref={ref} data-wm>
+    <div className={s.wm} data-wm>
       <svg
         className={s.wmSvg}
         viewBox="0 0 1440 460"
