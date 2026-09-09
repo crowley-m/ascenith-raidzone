@@ -8,6 +8,7 @@ import { fmtInZone, DEFAULT_EVENT_TZ } from "@/lib/tz";
 import { SignupButton } from "@/components/signup-button";
 import { TeamSignup } from "@/components/team/team-signup";
 import { Markdown } from "@/components/markdown";
+import { EventProse } from "@/components/event-prose";
 import { VideoEmbed } from "@/components/video-embed";
 import { teamForEvent } from "@/lib/team";
 import { bracketForEvent } from "@/lib/bracket";
@@ -181,6 +182,17 @@ export default async function EventDetailPage({
             </p>
           )}
 
+          {event.posterUrl && /^https?:\/\//.test(event.posterUrl) && (
+            <div className="mt-8 max-w-2xl overflow-hidden border border-edge">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={event.posterUrl}
+                alt={`${event.title} key art`}
+                className="w-full object-cover"
+              />
+            </div>
+          )}
+
           {event.howToJoinVideoUrl && (
             <div className="mt-8 max-w-2xl">
               <div className="eyebrow">How to join</div>
@@ -248,10 +260,37 @@ export default async function EventDetailPage({
             </p>
           )}
 
+          {event.gameplayMd && (
+            <div className="mt-10 max-w-2xl border-l-2 border-teal/50 pl-5">
+              <h2 className="font-poster text-2xl uppercase text-white">Gameplay</h2>
+              <div className="mt-3">
+                <EventProse source={event.gameplayMd} />
+              </div>
+            </div>
+          )}
+
+          {event.scheduleMd && (
+            <div className="mt-10 max-w-2xl border-l-2 border-teal/50 pl-5">
+              <h2 className="font-poster text-2xl uppercase text-white">Schedule</h2>
+              <div className="mt-3">
+                <EventProse source={event.scheduleMd} />
+              </div>
+            </div>
+          )}
+
           {event.rulesMd && (
             <div className="mt-10 max-w-2xl border-l-2 border-teal/50 pl-5">
               <h2 className="font-poster text-2xl uppercase text-white">Rules</h2>
               <Markdown source={event.rulesMd} className="md mt-3" />
+            </div>
+          )}
+
+          {event.wipeInfoMd && (
+            <div className="mt-10 max-w-2xl border-l-2 border-teal/50 pl-5">
+              <h2 className="font-poster text-2xl uppercase text-white">Wipe info</h2>
+              <div className="mt-3">
+                <EventProse source={event.wipeInfoMd} />
+              </div>
             </div>
           )}
 

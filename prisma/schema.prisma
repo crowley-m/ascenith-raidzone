@@ -321,6 +321,7 @@ model Event {
 
   // landing / public brief
   summary     String? // 1-2 line teaser for the landing card
+  posterUrl   String? // absolute URL of the event's key art — shown on the announcement embed + event page
   mode        String? // e.g. "PURGE" — shown next to RAIDZONE
   wipeCycle   String? // e.g. "2 weeks"
   raidWindow  String? // e.g. "15:30 – 21:29 · 6 hrs/day"
@@ -337,6 +338,7 @@ model Event {
   registrationMd  String?
   howToJoinMd     String?
   gameplayMd      String?
+  scheduleMd      String? // day-by-day schedule — own #schedule channel + event-page section
   wipeInfoMd      String?
   rewardsMd       String? // overrides the auto reward-tier post if set
 

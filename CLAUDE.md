@@ -62,10 +62,22 @@ mutation writes an `AuditLog` row via `logAudit(...)`; viewer at `/portal/audit`
 - **Factions page** (`/factions`) is scoped to the **Faction War** season series
   (any `Season.series` containing "faction"). Team-event podiums are NOT rolled
   into factions. Titles matched champion-name → faction-name fuzzily.
-- **Events → Discord** — "Build space" creates a category + channel set; content
-  is pushed per channel. `announcement / how-to-join / rules / wipe-info` are
-  read-only. `announcePing` / `announcePingAll` control `@everyone`. "Repost +
-  ping" deletes & reposts to re-fire pings.
+- **Events → Discord** — "Build space" creates a category + channel set. Content
+  is **auto-composed into rich embeds** (never a raw-text dump): `eventEmbed()`
+  builds the `#announcement` card from the structured fields; every other channel
+  gets a titled embed via `contentEmbed()`. `eventChannelPayloads(ev)` in
+  `src/lib/event-channels.ts` is the single source of truth for per-channel
+  content — the `saveEvent` publish path, `pushEventChannelContent`, and the
+  portal **Discord preview** (`<DiscordPreview>`) all read it. `bulletize()` /
+  `proseItems()` (`src/lib/prose.ts`) turn free-typed lines into point-wise
+  lists — `# Heading` → bold, `Label:` → bold, `-/*/1.` normalised, one bullet
+  per line; the event page renders the same via `<EventProse>`.
+  `announcement / how-to-join / rules / gameplay / schedule / wipe-info /
+  registration` are read-only. `Event.posterUrl` (absolute URL) → announcement
+  embed image + event-page hero. A pinned **channel guide** message
+  (`eventIndexContent`) sits in `#announcement`. `announcePing` /
+  `announcePingAll` control `@everyone`. "Repost + ping" deletes & reposts to
+  re-fire pings; "Sync channels" edits the existing messages in place (no re-ping).
 - **Event access roles** (`src/lib/event-space.ts`) — "Build space" also creates a
   per-event Discord role (`Event.discordRoleId`); `applyEventChannelPerms` gates
   every channel except `announcement / how-to-join / registration` to it. Signing

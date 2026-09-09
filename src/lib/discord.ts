@@ -14,7 +14,11 @@ type Embed = {
   timestamp?: string;
   footer?: { text: string };
   author?: { name: string; url?: string };
+  image?: { url: string };
+  thumbnail?: { url: string };
 };
+
+export type { Embed };
 
 const BRAND = 0xe5484d; // crimson accent
 
@@ -69,6 +73,8 @@ type ButtonRow = {
   type: 1;
   components: { type: 2; style: number; label: string; url?: string; custom_id?: string }[];
 };
+
+export type { ButtonRow };
 
 /** A link button that opens the event's page on the website (works for solo + team). */
 export function signupButtonRow(url: string, label = "Open the event page"): ButtonRow {
@@ -158,7 +164,7 @@ const lines = (s: string | null | undefined) =>
  * - every other non-empty line gets a `•` bullet
  * - blank lines are kept (collapsed to one) as visual breaks
  */
-export function bulletize(md: string | null | undefined): string {
+export function bulletize(md: string | null | undefined, marker = "• "): string {
   const raw = (md ?? "").replace(/\r/g, "");
   if (lines(raw).length <= 1) return raw.trim();
 
@@ -176,16 +182,17 @@ export function bulletize(md: string | null | undefined): string {
     if (heading) {
       out.push(`**${heading[1]}**`);
     } else if (/^([-*•]|\d+[.)])\s+/.test(line)) {
-      out.push(line.replace(/^[-*•]\s+/, "• "));
+      out.push(line.replace(/^[-*•]\s+/, marker).replace(/^(\d+[.)])\s+/, `$1 `));
     } else if (/^[A-Za-z0-9][^:]{0,40}:$/.test(line)) {
       out.push(`**${line}**`);
     } else {
-      out.push(`• ${line}`);
+      out.push(`${marker}${line}`);
     }
   }
   while (out.length && out[out.length - 1] === "") out.pop();
   return out.join("\n");
 }
+
 
 /** Rich, auto-composed announcement embed built from the event's structured fields. */
 export function eventEmbed(e: {
@@ -206,6 +213,7 @@ export function eventEmbed(e: {
   maxSlots?: number | null;
   signupCount?: number;
   seasonNumber?: number | null;
+  posterUrl?: string | null;
   url: string;
 }): Embed {
   const start = Math.floor(e.startsAt.getTime() / 1000);
@@ -262,6 +270,7 @@ export function eventEmbed(e: {
   fields.push({ name: "​", value: `**[▶ Sign up on the website](${e.url})**`, inline: false });
 
   const emoji = eventEmoji(e.mode);
+  const poster = (e.posterUrl ?? "").trim();
   return {
     author: { name: e.mode ? `RAIDZONE · ${e.mode}` : "ASCENITH RAIDZONE" },
     title: `${emoji} ${e.title}`,
@@ -269,6 +278,7 @@ export function eventEmbed(e: {
     url: e.url,
     color: BRAND,
     fields,
+    ...(/^https?:\/\//.test(poster) ? { image: { url: poster } } : {}),
     timestamp: e.startsAt.toISOString(),
     footer: { text: e.seasonNumber ? `Season ${e.seasonNumber}` : "ASCENITH RAIDZONE" },
   };
@@ -368,6 +378,7 @@ export const EVENT_CHANNELS = [
   "how-to-join",
   "rules",
   "gameplay",
+  "schedule",
   "wipe-info",
   "rewards",
   "registration",
@@ -386,6 +397,8 @@ export const READONLY_CHANNELS = new Set([
   "announcement",
   "how-to-join",
   "rules",
+  "gameplay",
+  "schedule",
   "wipe-info",
   "registration",
 ]);
@@ -733,6 +746,40 @@ export async function deleteChannelMessage(channelId: string, messageId: string)
   await discordFetch(`/channels/${channelId}/messages/${messageId}`, {
     method: "DELETE",
   }).catch(() => {});
+}
+
+/** Pin a message (needs Manage Messages). Best-effort. */
+export async function pinMessage(channelId: string, messageId: string): Promise<void> {
+  if (!process.env.DISCORD_BOT_TOKEN) return;
+  await discordFetch(`/channels/${channelId}/pins/${messageId}`, { method: "PUT" }).catch(() => {});
+}
+
+/**
+ * A navigation index for an event's category — jump-links to every channel.
+ * `channels` is the name→id map; `order` controls the display order.
+ */
+export function eventIndexContent(
+  title: string,
+  channels: Record<string, string>,
+  order: readonly string[] = EVENT_CHANNELS,
+): string {
+  const label: Record<string, string> = {
+    announcement: "📢 announcement",
+    "how-to-join": "🧭 how-to-join",
+    registration: "📝 registration",
+    rules: "📜 rules",
+    gameplay: "🎮 gameplay",
+    schedule: "🗓 schedule",
+    "wipe-info": "♻ wipe-info",
+    rewards: "🏆 rewards",
+    "looking-for-team": "🤝 looking-for-team",
+    questions: "❓ questions",
+    chat: "💬 chat",
+  };
+  const links = order
+    .filter((n) => channels[n])
+    .map((n) => `${label[n] ?? `# ${n}`} → <#${channels[n]}>`);
+  return `**📂 ${title} — channel guide**\n${links.join("\n")}`;
 }
 
 // ---------------------------------------------------------------------------

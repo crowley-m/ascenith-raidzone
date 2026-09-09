@@ -19,6 +19,7 @@ type EventInit = {
   status: string;
   seasonId: string | null;
   summary: string | null;
+  posterUrl: string | null;
   mode: string | null;
   wipeCycle: string | null;
   raidWindow: string | null;
@@ -33,6 +34,7 @@ type EventInit = {
   registrationMd: string | null;
   howToJoinMd: string | null;
   gameplayMd: string | null;
+  scheduleMd: string | null;
   wipeInfoMd: string | null;
   rewardsMd: string | null;
 };
@@ -83,6 +85,7 @@ export function EventForm({
     set("teamSize", "");
     set("status", "DRAFT");
     set("summary", "No rules, no limits. 2-week wipe. Top 3 on the Glory board take the pool.");
+    set("posterUrl", "");
     set("mode", "PURGE");
     set("wipeCycle", "2 weeks");
     set("raidWindow", "Days 1–4 · 15:30 – 21:29 (6 hrs/day)\nFinal weekend · no safe window");
@@ -111,7 +114,11 @@ export function EventForm({
     set("howToJoinMd", "");
     set(
       "gameplayMd",
-      "Capture Red and Blue rooms for Glory Points. Rooms rotate on the map every cycle — check pins. Bases are fair game outside the safe window.",
+      "# Objective\nCapture Red and Blue rooms for Glory Points.\nRooms rotate on the map every cycle — check pins.\nBases are fair game outside the safe window.\n\n# Scoring\nRed Room — 2 pts, spawns every 2h\nBlue Room — 1 pt, spawns every 1h",
+    );
+    set(
+      "scheduleMd",
+      "# Days 1–4 · Farm phase\nRaid window 6 PM – 11:59 PM\nStandard loot rules\n\n# Day 5 · Meteor Clash\nAdmins summon the meteor car at 7 PM\nFirst team to bring it home earns the bonus\n\n# Days 6–7 · Endgame\nRaid hours extended to 12 PM – 11:59 PM\nProtect your meteor car to wipe end",
     );
     set("wipeInfoMd", "Full server wipe at start. Blueprints reset. Bring nothing, leave nothing.");
     set("rewardsMd", "");
@@ -281,6 +288,21 @@ export function EventForm({
         <textarea name="summary" rows={2} className="input" defaultValue={event?.summary ?? ""} placeholder="No rules, no limits. 2-week wipe. Top 3 on the Glory Points board take the pool." />
       </div>
 
+      <div>
+        <label className="label">Poster / key art URL (optional)</label>
+        <input
+          name="posterUrl"
+          type="url"
+          className="input font-mono text-xs"
+          defaultValue={event?.posterUrl ?? ""}
+          placeholder="https://…/meteor-clash.png"
+        />
+        <p className="mt-1 text-xs text-slate-500">
+          A full <code>https://</code> image URL. Shown at the top of the event page and as the
+          image on the Discord announcement embed.
+        </p>
+      </div>
+
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className="label">Mode (next to RAIDZONE)</label>
@@ -441,8 +463,15 @@ export function EventForm({
             "gameplayMd",
             "Gameplay",
             8,
-            "Objectives, map, how the mode plays.",
+            "Objectives, map, how the mode plays. One point per line; `# Heading` groups them.",
             "Capture Red and Blue rooms for Glory Points. Rooms rotate every cycle — check pins.",
+          ],
+          [
+            "scheduleMd",
+            "Schedule (day-by-day)",
+            8,
+            "One line per point. Use `# Day 1–4 · Farm phase` headings to group the days.",
+            "# Days 1–4 · Farm phase\nRaid window 6 PM – 11:59 PM\n\n# Day 5 · Meteor Clash\nAdmins summon the meteor car at 7 PM",
           ],
           [
             "wipeInfoMd",

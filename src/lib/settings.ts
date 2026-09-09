@@ -28,6 +28,7 @@ const DEFAULTS: Settings = {
     "how-to-join",
     "rules",
     "gameplay",
+    "schedule",
     "wipe-info",
     "rewards",
     "registration",

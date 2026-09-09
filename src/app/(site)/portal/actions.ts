@@ -19,7 +19,6 @@ import {
   postAnnouncement,
   editAnnouncement,
   eventEmbed,
-  contentEmbed,
   bulletize,
   signupButtonRow,
   createEventSpace,
@@ -29,7 +28,10 @@ import {
   editChannelMessage,
   deleteChannelMessage,
   eventEmoji,
+  eventIndexContent,
+  pinMessage,
 } from "@/lib/discord";
+import { eventChannelPayloads, EVENT_CHANNEL_ORDER } from "@/lib/event-channels";
 import { createMediaAsset } from "@/lib/media";
 import { getSettings } from "@/lib/settings";
 import { notify, notifyPlayer } from "@/lib/notify";
@@ -157,6 +159,7 @@ export async function saveEvent(_prev: FormState, formData: FormData): Promise<F
     status: formData.get("status"),
     seasonId: str("seasonId"),
     summary: str("summary"),
+    posterUrl: str("posterUrl"),
     mode: str("mode"),
     wipeCycle: str("wipeCycle"),
     raidWindow: str("raidWindow"),
@@ -171,6 +174,7 @@ export async function saveEvent(_prev: FormState, formData: FormData): Promise<F
     registrationMd: str("registrationMd"),
     howToJoinMd: str("howToJoinMd"),
     gameplayMd: str("gameplayMd"),
+    scheduleMd: str("scheduleMd"),
     wipeInfoMd: str("wipeInfoMd"),
     rewardsMd: str("rewardsMd"),
   });
@@ -200,6 +204,7 @@ export async function saveEvent(_prev: FormState, formData: FormData): Promise<F
     status: d.status,
     seasonId: d.seasonId ? d.seasonId : null,
     summary: d.summary ?? null,
+    posterUrl: d.posterUrl ? d.posterUrl : null,
     mode: d.mode ?? null,
     wipeCycle: d.wipeCycle ?? null,
     raidWindow: d.raidWindow ?? null,
@@ -215,6 +220,7 @@ export async function saveEvent(_prev: FormState, formData: FormData): Promise<F
     registrationMd: d.registrationMd ?? null,
     howToJoinMd: d.howToJoinMd ?? null,
     gameplayMd: d.gameplayMd ?? null,
+    scheduleMd: d.scheduleMd ?? null,
     wipeInfoMd: d.wipeInfoMd ?? null,
     rewardsMd: d.rewardsMd ?? null,
   };
@@ -297,100 +303,6 @@ export async function saveEvent(_prev: FormState, formData: FormData): Promise<F
   redirect(`/portal/events/${eventId}`);
 }
 
-type ChannelPayload = {
-  content?: string;
-  embed?: Parameters<typeof postToChannel>[1]["embed"];
-  components?: Parameters<typeof postToChannel>[1]["components"];
-  mentionEveryone?: boolean;
-};
-
-type FullEvent = NonNullable<Awaited<ReturnType<typeof db.event.findUnique>>>;
-
-/** What goes in each of the event's Discord channels. */
-function eventChannelPayloads(ev: FullEvent): Record<string, ChannelPayload> {
-  const url = `${APP_URL}/events/${ev.id}`;
-  const tiers = Array.isArray(ev.rewardTiers)
-    ? (ev.rewardTiers as Array<{ place: string; reward: string }>)
-    : [];
-  const bullets = (s: string | null | undefined) =>
-    (s ?? "")
-      .split("\n")
-      .map((l) => l.trim())
-      .filter(Boolean);
-  const out: Record<string, ChannelPayload> = {};
-
-  // #announcement — the rich auto-composed card only, no raw text dump.
-  // A custom announcementMd (if the staffer wrote one) becomes the card's intro.
-  out.announcement = {
-    embed: eventEmbed({
-      ...ev,
-      summary: bulletize(ev.announcementMd) || ev.summary,
-      signupCount: 0,
-      url,
-    }),
-    components: [signupButtonRow(url, "Sign up on the website")],
-    mentionEveryone: ev.announcePing || ev.announcePingAll,
-  };
-
-  out["how-to-join"] = {
-    embed: contentEmbed(
-      "🧭 How to join",
-      ev.howToJoinMd
-        ? bulletize(ev.howToJoinMd)
-        : `**1.** Register once at ${APP_URL}/register — Discord login links automatically.\n` +
-            `**2.** Add your in-game UID on your profile — that's where rewards go.\n` +
-            (ev.format === "TEAM"
-              ? `**3.** Team event — your team leader registers the whole team on the event page.`
-              : `**3.** Claim your slot on the event page.`),
-    ),
-    components: [signupButtonRow(url, "Open the event page")],
-  };
-
-  out.registration = {
-    embed: contentEmbed(
-      `📝 Registration — ${ev.title}`,
-      ev.registrationMd
-        ? bulletize(ev.registrationMd)
-        : ev.format === "TEAM"
-          ? "Your team leader signs the whole team up on the website. Everyone else needs a profile with an in-game UID set."
-          : "Open to everyone. Register once, add your in-game UID, then claim your slot below.",
-    ),
-    components: [signupButtonRow(url, "Sign up on the website")],
-  };
-
-  if (ev.rulesMd) out.rules = { embed: contentEmbed(`📜 Rules — ${ev.title}`, bulletize(ev.rulesMd)) };
-  if (ev.gameplayMd) out.gameplay = { embed: contentEmbed("🎮 Gameplay", bulletize(ev.gameplayMd)) };
-
-  if (ev.wipeInfoMd || ev.wipeCycle || ev.raidWindow) {
-    const parts: string[] = [];
-    if (ev.wipeCycle) parts.push(`**Wipe cycle** — ${ev.wipeCycle}`);
-    const windows = bullets(ev.raidWindow);
-    if (windows.length === 1) parts.push(`**Raid window** — ${windows[0]}`);
-    else if (windows.length > 1)
-      parts.push(`**Raid window**\n${windows.map((w) => `• ${w}`).join("\n")}`);
-    if (ev.wipeInfoMd) parts.push(bulletize(ev.wipeInfoMd));
-    out["wipe-info"] = { embed: contentEmbed("♻ Wipe info", parts.join("\n\n")) };
-  }
-
-  if (ev.rewardsMd) {
-    out.rewards = { embed: contentEmbed("🏆 Rewards", ev.rewardsMd) };
-  } else if (tiers.length || ev.bonusText || ev.rewardPoolText) {
-    const medals = ["🥇", "🥈", "🥉"];
-    const parts: string[] = [];
-    tiers.forEach((t, i) => parts.push(`${medals[i] ?? `#${i + 1}`} **${t.place}** — ${t.reward}`));
-    if (!tiers.length && ev.rewardPoolText) parts.push(ev.rewardPoolText);
-    const bonus = bullets(ev.bonusText);
-    if (bonus.length) parts.push("", "**Bonus**", ...bonus.map((b) => `✨ ${b}`));
-    out.rewards = { embed: contentEmbed("🏆 Rewards", parts.join("\n")) };
-  }
-
-  if (ev.announcePingAll) {
-    for (const p of Object.values(out)) p.mentionEveryone = true;
-  }
-
-  return out;
-}
-
 /**
  * Post (or edit, if a seed message id exists) the event's channel content.
  * Stores the message ids on the event for the next re-sync.
@@ -420,6 +332,26 @@ async function pushEventChannelContent(
       console.error(`channel sync failed for ${name}`, err);
       // a deleted message → post a fresh one next time
       if (existing) delete next[name];
+    }
+  }
+
+  // Pinned channel guide in #announcement — jump-links to every channel.
+  const indexChannel = channels.announcement;
+  if (indexChannel) {
+    const content = eventIndexContent(ev.title, channels, EVENT_CHANNEL_ORDER);
+    try {
+      if (seed.index) {
+        await editChannelMessage(indexChannel, seed.index, { content });
+      } else {
+        const m = await postToChannel(indexChannel, { content });
+        if (m) {
+          next.index = m.id;
+          await pinMessage(indexChannel, m.id);
+        }
+      }
+    } catch (err) {
+      console.error("channel index sync failed", err);
+      if (seed.index) delete next.index;
     }
   }
 
@@ -700,6 +632,7 @@ export async function cloneEvent(eventId: string): Promise<void> {
       status: "DRAFT",
       seasonId: src.seasonId,
       summary: src.summary,
+      posterUrl: src.posterUrl,
       mode: src.mode,
       wipeCycle: src.wipeCycle,
       raidWindow: src.raidWindow,
@@ -714,6 +647,7 @@ export async function cloneEvent(eventId: string): Promise<void> {
       registrationMd: src.registrationMd,
       howToJoinMd: src.howToJoinMd,
       gameplayMd: src.gameplayMd,
+      scheduleMd: src.scheduleMd,
       wipeInfoMd: src.wipeInfoMd,
       rewardsMd: src.rewardsMd,
       createdById: actor.id,

@@ -43,6 +43,7 @@ export const eventSchema = z.object({
   seasonId: z.string().trim().nullable().optional().or(z.literal("")),
   // landing / public brief
   summary: z.string().max(400).nullable().optional(),
+  posterUrl: z.string().trim().max(500).nullable().optional().or(z.literal("")),
   mode: z.string().max(40).nullable().optional(),
   wipeCycle: z.string().max(80).nullable().optional(),
   raidWindow: z.string().max(600).nullable().optional(),
@@ -57,6 +58,7 @@ export const eventSchema = z.object({
   registrationMd: z.string().max(4000).nullable().optional(),
   howToJoinMd: z.string().max(4000).nullable().optional(),
   gameplayMd: z.string().max(20000).nullable().optional(),
+  scheduleMd: z.string().max(20000).nullable().optional(),
   wipeInfoMd: z.string().max(20000).nullable().optional(),
   rewardsMd: z.string().max(4000).nullable().optional(),
 });

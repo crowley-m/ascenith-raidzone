@@ -17,6 +17,7 @@ import {
   ResyncRolesButton,
 } from "@/components/portal/build-space-button";
 import { ResultsForm, AttendeeRewardForm } from "@/components/portal/results-form";
+import { DiscordPreview } from "@/components/portal/discord-preview";
 import { BracketEditor } from "@/components/portal/bracket-editor";
 import { bracketForEvent, entrantsForEvent } from "@/lib/bracket";
 import { ConfirmButton } from "@/components/portal/confirm-button";
@@ -417,6 +418,21 @@ export default async function PortalEventDetail({
           )}
         </div>
 
+        {/* Discord preview */}
+        {canManage && (
+          <details className="max-w-3xl">
+            <summary className="cursor-pointer font-display font-bold text-white">
+              Discord preview
+              <span className="ml-2 text-xs font-normal text-slate-500">
+                what the bot posts to each channel
+              </span>
+            </summary>
+            <div className="mt-4">
+              <DiscordPreview event={event} />
+            </div>
+          </details>
+        )}
+
         {/* Edit */}
         <div className="max-w-3xl">
           {canManage ? (
@@ -440,6 +456,7 @@ export default async function PortalEventDetail({
                     status: event.status,
                     seasonId: event.seasonId,
                     summary: event.summary,
+                    posterUrl: event.posterUrl,
                     mode: event.mode,
                     wipeCycle: event.wipeCycle,
                     raidWindow: event.raidWindow,
@@ -454,6 +471,7 @@ export default async function PortalEventDetail({
                     registrationMd: event.registrationMd,
                     howToJoinMd: event.howToJoinMd,
                     gameplayMd: event.gameplayMd,
+                    scheduleMd: event.scheduleMd,
                     wipeInfoMd: event.wipeInfoMd,
                     rewardsMd: event.rewardsMd,
                   }}
