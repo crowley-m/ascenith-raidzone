@@ -35,6 +35,13 @@ export const metadata: Metadata = {
     description:
       "A custom Once Human server, weekly RaidZone tournaments, and sponsored prizes for winning squads.",
     type: "website",
+    siteName: "ASCENITH RAIDZONE",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "ASCENITH RAIDZONE",
+    description:
+      "A custom Once Human server, weekly RaidZone tournaments, and sponsored prizes for winning squads.",
   },
 };
 

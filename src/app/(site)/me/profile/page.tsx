@@ -10,7 +10,10 @@ export default async function ProfilePage({
   const user = await requireUser();
   const { new: isNew } = await searchParams;
 
-  const player = await db.player.findUnique({ where: { userId: user.id } });
+  const [player, factions] = await Promise.all([
+    db.player.findUnique({ where: { userId: user.id } }),
+    db.faction.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
+  ]);
 
   return (
     <div>
@@ -19,7 +22,7 @@ export default async function ProfilePage({
         This is what staff see when they manage rosters and rewards.
       </p>
       <div className="mt-6">
-        <ProfileForm player={player} isNew={isNew === "1"} />
+        <ProfileForm player={player} isNew={isNew === "1"} factions={factions} />
       </div>
     </div>
   );

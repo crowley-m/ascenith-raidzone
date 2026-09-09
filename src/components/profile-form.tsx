@@ -11,7 +11,10 @@ type PlayerInit = {
   timezone: string | null;
   playHours: string | null;
   languages: string | null;
+  factionId: string | null;
 };
+
+type FactionOpt = { id: string; name: string };
 
 const REGIONS = [
   "North America",
@@ -41,9 +44,11 @@ const initial: ProfileState = {};
 export function ProfileForm({
   player,
   isNew,
+  factions = [],
 }: {
   player: PlayerInit | null;
   isNew?: boolean;
+  factions?: FactionOpt[];
 }) {
   const [state, action, pending] = useActionState(updateProfileAction, initial);
   const err = (k: string) => state.fieldErrors?.[k];
@@ -115,10 +120,26 @@ export function ProfileForm({
         </div>
       </div>
 
-      <div>
-        <label className="label" htmlFor="languages">Languages</label>
-        <input id="languages" name="languages" className="input" maxLength={200}
-          defaultValue={player?.languages ?? ""} placeholder="e.g. English" />
+      <div className="grid gap-5 sm:grid-cols-2">
+        <div>
+          <label className="label" htmlFor="languages">Languages</label>
+          <input id="languages" name="languages" className="input" maxLength={200}
+            defaultValue={player?.languages ?? ""} placeholder="e.g. English" />
+        </div>
+        {factions.length > 0 && (
+          <div>
+            <label className="label" htmlFor="factionId">Faction</label>
+            <select id="factionId" name="factionId" className="input" defaultValue={player?.factionId ?? ""}>
+              <option value="">— none —</option>
+              {factions.map((f) => (
+                <option key={f.id} value={f.id}>{f.name}</option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-slate-500">
+              Pick your banner — grants the faction&apos;s Discord role. Staff may reassign.
+            </p>
+          </div>
+        )}
       </div>
 
       <p className="text-xs text-slate-500">

@@ -1042,6 +1042,36 @@ export async function deleteSeason(id: string) {
   revalidatePath("/winners");
 }
 
+/** Set exactly this set of events on the season; detach any others it had. */
+export async function assignEventsToSeason(
+  seasonId: string,
+  eventIds: string[],
+): Promise<FormState> {
+  const actor = await assertPermission("event:manage");
+  const wanted = [...new Set(eventIds)].filter(Boolean);
+
+  await db.event.updateMany({
+    where: { seasonId, ...(wanted.length ? { id: { notIn: wanted } } : {}) },
+    data: { seasonId: null },
+  });
+  if (wanted.length) {
+    await db.event.updateMany({ where: { id: { in: wanted } }, data: { seasonId } });
+  }
+
+  await logAudit({
+    actorId: actor.id,
+    action: "season.assign_events",
+    targetType: "Season",
+    targetId: seasonId,
+    meta: { count: wanted.length },
+  });
+  revalidatePath("/portal/seasons");
+  revalidatePath("/portal/events");
+  revalidatePath("/seasons");
+  revalidatePath("/winners");
+  return { ok: true, count: wanted.length };
+}
+
 // --------------------------------------------------------------------------
 // Staff roles (Owner only)
 // --------------------------------------------------------------------------

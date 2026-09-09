@@ -28,6 +28,7 @@ export async function updateProfileAction(
     timezone: clean(formData.get("timezone")),
     playHours: clean(formData.get("playHours")),
     languages: clean(formData.get("languages")),
+    factionId: clean(formData.get("factionId")),
   });
 
   if (!parsed.success) {
@@ -37,6 +38,11 @@ export async function updateProfileAction(
   }
 
   const d = parsed.data;
+  const factionId =
+    d.factionId && (await db.faction.findUnique({ where: { id: d.factionId }, select: { id: true } }))
+      ? d.factionId
+      : null;
+
   await db.player.upsert({
     where: { userId: user.id },
     create: {
@@ -49,6 +55,7 @@ export async function updateProfileAction(
       timezone: d.timezone ?? null,
       playHours: d.playHours ?? null,
       languages: d.languages ?? null,
+      factionId,
     },
     update: {
       characterName: d.characterName,
@@ -58,6 +65,7 @@ export async function updateProfileAction(
       timezone: d.timezone ?? null,
       playHours: d.playHours ?? null,
       languages: d.languages ?? null,
+      factionId,
     },
   });
 

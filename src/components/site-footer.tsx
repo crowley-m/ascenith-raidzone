@@ -42,6 +42,11 @@ export function SiteFooter() {
               </Link>
             </li>
             <li>
+              <Link href="/factions" className="hover:text-white">
+                Factions
+              </Link>
+            </li>
+            <li>
               <Link href="/seasons" className="hover:text-white">
                 Seasons
               </Link>

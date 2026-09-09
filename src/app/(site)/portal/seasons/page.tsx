@@ -3,6 +3,7 @@ import { requirePermission } from "@/lib/session";
 import { db } from "@/lib/db";
 import { fmtDate } from "@/lib/format";
 import { SeasonForm } from "@/components/portal/season-form";
+import { SeasonEventPicker } from "@/components/portal/season-event-picker";
 import { ConfirmButton } from "@/components/portal/confirm-button";
 import { deleteSeason } from "@/app/(site)/portal/actions";
 
@@ -13,14 +14,25 @@ const d = (v: Date | null) => (v ? v.toISOString().slice(0, 10) : "");
 export default async function SeasonsPage() {
   await requirePermission("event:manage");
 
-  const seasons = await db.season.findMany({
-    orderBy: [{ series: "asc" }, { number: "desc" }],
-    include: {
-      _count: { select: { events: true } },
-      videos: { orderBy: { sortOrder: "asc" } },
-    },
-  });
+  const [seasons, allEvents] = await Promise.all([
+    db.season.findMany({
+      orderBy: [{ series: "asc" }, { number: "desc" }],
+      include: {
+        _count: { select: { events: true } },
+        videos: { orderBy: { sortOrder: "asc" } },
+      },
+    }),
+    db.event.findMany({
+      orderBy: { startsAt: "desc" },
+      select: { id: true, title: true, mode: true, startsAt: true, seasonId: true },
+    }),
+  ]);
   const seriesList = [...new Set(seasons.map((s) => s.series))];
+  const eventOpts = allEvents.map((e) => ({
+    id: e.id,
+    seasonId: e.seasonId,
+    label: `${e.mode ? `RAIDZONE ${e.mode}` : e.title} · ${e.startsAt.toISOString().slice(0, 10)}`,
+  }));
 
   return (
     <div className="max-w-2xl">
@@ -84,7 +96,10 @@ export default async function SeasonsPage() {
                       .join("\n"),
                   }}
                 />
-                <div className="mt-3">
+
+                <SeasonEventPicker seasonId={s.id} events={eventOpts} />
+
+                <div className="mt-4">
                   <ConfirmButton
                     action={deleteSeason.bind(null, s.id)}
                     confirm={`Delete ${s.series} Season ${s.number}? Events stay but lose their season link.`}
