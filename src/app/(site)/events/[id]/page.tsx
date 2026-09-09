@@ -149,10 +149,15 @@ export default async function EventDetailPage({
   if (event.raidWindow) facts.push(["Raid window", multiline(event.raidWindow)]);
   if (event.server) facts.push(["Server", event.server]);
   facts.push(["Format", isTeamEvent ? "Team event" : "Solo event"]);
-  if (isTeamEvent && event.teamSize) facts.push(["Team size", `up to ${event.teamSize}`]);
+  if (isTeamEvent && event.teamSize)
+    facts.push(["Team size cap", `${event.teamSize} players / team`]);
   facts.push([
-    isTeamEvent ? "Teams" : "Slots",
-    `${isTeamEvent ? teamGroups.size : confirmed.length}${event.maxSlots ? ` / ${event.maxSlots}` : ""}`,
+    isTeamEvent ? "Teams registered" : "Players signed up",
+    String(isTeamEvent ? teamGroups.size : confirmed.length),
+  ]);
+  facts.push([
+    isTeamEvent ? "Max teams" : "Max slots",
+    event.maxSlots ? String(event.maxSlots) : "Unlimited",
   ]);
 
   return (
@@ -201,15 +206,6 @@ export default async function EventDetailPage({
               </div>
             </div>
           )}
-
-          <dl className="mt-8 grid grid-cols-2 gap-px border border-edge bg-edge sm:grid-cols-3">
-            {facts.map(([k, v]) => (
-              <div key={k} className="bg-panel p-4">
-                <dt className="label">{k}</dt>
-                <dd className="mt-1 font-mono text-sm text-slate-100">{v}</dd>
-              </div>
-            ))}
-          </dl>
 
           {(tiers.length > 0 || event.bonusText || event.rewardPoolText) && (
             <div className="mt-8 border border-edge bg-panel/70 p-5">
@@ -293,6 +289,18 @@ export default async function EventDetailPage({
               </div>
             </div>
           )}
+
+          <div className="mt-10 max-w-2xl border-l-2 border-teal/50 pl-5">
+            <h2 className="font-poster text-2xl uppercase text-white">Information</h2>
+            <dl className="mt-3 grid grid-cols-2 gap-px border border-edge bg-edge sm:grid-cols-3">
+              {facts.map(([k, v]) => (
+                <div key={k} className="bg-panel p-4">
+                  <dt className="label">{k}</dt>
+                  <dd className="mt-1 font-mono text-sm text-slate-100">{v}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
 
           {bracket && (
             <div className="mt-12">
