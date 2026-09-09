@@ -13,7 +13,9 @@ export function ScrollReveal() {
   const pathname = usePathname();
 
   useEffect(() => {
-    const els = Array.from(document.querySelectorAll<HTMLElement>("[data-reveal]"));
+    const els = Array.from(
+      document.querySelectorAll<HTMLElement>(".site-shell [data-reveal]"),
+    );
     if (els.length === 0) return;
 
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;

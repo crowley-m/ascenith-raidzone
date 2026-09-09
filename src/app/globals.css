@@ -20,14 +20,15 @@ body {
   color: #0a0a0b;
 }
 
-/* Scroll reveal — restrained fade + rise, plays once (see ScrollReveal) */
+/* Scroll reveal — restrained fade + rise, plays once (see ScrollReveal).
+   Scoped to .site-shell so it never touches the landing's own GSAP reveals. */
 @media (prefers-reduced-motion: no-preference) {
-  [data-reveal] {
+  .site-shell [data-reveal] {
     opacity: 0;
     transform: translateY(12px);
     will-change: opacity, transform;
   }
-  [data-reveal].reveal-in {
+  .site-shell [data-reveal].reveal-in {
     opacity: 1;
     transform: none;
     transition: opacity 0.5s ease, transform 0.5s ease;
