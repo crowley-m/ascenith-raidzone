@@ -1,17 +1,5 @@
 import { z } from "zod";
 
-export const registerSchema = z
-  .object({
-    email: z.string().email().max(200),
-    password: z.string().min(8, "At least 8 characters").max(200),
-    confirm: z.string(),
-    characterName: z.string().min(1).max(60),
-  })
-  .refine((d) => d.password === d.confirm, {
-    message: "Passwords do not match",
-    path: ["confirm"],
-  });
-
 export const profileSchema = z.object({
   characterName: z.string().min(1).max(60),
   gameUid: z.string().max(40).nullable().optional(),

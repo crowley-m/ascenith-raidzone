@@ -25,6 +25,7 @@ import {
   lockReadonlyChannels,
   postToChannel,
   editChannelMessage,
+  deleteChannelMessage,
   eventEmoji,
 } from "@/lib/discord";
 import { createMediaAsset } from "@/lib/media";
@@ -405,6 +406,40 @@ export async function syncEventChannels(eventId: string): Promise<FormState> {
     return { error: `Discord: ${err instanceof Error ? err.message : "sync failed"}` };
   }
   await logAudit({ actorId: actor.id, action: "event.discord_sync", targetType: "Event", targetId: eventId });
+  revalidatePath(`/portal/events/${eventId}`);
+  return { ok: true };
+}
+
+/**
+ * Delete the current channel messages and post fresh ones — so the pings fire
+ * again (edits never re-notify). Honours the event's @everyone ping settings.
+ */
+export async function reannounceEventChannels(eventId: string): Promise<FormState> {
+  const actor = await assertPermission("event:manage");
+  const ev = await db.event.findUnique({ where: { id: eventId } });
+  if (!ev?.discordCategoryId) return { error: "This event has no Discord space yet." };
+
+  const channels = (ev.discordChannels as Record<string, string>) ?? {};
+  const seed = (ev.discordSeedMessages as Record<string, string>) ?? {};
+
+  try {
+    // drop the old messages
+    for (const [name, msgId] of Object.entries(seed)) {
+      const chId = channels[name];
+      if (chId && msgId) await deleteChannelMessage(chId, msgId);
+    }
+    await db.event.update({
+      where: { id: eventId },
+      data: { discordSeedMessages: {} as Prisma.InputJsonValue },
+    });
+    // repost fresh (empty seed → new posts → pings per announcePing / announcePingAll)
+    await lockReadonlyChannels(channels);
+    await pushEventChannelContent(eventId, channels, {});
+  } catch (err) {
+    return { error: `Discord: ${err instanceof Error ? err.message : "repost failed"}` };
+  }
+
+  await logAudit({ actorId: actor.id, action: "event.discord_reannounce", targetType: "Event", targetId: eventId });
   revalidatePath(`/portal/events/${eventId}`);
   return { ok: true };
 }

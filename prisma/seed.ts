@@ -1,4 +1,6 @@
 import { PrismaClient } from "@prisma/client";
+import fs from "node:fs";
+import sharp from "sharp";
 
 const db = new PrismaClient();
 
@@ -185,6 +187,43 @@ async function main() {
     }
   }
   console.log(`Seeded ${seasons.length} seasons.`);
+
+  // "From the campaign" — the static key-art becomes an editable collection.
+  // Runs once; after that staff manage it in /portal/media like any other.
+  if (!(await db.mediaCollection.findUnique({ where: { slug: "campaign" } }))) {
+    await db.mediaCollection.create({
+      data: { slug: "campaign", title: "From the campaign", sortOrder: 999 },
+    });
+    if ((await db.mediaAsset.count({ where: { kind: "campaign" } })) === 0) {
+      const CAMPAIGN = [
+        ["key-art-ascenith.webp", "ASCENITH — Rise. Conquer. Ascend."],
+        ["promo-solo-season-1.webp", "Solo Mode · Season 1"],
+        ["promo-solo-duo.webp", "Solo / Duo RaidZone"],
+        ["poster-boxing-event.webp", "Boxing Event — Fight for Glory"],
+        ["trophy-ascenith.webp", "The RaidZone trophy"],
+      ] as const;
+      let n = 0;
+      for (const [file, caption] of CAMPAIGN) {
+        const path = `public/media/${file}`;
+        if (!fs.existsSync(path)) continue;
+        const buf = fs.readFileSync(path);
+        const meta = await sharp(buf).metadata();
+        await db.mediaAsset.create({
+          data: {
+            kind: "campaign",
+            data: buf,
+            contentType: "image/webp",
+            bytes: buf.length,
+            width: meta.width ?? null,
+            height: meta.height ?? null,
+            caption,
+            sortOrder: n++,
+          },
+        });
+      }
+      console.log(`Seeded ${n} campaign images.`);
+    }
+  }
 
   const ownerId = process.env.OWNER_DISCORD_ID;
   const ownerName = process.env.OWNER_DISCORD_USERNAME;

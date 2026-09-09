@@ -13,6 +13,7 @@ import {
   BuildSpaceButton,
   ArchiveSpaceButton,
   SyncChannelsButton,
+  ReannounceButton,
 } from "@/components/portal/build-space-button";
 import { ResultsForm, AttendeeRewardForm } from "@/components/portal/results-form";
 import { ConfirmButton } from "@/components/portal/confirm-button";
@@ -170,6 +171,7 @@ export default async function PortalEventDetail({
                     channels
                   </span>
                   <SyncChannelsButton eventId={event.id} />
+                  <ReannounceButton eventId={event.id} />
                   <ArchiveSpaceButton eventId={event.id} />
                 </>
               )

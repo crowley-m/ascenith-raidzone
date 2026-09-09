@@ -2,7 +2,12 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { buildEventSpace, archiveEventDiscord, syncEventChannels } from "@/app/(site)/portal/actions";
+import {
+  buildEventSpace,
+  archiveEventDiscord,
+  syncEventChannels,
+  reannounceEventChannels,
+} from "@/app/(site)/portal/actions";
 
 export function SyncChannelsButton({ eventId }: { eventId: string }) {
   const router = useRouter();
@@ -27,6 +32,38 @@ export function SyncChannelsButton({ eventId }: { eventId: string }) {
         }}
       >
         {pending ? "Syncing…" : "Sync channels"}
+      </button>
+      {msg && <span className="text-[0.66rem] text-slate-400">{msg}</span>}
+    </span>
+  );
+}
+
+export function ReannounceButton({ eventId }: { eventId: string }) {
+  const router = useRouter();
+  const [pending, start] = useTransition();
+  const [msg, setMsg] = useState<string | null>(null);
+  return (
+    <span className="inline-flex flex-col items-start gap-1">
+      <button
+        type="button"
+        className="btn-ghost text-xs"
+        disabled={pending}
+        onClick={() => {
+          if (
+            !window.confirm(
+              "Delete the current channel messages and repost them? This re-fires the @everyone pings (per this event's ping settings).",
+            )
+          )
+            return;
+          setMsg(null);
+          start(async () => {
+            const res = await reannounceEventChannels(eventId);
+            setMsg(res?.error ?? "Reposted.");
+            router.refresh();
+          });
+        }}
+      >
+        {pending ? "Reposting…" : "Repost + ping"}
       </button>
       {msg && <span className="text-[0.66rem] text-slate-400">{msg}</span>}
     </span>

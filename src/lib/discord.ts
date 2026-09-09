@@ -372,10 +372,24 @@ export async function archiveEventSpace(
     ...(botId ? [{ id: botId, type: 1, allow: botAllow, deny: "0" }] : []),
   ];
 
+  // every channel actually parented to this category right now — not just the
+  // ones we created, so manually-added channels get locked too
+  let liveChildren: string[] = [];
+  try {
+    const all = (await discordFetch(`/guilds/${gid}/channels`, { method: "GET" })) as {
+      id: string;
+      parent_id: string | null;
+    }[];
+    liveChildren = all.filter((c) => c.parent_id === categoryId).map((c) => c.id);
+  } catch {
+    /* fall back to the recorded ids */
+  }
+  const targets = [...new Set([...channelIds, ...liveChildren])];
+
   let hidden = true;
-  // channels first, category last — so the bot keeps inherited access while it
-  // still needs to edit the children
-  for (const id of [...channelIds, categoryId]) {
+  // children first, category last — so the bot keeps inherited access while it
+  // still needs to edit them
+  for (const id of [...targets, categoryId]) {
     try {
       await discordFetch(`/channels/${id}`, {
         method: "PATCH",
@@ -504,6 +518,14 @@ export async function editChannelMessage(
       ...(payload.components ? { components: payload.components } : {}),
     }),
   });
+}
+
+/** Delete one of the bot's own messages. Best-effort. */
+export async function deleteChannelMessage(channelId: string, messageId: string): Promise<void> {
+  if (!process.env.DISCORD_BOT_TOKEN) return;
+  await discordFetch(`/channels/${channelId}/messages/${messageId}`, {
+    method: "DELETE",
+  }).catch(() => {});
 }
 
 // ---------------------------------------------------------------------------

@@ -2,16 +2,11 @@ import NextAuth from "next-auth";
 import type { NextAuthConfig } from "next-auth";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import Discord from "next-auth/providers/discord";
-import Credentials from "next-auth/providers/credentials";
-import bcrypt from "bcryptjs";
-import { z } from "zod";
 import { db } from "@/lib/db";
 import { authConfig } from "@/auth.config";
 import { syncMemberRoles } from "@/lib/discord-roles";
 
-// Email/password sign-in is opt-in — set ENABLE_EMAIL_AUTH=true to turn it on.
-// Discord is the only route by default.
-export const EMAIL_AUTH_ENABLED = process.env.ENABLE_EMAIL_AUTH === "true";
+// Discord is the only sign-in route.
 
 const OWNER_DISCORD_ID = process.env.OWNER_DISCORD_ID ?? "";
 const OWNER_DISCORD_USERNAME = (process.env.OWNER_DISCORD_USERNAME ?? "").toLowerCase();
@@ -28,37 +23,7 @@ if (process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET) {
       // object, dropping its `url`; the sign-in leg then hits `new URL(issuer)`
       // with no issuer and dies with "TypeError: Invalid URL" (error=Configuration).
       // The default scope is already "identify email", so we just use it.
-      // Discord verifies emails; auto-link so a member who signed up with
-      // email/password can also use "Login with Discord".
       allowDangerousEmailAccountLinking: true,
-    }),
-  );
-}
-
-if (EMAIL_AUTH_ENABLED) {
-  providers.push(
-    Credentials({
-      name: "Email",
-      credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" },
-      },
-      async authorize(raw) {
-        const parsed = z
-          .object({ email: z.string().email(), password: z.string().min(1) })
-          .safeParse(raw);
-        if (!parsed.success) return null;
-
-        const user = await db.user.findUnique({
-          where: { email: parsed.data.email.toLowerCase() },
-        });
-        if (!user?.passwordHash) return null;
-
-        const ok = await bcrypt.compare(parsed.data.password, user.passwordHash);
-        if (!ok) return null;
-
-        return { id: user.id, email: user.email, name: user.name, image: user.image };
-      },
     }),
   );
 }
