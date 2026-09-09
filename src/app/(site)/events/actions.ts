@@ -63,6 +63,44 @@ export async function signUpForEvent(eventId: string) {
   return { ok: true, state };
 }
 
+/**
+ * Solo "I'm in, looking for a team" registration for a TEAM event. Puts the
+ * player on the roster with no team so leaders can recruit them; joining or
+ * forming a team later absorbs this signup.
+ */
+export async function registerAsFreeAgent(eventId: string) {
+  const session = await auth();
+  const playerId = await callerPlayerId(eventId);
+
+  const event = await db.event.findUnique({ where: { id: eventId } });
+  if (!event || event.status !== "PUBLISHED") {
+    return { error: "This event is not open for sign-ups." };
+  }
+  if (event.format !== "TEAM") {
+    return { error: "This is a solo event — just sign up." };
+  }
+  if (await teamForEvent(playerId, eventId)) {
+    return { error: "You're already in a team for this event." };
+  }
+
+  await db.eventSignup.upsert({
+    where: { eventId_playerId: { eventId, playerId } },
+    create: { eventId, playerId, state: "SIGNED_UP" },
+    update: { state: "SIGNED_UP", teamId: null },
+  });
+  await logAudit({
+    actorId: session?.user?.id,
+    action: "event.free_agent",
+    targetType: "Event",
+    targetId: eventId,
+  });
+  void grantEventAccess(eventId, playerId);
+
+  revalidatePath(`/events/${eventId}`);
+  revalidatePath("/me/events");
+  return { ok: true };
+}
+
 export async function withdrawFromEvent(eventId: string) {
   const playerId = await callerPlayerId(eventId);
   const existing = await db.eventSignup.findUnique({

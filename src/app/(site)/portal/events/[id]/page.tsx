@@ -94,7 +94,7 @@ export default async function PortalEventDetail({
     if (isTeamEvent) {
       const groups = new Map<string, typeof confirmed>();
       for (const s of confirmed) {
-        const k = s.team?.name ?? "—";
+        const k = s.team?.name ?? "Free agents (no team)";
         if (!groups.has(k)) groups.set(k, []);
         groups.get(k)!.push(s);
       }
@@ -117,18 +117,26 @@ export default async function PortalEventDetail({
     return lines.join("\n");
   })();
 
-  // team-event roster grouped
+  // team-event roster grouped; teamless sign-ups are free agents
   const teamGroups = new Map<
     string,
     { name: string; tag: string | null; members: typeof confirmed }
   >();
+  const freeAgents: typeof confirmed = [];
   if (isTeamEvent) {
     for (const s of confirmed) {
-      const key = s.teamId ?? "none";
-      if (!teamGroups.has(key)) {
-        teamGroups.set(key, { name: s.team?.name ?? "—", tag: s.team?.tag ?? null, members: [] });
+      if (!s.teamId) {
+        freeAgents.push(s);
+        continue;
       }
-      teamGroups.get(key)!.members.push(s);
+      if (!teamGroups.has(s.teamId)) {
+        teamGroups.set(s.teamId, {
+          name: s.team?.name ?? "—",
+          tag: s.team?.tag ?? null,
+          members: [],
+        });
+      }
+      teamGroups.get(s.teamId)!.members.push(s);
     }
   }
 
@@ -306,6 +314,38 @@ export default async function PortalEventDetail({
                   </table>
                 </div>
               ))}
+
+              {freeAgents.length > 0 && (
+                <div className="border border-edge">
+                  <div className="border-b border-edge bg-panel/50 px-3 py-2 text-sm font-bold text-white">
+                    Free agents — looking for a team
+                    <span className="ml-2 text-xs font-normal text-slate-500">
+                      {freeAgents.length}
+                    </span>
+                  </div>
+                  <table className="w-full text-sm">
+                    <tbody className="divide-y divide-edge/60">
+                      {freeAgents.map((s) => (
+                        <tr key={s.id}>
+                          <td className="px-3 py-2">
+                            <Link
+                              href={`/portal/players/${s.player.id}`}
+                              className="text-slate-200 hover:text-teal"
+                            >
+                              {s.player.characterName ?? "Unnamed"}
+                            </Link>
+                            {s.player.gameUid && (
+                              <span className="block text-xs text-slate-500">
+                                UID {s.player.gameUid}
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           ) : (
             <div className="mt-4 overflow-x-auto">

@@ -26,7 +26,11 @@ export function SyncChannelsButton({ eventId }: { eventId: string }) {
             const res = await syncEventChannels(eventId);
             if (res?.error) setMsg(res.error);
             else {
-              setMsg("Channels updated.");
+              setMsg(
+                res?.count
+                  ? `Channels updated · ${res.count} new channel${res.count === 1 ? "" : "s"} created.`
+                  : "Channels updated.",
+              );
               router.refresh();
             }
           });

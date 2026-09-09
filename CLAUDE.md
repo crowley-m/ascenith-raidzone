@@ -56,9 +56,13 @@ mutation writes an `AuditLog` row via `logAudit(...)`; viewer at `/portal/audit`
 - **Player vs User** — `User` = auth identity, `Player` = community profile. A
   `Player` (status `PENDING`) is auto-created on every sign-in so staff see
   everyone; it flips to `ACTIVE` when the profile is completed.
-- **Teams** — player-made, **one per event**, for `format: TEAM` events. Distinct
-  from **Factions** (staff-defined houses / persistent allegiance, with an
-  optional Discord role per house; `syncMemberRoles` reconciles roles).
+- **Teams** — player-made, **one per event**, for `format: TEAM` events. Forming
+  a team (or joining one) signs it up for that event — `registerTeam()` in
+  `src/lib/events.ts`; leaving / kick withdraws that member. A player with no
+  team can `registerAsFreeAgent()` — a teamless `EventSignup` ("looking for a
+  team"); forming/joining a team later absorbs it. Distinct from **Factions**
+  (staff-defined houses / persistent allegiance, with an optional Discord role
+  per house; `syncMemberRoles` reconciles roles).
 - **Factions page** (`/factions`) is scoped to the **Faction War** season series
   (any `Season.series` containing "faction"). Team-event podiums are NOT rolled
   into factions. Titles matched champion-name → faction-name fuzzily.
@@ -77,7 +81,10 @@ mutation writes an `AuditLog` row via `logAudit(...)`; viewer at `/portal/audit`
   embed image + event-page hero. A pinned **channel guide** message
   (`eventIndexContent`) sits in `#announcement`. `announcePing` /
   `announcePingAll` control `@everyone`. "Repost + ping" deletes & reposts to
-  re-fire pings; "Sync channels" edits the existing messages in place (no re-ping).
+  re-fire pings; "Sync channels" edits the existing messages in place (no
+  re-ping) and creates any channels an older space is missing
+  (`addMissingEventChannels`). Portal Settings surfaces the bot's missing
+  guild permissions (`botGuildPermissions`).
 - **Event access roles** (`src/lib/event-space.ts`) — "Build space" also creates a
   per-event Discord role (`Event.discordRoleId`); `applyEventChannelPerms` gates
   every channel except `announcement / how-to-join / registration` to it. Signing

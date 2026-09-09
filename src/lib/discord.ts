@@ -460,6 +460,42 @@ export async function createEventSpace(opts: {
 }
 
 /**
+ * Create any channels in `wanted` that aren't already in `existing`, under the
+ * event's category. Returns the full name→id map (existing + newly created).
+ * Used to bring an older space up to the current channel set.
+ */
+export async function addMissingEventChannels(
+  categoryId: string,
+  existing: Record<string, string>,
+  emoji: string,
+  wanted: readonly string[] = EVENT_CHANNELS,
+): Promise<{ channels: Record<string, string>; added: string[] }> {
+  const gid = process.env.DISCORD_GUILD_ID;
+  const channels = { ...existing };
+  const added: string[] = [];
+  if (!gid || !process.env.DISCORD_BOT_TOKEN) return { channels, added };
+
+  for (const name of wanted) {
+    if (channels[name]) continue;
+    try {
+      const ch = (await discordFetch(`/guilds/${gid}/channels`, {
+        method: "POST",
+        body: JSON.stringify({
+          name: `${emoji}・${name}`,
+          type: 0,
+          parent_id: categoryId,
+        }),
+      })) as { id: string };
+      channels[name] = ch.id;
+      added.push(name);
+    } catch (err) {
+      console.error(`addMissingEventChannels ${name}`, err);
+    }
+  }
+  return { channels, added };
+}
+
+/**
  * Set the full permission state on an event's channels in one pass:
  *  - public channels (announcement / how-to-join): @everyone can read, not post
  *  - registration: default (open)
@@ -748,10 +784,61 @@ export async function deleteChannelMessage(channelId: string, messageId: string)
   }).catch(() => {});
 }
 
-/** Pin a message (needs Manage Messages). Best-effort. */
-export async function pinMessage(channelId: string, messageId: string): Promise<void> {
-  if (!process.env.DISCORD_BOT_TOKEN) return;
-  await discordFetch(`/channels/${channelId}/pins/${messageId}`, { method: "PUT" }).catch(() => {});
+/** Pin a message (needs Manage Messages). Best-effort — returns whether it stuck. */
+export async function pinMessage(channelId: string, messageId: string): Promise<boolean> {
+  if (!process.env.DISCORD_BOT_TOKEN) return false;
+  try {
+    await discordFetch(`/channels/${channelId}/pins/${messageId}`, { method: "PUT" });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// Discord permission bits we rely on, name → bit.
+const PERM_BITS: Record<string, bigint> = {
+  "View Channels": 1n << 10n,
+  "Manage Channels": 1n << 4n,
+  "Manage Roles": 1n << 28n,
+  "Send Messages": 1n << 11n,
+  "Manage Messages": 1n << 13n,
+  "Mention Everyone": 1n << 17n,
+};
+const PERM_ADMINISTRATOR = 1n << 3n;
+
+/**
+ * The bot's effective guild-level permissions, and which of the ones we need
+ * are missing. Returns null if Discord isn't configured / reachable.
+ */
+export async function botGuildPermissions(): Promise<{
+  administrator: boolean;
+  missing: string[];
+} | null> {
+  const gid = process.env.DISCORD_GUILD_ID;
+  if (!gid || !process.env.DISCORD_BOT_TOKEN) return null;
+  try {
+    const me = await botUserId();
+    if (!me) return null;
+    const [member, roles] = (await Promise.all([
+      discordFetch(`/guilds/${gid}/members/${me}`, { method: "GET" }),
+      discordFetch(`/guilds/${gid}/roles`, { method: "GET" }),
+    ])) as [{ roles: string[] }, { id: string; permissions: string }[]];
+
+    const held = new Set(member.roles);
+    let perms = 0n;
+    for (const r of roles) {
+      if (r.id === gid || held.has(r.id)) perms |= BigInt(r.permissions);
+    }
+    const administrator = (perms & PERM_ADMINISTRATOR) !== 0n;
+    const missing = administrator
+      ? []
+      : Object.entries(PERM_BITS)
+          .filter(([, bit]) => (perms & bit) === 0n)
+          .map(([name]) => name);
+    return { administrator, missing };
+  } catch {
+    return null;
+  }
 }
 
 /**

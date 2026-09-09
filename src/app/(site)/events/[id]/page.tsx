@@ -81,17 +81,27 @@ export default async function EventDetailPage({
   const confirmed = event.signups.filter((s) => s.state === "SIGNED_UP");
   const waitlist = event.signups.filter((s) => s.state === "WAITLIST");
 
-  // team-event roster, grouped by team
+  // team-event roster, grouped by team; teamless sign-ups are "free agents"
   const teamGroups = new Map<string, { name: string; tag: string | null; members: typeof confirmed }>();
+  const freeAgents: typeof confirmed = [];
   if (isTeamEvent) {
     for (const s of confirmed) {
-      const key = s.teamId ?? "none";
-      if (!teamGroups.has(key)) {
-        teamGroups.set(key, { name: s.team?.name ?? "—", tag: s.team?.tag ?? null, members: [] });
+      if (!s.teamId) {
+        freeAgents.push(s);
+        continue;
       }
-      teamGroups.get(key)!.members.push(s);
+      if (!teamGroups.has(s.teamId)) {
+        teamGroups.set(s.teamId, { name: s.team?.name ?? "—", tag: s.team?.tag ?? null, members: [] });
+      }
+      teamGroups.get(s.teamId)!.members.push(s);
     }
   }
+  const myFreeAgent =
+    isTeamEvent && !!myPlayerId && !myTeam
+      ? event.signups.some(
+          (s) => s.playerId === myPlayerId && !s.teamId && s.state !== "WITHDRAWN",
+        )
+      : false;
 
   const myTeamRegisteredCount = myTeam
     ? confirmed.filter((s) => s.teamId === myTeam.id).length
@@ -100,7 +110,7 @@ export default async function EventDetailPage({
   const teamSignupState = (() => {
     if (!session?.user) return { kind: "no-account" as const };
     if (!myPlayerId) return { kind: "no-player" as const };
-    if (!myTeam) return { kind: "no-team" as const };
+    if (!myTeam) return { kind: "no-team" as const, freeAgent: myFreeAgent };
     if (myTeam.leaderId === myPlayerId) {
       return {
         kind: "leader" as const,
@@ -186,6 +196,30 @@ export default async function EventDetailPage({
               {event.summary}
             </p>
           )}
+
+          <div className="mt-5 flex flex-wrap gap-x-6 gap-y-1 border-y border-edge py-3 font-mono text-xs uppercase tracking-wide text-slate-300">
+            <span>
+              <span className="text-slate-600">Starts </span>
+              {fmtInZone(event.startsAt, tz)}
+            </span>
+            {event.server && (
+              <span>
+                <span className="text-slate-600">Server </span>
+                {event.server}
+              </span>
+            )}
+            <span>
+              <span className="text-slate-600">Format </span>
+              {isTeamEvent
+                ? `Team${event.teamSize ? ` · up to ${event.teamSize}` : ""}`
+                : "Solo"}
+            </span>
+            <span>
+              <span className="text-slate-600">{isTeamEvent ? "Teams " : "Slots "}</span>
+              {isTeamEvent ? teamGroups.size : confirmed.length}
+              {event.maxSlots ? ` / ${event.maxSlots}` : ""}
+            </span>
+          </div>
 
           {event.posterUrl && /^https?:\/\//.test(event.posterUrl) && (
             <div className="mt-8 max-w-2xl overflow-hidden border border-edge">
@@ -338,6 +372,26 @@ export default async function EventDetailPage({
                         </ul>
                       </div>
                     ))}
+                  </div>
+                )}
+
+                {freeAgents.length > 0 && (
+                  <div className="mt-6">
+                    <h3 className="font-mono text-xs font-bold uppercase tracking-wide text-slate-400">
+                      Free agents — looking for a team ({freeAgents.length})
+                    </h3>
+                    <ul className="mt-2 flex flex-wrap gap-2">
+                      {freeAgents.map((s) => (
+                        <li key={s.id} className="badge">
+                          {s.player.characterName ?? "Unnamed"}
+                          {s.player.region ? ` · ${s.player.region}` : ""}
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="mt-2 font-mono text-[0.7rem] uppercase tracking-wide text-slate-600">
+                      Leaders: recruit them in the event&apos;s{" "}
+                      <span className="text-slate-400">#looking-for-team</span> channel.
+                    </p>
                   </div>
                 )}
               </>

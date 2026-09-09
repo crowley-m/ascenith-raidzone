@@ -3,12 +3,17 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { registerTeamForEvent, withdrawTeamFromEvent } from "@/app/(site)/events/actions";
+import {
+  registerTeamForEvent,
+  withdrawTeamFromEvent,
+  registerAsFreeAgent,
+  withdrawFromEvent,
+} from "@/app/(site)/events/actions";
 
 type State =
   | { kind: "no-account" }
   | { kind: "no-player" }
-  | { kind: "no-team" }
+  | { kind: "no-team"; freeAgent: boolean }
   | { kind: "member"; teamName: string; registered: boolean }
   | { kind: "leader"; teamName: string; memberCount: number; registeredCount: number };
 
@@ -48,9 +53,39 @@ export function TeamSignup({ eventId, state }: { eventId: string; state: State }
         <p className="font-mono text-xs uppercase tracking-wide text-slate-400">
           This is a team event.
         </p>
-        <Link href="/me/team" className="btn-primary px-6 py-3 text-base">
+        <Link href="/me/team" className="btn-primary block px-6 py-3 text-center text-base">
           Create or join a team
         </Link>
+        {state.freeAgent ? (
+          <div className="space-y-1">
+            <span className="badge border-teal/40 text-teal">
+              Registered — looking for a team
+            </span>
+            <div>
+              <button
+                className="btn-ghost text-xs"
+                disabled={pending}
+                onClick={() => run(() => withdrawFromEvent(eventId))}
+              >
+                {pending ? "…" : "Withdraw"}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <p className="font-mono text-[0.7rem] uppercase tracking-wide text-slate-500">
+              No team yet? Register as a free agent and a leader can pick you up.
+            </p>
+            <button
+              className="btn-ghost text-xs"
+              disabled={pending}
+              onClick={() => run(() => registerAsFreeAgent(eventId))}
+            >
+              {pending ? "…" : "Register — looking for a team"}
+            </button>
+          </>
+        )}
+        {msg && <p className="text-xs text-ember">{msg}</p>}
       </div>
     );
   }

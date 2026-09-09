@@ -22,6 +22,7 @@ import {
   bulletize,
   signupButtonRow,
   createEventSpace,
+  addMissingEventChannels,
   archiveEventSpace,
   applyEventChannelPerms,
   postToChannel,
@@ -373,18 +374,44 @@ export async function syncEventChannels(eventId: string): Promise<FormState> {
   const ev = await db.event.findUnique({ where: { id: eventId } });
   if (!ev?.discordCategoryId) return { error: "This event has no Discord space yet." };
 
-  const channels = (ev.discordChannels as Record<string, string>) ?? {};
+  let channels = (ev.discordChannels as Record<string, string>) ?? {};
   const seed = (ev.discordSeedMessages as Record<string, string>) ?? {};
+  let added: string[] = [];
   try {
+    // bring an older space up to the current channel set (e.g. #schedule)
+    const { eventChannels } = await getSettings();
+    const grown = await addMissingEventChannels(
+      ev.discordCategoryId,
+      channels,
+      eventEmoji(ev.mode),
+      eventChannels,
+    );
+    channels = grown.channels;
+    added = grown.added;
+    if (added.length) {
+      await db.event.update({
+        where: { id: eventId },
+        data: { discordChannels: channels as Prisma.InputJsonValue },
+      });
+    }
     // re-assert channel perms first — also grants the bot a send override
     await applyEventChannelPerms(channels, ev.discordRoleId);
     await pushEventChannelContent(eventId, channels, seed);
   } catch (err) {
     return { error: `Discord: ${err instanceof Error ? err.message : "sync failed"}` };
   }
-  await logAudit({ actorId: actor.id, action: "event.discord_sync", targetType: "Event", targetId: eventId });
+  await logAudit({
+    actorId: actor.id,
+    action: "event.discord_sync",
+    targetType: "Event",
+    targetId: eventId,
+    meta: added.length ? { addedChannels: added } : undefined,
+  });
   revalidatePath(`/portal/events/${eventId}`);
-  return { ok: true };
+  return {
+    ok: true,
+    ...(added.length ? { count: added.length } : {}),
+  };
 }
 
 /**
