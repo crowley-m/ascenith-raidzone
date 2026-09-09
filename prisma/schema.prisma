@@ -353,6 +353,7 @@ model Event {
   rewards    Reward[]
   placements EventPlacement[]
   teamsFor   Team[]           @relation("TeamsForEvent")
+  bracket    Bracket?
 
   @@index([status, startsAt])
   @@index([seasonId])
@@ -402,6 +403,38 @@ model EventAttendance {
 
   @@unique([eventId, playerId])
   @@index([eventId])
+}
+
+// ---------------------------------------------------------------------------
+// Tournament bracket — single elimination, one per event
+// ---------------------------------------------------------------------------
+
+model Bracket {
+  id        String         @id @default(cuid())
+  eventId   String         @unique
+  event     Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  size      Int // 2 · 4 · 8 · 16 · 32 — round-1 slot count
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  matches   BracketMatch[]
+}
+
+model BracketMatch {
+  id          String  @id @default(cuid())
+  bracketId   String
+  bracket     Bracket @relation(fields: [bracketId], references: [id], onDelete: Cascade)
+  round       Int // 1 = first round
+  position    Int // 0-based within the round
+  aRef        String? // "team:<id>" | "player:<id>"
+  bRef        String?
+  winner      String? // "a" | "b"
+  aScore      Int?
+  bScore      Int?
+  nextMatchId String? // the match this winner advances into
+  nextSlot    String? // "a" | "b"
+
+  @@unique([bracketId, round, position])
+  @@index([bracketId])
 }
 
 // ---------------------------------------------------------------------------

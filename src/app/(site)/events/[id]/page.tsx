@@ -9,6 +9,8 @@ import { TeamSignup } from "@/components/team/team-signup";
 import { Markdown } from "@/components/markdown";
 import { VideoEmbed } from "@/components/video-embed";
 import { teamForEvent } from "@/lib/team";
+import { bracketForEvent } from "@/lib/bracket";
+import { BracketBoard } from "@/components/bracket/bracket-board";
 import type { RewardTier } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
@@ -68,6 +70,7 @@ export default async function EventDetailPage({
     myPlayerId = p?.id ?? null;
   }
   const myTeam = isTeamEvent && myPlayerId ? await teamForEvent(myPlayerId, id) : null;
+  const bracket = await bracketForEvent(id);
 
   const mySignup = myPlayerId
     ? event.signups.find((s) => s.playerId === myPlayerId)
@@ -232,6 +235,15 @@ export default async function EventDetailPage({
             <div className="mt-10 max-w-2xl border-l-2 border-teal/50 pl-5">
               <h2 className="font-poster text-2xl uppercase text-white">Rules</h2>
               <Markdown source={event.rulesMd} className="md mt-3" />
+            </div>
+          )}
+
+          {bracket && (
+            <div className="mt-12">
+              <h2 className="font-poster text-2xl uppercase text-white">Bracket</h2>
+              <div className="mt-4">
+                <BracketBoard bracket={bracket} />
+              </div>
             </div>
           )}
 

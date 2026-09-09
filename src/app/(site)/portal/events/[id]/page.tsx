@@ -16,6 +16,8 @@ import {
   ReannounceButton,
 } from "@/components/portal/build-space-button";
 import { ResultsForm, AttendeeRewardForm } from "@/components/portal/results-form";
+import { BracketEditor } from "@/components/portal/bracket-editor";
+import { bracketForEvent, entrantsForEvent } from "@/lib/bracket";
 import { ConfirmButton } from "@/components/portal/confirm-button";
 import { deleteEvent, cloneEvent, promoteSignup } from "@/app/(site)/portal/actions";
 import type { RewardTier } from "@/lib/validation";
@@ -53,10 +55,14 @@ export default async function PortalEventDetail({
   });
   if (!event) notFound();
 
-  const seasons = await db.season.findMany({
-    orderBy: [{ series: "asc" }, { number: "desc" }],
-    select: { id: true, series: true, number: true, name: true },
-  });
+  const [seasons, bracket, bracketEntrants] = await Promise.all([
+    db.season.findMany({
+      orderBy: [{ series: "asc" }, { number: "desc" }],
+      select: { id: true, series: true, number: true, name: true },
+    }),
+    bracketForEvent(id),
+    entrantsForEvent(id),
+  ]);
 
   const attMap = new Map(event.attendance.map((a) => [a.playerId, a.attended]));
   const canManage = can(user.role, "event:manage");
@@ -345,6 +351,16 @@ export default async function PortalEventDetail({
             <p className="mt-3 text-xs text-slate-500">
               + {waitlist.length} on the waitlist
             </p>
+          )}
+
+          {canManage && (
+            <div className="mt-8">
+              <BracketEditor
+                eventId={event.id}
+                bracket={bracket}
+                entrantCount={bracketEntrants.length}
+              />
+            </div>
           )}
 
           {canManage && confirmed.length > 0 && (

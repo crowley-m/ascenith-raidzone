@@ -70,6 +70,11 @@ mutation writes an `AuditLog` row via `logAudit(...)`; viewer at `/portal/audit`
   shows to members.
 - **Notifications** — players get Discord DMs (waitlist promotion, reward
   granted, event starting) unless `Player.dmNotifications` is off. `src/lib/notify.ts`.
+- **Bracket** — optional single-elimination bracket per event (`src/lib/bracket.ts`,
+  `Bracket` / `BracketMatch`). Staff draw it from the roster (`generateBracket`),
+  set winners (`setBracketMatch` propagates the winner into the next match).
+  Shown read-only on the public event page. Separate from the Results form
+  (1/2/3 placements that feed `/winners`).
 
 ## Migrations
 

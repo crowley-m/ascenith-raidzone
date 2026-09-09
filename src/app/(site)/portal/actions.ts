@@ -32,6 +32,7 @@ import { createMediaAsset } from "@/lib/media";
 import { getSettings } from "@/lib/settings";
 import { notify, notifyPlayer } from "@/lib/notify";
 import { syncMemberRolesByPlayer } from "@/lib/discord-roles";
+import { BRACKET_SIZES, entrantsForEvent, roundCount, seedOrder } from "@/lib/bracket";
 import { Prisma } from "@prisma/client";
 import type { PlayerStatus, Role } from "@prisma/client";
 
@@ -1354,4 +1355,150 @@ export async function postBroadcast(_prev: FormState, formData: FormData): Promi
   });
   revalidatePath("/portal/broadcast");
   return { ok: true };
+}
+
+// --------------------------------------------------------------------------
+// Tournament bracket — single elimination
+// --------------------------------------------------------------------------
+
+/** Build a fresh single-elim bracket from the event's roster. Replaces any existing one. */
+export async function generateBracket(
+  eventId: string,
+  size: number,
+  seedMode: "signup" | "random",
+): Promise<FormState> {
+  const actor = await assertPermission("event:manage");
+  if (!BRACKET_SIZES.includes(size as (typeof BRACKET_SIZES)[number])) {
+    return { error: "Pick a valid bracket size." };
+  }
+
+  const entrants = await entrantsForEvent(eventId);
+  if (entrants.length < 2) {
+    return { error: "Need at least 2 registered entrants to draw a bracket." };
+  }
+
+  const list = seedMode === "random" ? [...entrants].sort(() => Math.random() - 0.5) : entrants;
+  const refBySeed = Array.from({ length: size }, (_, i) => list[i]?.ref ?? null);
+  const order = seedOrder(size); // bracket position -> seed number
+  const slots = order.map((seed) => refBySeed[seed - 1] ?? null);
+
+  await db.bracket.deleteMany({ where: { eventId } });
+  const bracket = await db.bracket.create({ data: { eventId, size } });
+
+  const total = roundCount(size);
+  const idAt = new Map<string, string>(); // "r:p" -> matchId
+
+  // create from the final round backwards so a match can reference its (already made) parent
+  for (let round = total; round >= 1; round--) {
+    const count = size / 2 ** round;
+    for (let position = 0; position < count; position++) {
+      const nextKey = round < total ? `${round + 1}:${Math.floor(position / 2)}` : null;
+      const m = await db.bracketMatch.create({
+        data: {
+          bracketId: bracket.id,
+          round,
+          position,
+          nextMatchId: nextKey ? idAt.get(nextKey) : null,
+          nextSlot: nextKey ? (position % 2 === 0 ? "a" : "b") : null,
+          ...(round === 1
+            ? { aRef: slots[position * 2] ?? null, bRef: slots[position * 2 + 1] ?? null }
+            : {}),
+        },
+      });
+      idAt.set(`${round}:${position}`, m.id);
+    }
+  }
+
+  // auto-advance round-1 byes (a slot filled, the other empty)
+  const r1 = await db.bracketMatch.findMany({ where: { bracketId: bracket.id, round: 1 } });
+  for (const m of r1) {
+    if (m.aRef && !m.bRef) {
+      await db.bracketMatch.update({ where: { id: m.id }, data: { winner: "a" } });
+      await propagateBracket(m.id);
+    } else if (!m.aRef && m.bRef) {
+      await db.bracketMatch.update({ where: { id: m.id }, data: { winner: "b" } });
+      await propagateBracket(m.id);
+    }
+  }
+
+  await logAudit({
+    actorId: actor.id,
+    action: "event.bracket_generate",
+    targetType: "Event",
+    targetId: eventId,
+    meta: { size, entrants: entrants.length, seedMode },
+  });
+  revalidatePath(`/portal/events/${eventId}`);
+  revalidatePath(`/events/${eventId}`);
+  return { ok: true };
+}
+
+async function propagateBracket(matchId: string): Promise<void> {
+  const m = await db.bracketMatch.findUnique({ where: { id: matchId } });
+  if (!m?.nextMatchId || !m.nextSlot) return;
+  const winnerRef = m.winner === "a" ? m.aRef : m.winner === "b" ? m.bRef : null;
+  const next = await db.bracketMatch.findUnique({ where: { id: m.nextMatchId } });
+  if (!next) return;
+  const field = m.nextSlot === "a" ? "aRef" : "bRef";
+  const current = m.nextSlot === "a" ? next.aRef : next.bRef;
+  if (current === winnerRef) return;
+
+  const wipesDecidedSide =
+    !!next.winner &&
+    ((m.nextSlot === "a" && next.winner === "a") || (m.nextSlot === "b" && next.winner === "b"));
+  await db.bracketMatch.update({
+    where: { id: next.id },
+    data: {
+      [field]: winnerRef,
+      ...(wipesDecidedSide ? { winner: null, aScore: null, bScore: null } : {}),
+    },
+  });
+  if (wipesDecidedSide) await propagateBracket(next.id);
+}
+
+export async function setBracketMatch(
+  matchId: string,
+  data: { winner?: "a" | "b" | null; aScore?: number | null; bScore?: number | null },
+): Promise<FormState> {
+  const actor = await assertPermission("event:manage");
+  const m = await db.bracketMatch.findUnique({
+    where: { id: matchId },
+    include: { bracket: { select: { eventId: true } } },
+  });
+  if (!m) return { error: "Match not found." };
+
+  const patch: {
+    winner?: string | null;
+    aScore?: number | null;
+    bScore?: number | null;
+  } = {};
+  if (data.aScore !== undefined) patch.aScore = Number.isFinite(data.aScore) ? data.aScore : null;
+  if (data.bScore !== undefined) patch.bScore = Number.isFinite(data.bScore) ? data.bScore : null;
+  if (data.winner !== undefined) {
+    if (data.winner === "a" && !m.aRef) return { error: "That side is empty." };
+    if (data.winner === "b" && !m.bRef) return { error: "That side is empty." };
+    patch.winner = data.winner;
+  }
+
+  await db.bracketMatch.update({ where: { id: matchId }, data: patch });
+  if (data.winner !== undefined) await propagateBracket(matchId);
+
+  await logAudit({
+    actorId: actor.id,
+    action: "event.bracket_result",
+    targetType: "Event",
+    targetId: m.bracket.eventId,
+    meta: { matchId, winner: patch.winner ?? null },
+  });
+  revalidatePath(`/portal/events/${m.bracket.eventId}`);
+  revalidatePath(`/events/${m.bracket.eventId}`);
+  return { ok: true };
+}
+
+export async function deleteBracket(eventId: string): Promise<void> {
+  const actor = await assertPermission("event:manage");
+  await db.bracket.deleteMany({ where: { eventId } });
+  await logAudit({ actorId: actor.id, action: "event.bracket_delete", targetType: "Event", targetId: eventId });
+  revalidatePath(`/portal/events/${eventId}`);
+  revalidatePath(`/events/${eventId}`);
 }
