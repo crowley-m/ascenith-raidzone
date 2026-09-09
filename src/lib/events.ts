@@ -1,6 +1,54 @@
 import { db } from "@/lib/db";
 import { notify, notifyPlayer } from "@/lib/notify";
-import { grantEventAccess } from "@/lib/event-space";
+import { grantEventAccess, ensureTeamVoice } from "@/lib/event-space";
+
+/**
+ * Sign a whole team up for a TEAM event (also the "update roster" path — safe to
+ * re-run when members join or leave). Idempotent. Returns the resulting state or
+ * an error string; the caller owns audit logging + revalidation.
+ */
+export async function registerTeam(
+  eventId: string,
+  team: { id: string; members: { playerId: string }[] },
+): Promise<{ ok: true; state: "SIGNED_UP" | "WAITLIST" } | { error: string }> {
+  const event = await db.event.findUnique({ where: { id: eventId } });
+  if (!event || event.status !== "PUBLISHED") return { error: "This event is not open." };
+  if (event.format !== "TEAM") return { error: "This is a solo event." };
+  if (event.teamSize && team.members.length > event.teamSize) {
+    const over = team.members.length - event.teamSize;
+    return {
+      error: `This event caps teams at ${event.teamSize} — drop ${over} member${
+        over === 1 ? "" : "s"
+      } first.`,
+    };
+  }
+
+  // capacity is counted in whole teams
+  const signedTeams = await db.eventSignup.findMany({
+    where: { eventId, state: "SIGNED_UP", teamId: { not: null } },
+    select: { teamId: true },
+    distinct: ["teamId"],
+  });
+  const alreadyIn = signedTeams.some((s) => s.teamId === team.id);
+  const full = !alreadyIn && event.maxSlots ? signedTeams.length >= event.maxSlots : false;
+  const state = full ? "WAITLIST" : "SIGNED_UP";
+
+  const memberIds = team.members.map((m) => m.playerId);
+  await db.$transaction(
+    memberIds.map((pid) =>
+      db.eventSignup.upsert({
+        where: { eventId_playerId: { eventId, playerId: pid } },
+        create: { eventId, playerId: pid, teamId: team.id, state },
+        update: { teamId: team.id, state },
+      }),
+    ),
+  );
+  if (state === "SIGNED_UP") {
+    void ensureTeamVoice(team.id);
+    for (const pid of memberIds) void grantEventAccess(eventId, pid);
+  }
+  return { ok: true, state };
+}
 
 /**
  * After a withdrawal, pull the oldest waitlisted entrant(s) into open slots.

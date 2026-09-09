@@ -18,6 +18,7 @@ import {
 } from "@/components/portal/build-space-button";
 import { ResultsForm, AttendeeRewardForm } from "@/components/portal/results-form";
 import { DiscordPreview } from "@/components/portal/discord-preview";
+import { LandingPreview } from "@/components/portal/landing-preview";
 import { BracketEditor } from "@/components/portal/bracket-editor";
 import { bracketForEvent, entrantsForEvent } from "@/lib/bracket";
 import { ConfirmButton } from "@/components/portal/confirm-button";
@@ -46,6 +47,7 @@ export default async function PortalEventDetail({
         orderBy: { createdAt: "asc" },
       },
       attendance: true,
+      season: { select: { number: true, name: true } },
       placements: {
         orderBy: { rank: "asc" },
         include: {
@@ -145,6 +147,26 @@ export default async function PortalEventDetail({
   for (const p of event.placements) {
     currentPlacements[p.rank] = p.teamId ? `team:${p.teamId}` : `player:${p.playerId}`;
   }
+
+  const landingEvent = {
+    id: event.id,
+    title: event.title,
+    server: event.server,
+    startsAt: event.startsAt.toISOString(),
+    endsAt: event.endsAt ? event.endsAt.toISOString() : null,
+    maxSlots: event.maxSlots,
+    signups: isTeamEvent ? teamCount : confirmed.length,
+    rewardPoolText: event.rewardPoolText,
+    summary: event.summary,
+    mode: event.mode,
+    wipeCycle: event.wipeCycle,
+    raidWindow: event.raidWindow,
+    rewardTiers: tiers,
+    bonusText: event.bonusText,
+    howToJoinVideoUrl: event.howToJoinVideoUrl,
+    seasonNumber: event.season?.number ?? null,
+    seasonName: event.season?.name ?? null,
+  };
 
   return (
     <div>
@@ -418,19 +440,32 @@ export default async function PortalEventDetail({
           )}
         </div>
 
-        {/* Discord preview */}
+        {/* Previews */}
         {canManage && (
-          <details className="max-w-3xl">
-            <summary className="cursor-pointer font-display font-bold text-white">
-              Discord preview
-              <span className="ml-2 text-xs font-normal text-slate-500">
-                what the bot posts to each channel
-              </span>
-            </summary>
-            <div className="mt-4">
-              <DiscordPreview event={event} />
-            </div>
-          </details>
+          <div className="max-w-3xl space-y-3">
+            <details>
+              <summary className="cursor-pointer font-display font-bold text-white">
+                Landing preview
+                <span className="ml-2 text-xs font-normal text-slate-500">
+                  how this event reads on the homepage
+                </span>
+              </summary>
+              <div className="mt-4">
+                <LandingPreview event={landingEvent} />
+              </div>
+            </details>
+            <details>
+              <summary className="cursor-pointer font-display font-bold text-white">
+                Discord preview
+                <span className="ml-2 text-xs font-normal text-slate-500">
+                  what the bot posts to each channel
+                </span>
+              </summary>
+              <div className="mt-4">
+                <DiscordPreview event={event} />
+              </div>
+            </details>
+          </div>
         )}
 
         {/* Edit */}

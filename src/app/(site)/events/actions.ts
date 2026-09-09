@@ -6,12 +6,8 @@ import { db } from "@/lib/db";
 import { auth } from "@/auth";
 import { logAudit } from "@/lib/audit";
 import { teamForEvent } from "@/lib/team";
-import { promoteWaitlist } from "@/lib/events";
-import {
-  grantEventAccess,
-  revokeEventAccess,
-  ensureTeamVoice,
-} from "@/lib/event-space";
+import { promoteWaitlist, registerTeam } from "@/lib/events";
+import { grantEventAccess, revokeEventAccess } from "@/lib/event-space";
 
 async function callerPlayerId(eventId: string): Promise<string> {
   const session = await auth();
@@ -91,52 +87,19 @@ export async function registerTeamForEvent(eventId: string) {
   if (!team) return { error: "Create or join a team first." };
   if (team.leaderId !== playerId) return { error: "Only your team leader can register the team." };
 
-  const event = await db.event.findUnique({ where: { id: eventId } });
-  if (!event || event.status !== "PUBLISHED") return { error: "This event is not open." };
-  if (event.format !== "TEAM") return { error: "This is a solo event." };
-  if (event.teamSize && team.members.length > event.teamSize) {
-    return {
-      error: `This event caps teams at ${event.teamSize} — drop ${
-        team.members.length - event.teamSize
-      } member${team.members.length - event.teamSize === 1 ? "" : "s"} first.`,
-    };
-  }
+  const res = await registerTeam(eventId, team);
+  if ("error" in res) return res;
 
-  // capacity is counted in whole teams
-  const signedTeams = await db.eventSignup.findMany({
-    where: { eventId, state: "SIGNED_UP", teamId: { not: null } },
-    select: { teamId: true },
-    distinct: ["teamId"],
-  });
-  const alreadyIn = signedTeams.some((s) => s.teamId === team.id);
-  const full =
-    !alreadyIn && event.maxSlots ? signedTeams.length >= event.maxSlots : false;
-  const state = full ? "WAITLIST" : "SIGNED_UP";
-
-  const memberIds = team.members.map((m) => m.playerId);
-  await db.$transaction(
-    memberIds.map((pid) =>
-      db.eventSignup.upsert({
-        where: { eventId_playerId: { eventId, playerId: pid } },
-        create: { eventId, playerId: pid, teamId: team.id, state },
-        update: { teamId: team.id, state },
-      }),
-    ),
-  );
   await logAudit({
     action: "event.team_signup",
     targetType: "Event",
     targetId: eventId,
-    meta: { teamId: team.id, members: memberIds.length, state },
+    meta: { teamId: team.id, members: team.members.length, state: res.state },
   });
-  if (state === "SIGNED_UP") {
-    void ensureTeamVoice(team.id);
-    for (const pid of memberIds) void grantEventAccess(eventId, pid);
-  }
 
   revalidatePath(`/events/${eventId}`);
   revalidatePath("/me/events");
-  return { ok: true, state };
+  return res;
 }
 
 export async function withdrawTeamFromEvent(eventId: string) {

@@ -8,8 +8,9 @@ import { requireUser } from "@/lib/session";
 import { logAudit } from "@/lib/audit";
 import { teamCreateSchema, teamJoinSchema } from "@/lib/validation";
 import { uniqueInviteCode, teamForEvent } from "@/lib/team";
+import { registerTeam } from "@/lib/events";
 import { syncMemberRolesByPlayer } from "@/lib/discord-roles";
-import { ensureTeamVoice, revokeTeamVoice } from "@/lib/event-space";
+import { ensureTeamVoice, revokeTeamVoice, revokeEventAccess } from "@/lib/event-space";
 import { deleteChannel, deleteGuildRole } from "@/lib/discord";
 
 export type TeamState = { ok?: boolean; error?: string };
@@ -75,6 +76,17 @@ export async function createTeam(_prev: TeamState, formData: FormData): Promise<
       },
     });
     await logAudit({ actorId: playerId, action: "team.create", targetType: "Team", targetId: team.id });
+    // forming a team for an event = signing it up for that event
+    const reg = await registerTeam(eventId, { id: team.id, members: [{ playerId }] });
+    if ("ok" in reg) {
+      await logAudit({
+        actorId: playerId,
+        action: "event.team_signup",
+        targetType: "Event",
+        targetId: eventId,
+        meta: { teamId: team.id, members: 1, state: reg.state, via: "team.create" },
+      });
+    }
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
       return { error: "A team with that name already exists for this event." };
@@ -85,6 +97,8 @@ export async function createTeam(_prev: TeamState, formData: FormData): Promise<
   void syncMemberRolesByPlayer(playerId);
   revalidatePath("/me/team");
   revalidatePath("/teams");
+  revalidatePath("/me/events");
+  revalidatePath(`/events/${eventId}`);
   return { ok: true };
 }
 
@@ -113,24 +127,54 @@ export async function joinTeam(_prev: TeamState, formData: FormData): Promise<Te
   await logAudit({ actorId: playerId, action: "team.join", targetType: "Team", targetId: team.id });
   void syncMemberRolesByPlayer(playerId);
   void ensureTeamVoice(team.id);
+
+  // if the team is already registered for its event, pull the new member onto the roster
+  const registered = await db.eventSignup.findFirst({
+    where: { teamId: team.id, state: { in: ["SIGNED_UP", "WAITLIST"] } },
+    select: { id: true },
+  });
+  if (registered) {
+    const members = await db.teamMember.findMany({
+      where: { teamId: team.id },
+      select: { playerId: true },
+    });
+    await registerTeam(team.eventId, { id: team.id, members });
+  }
+
   revalidatePath("/me/team");
   revalidatePath("/teams");
+  revalidatePath("/me/events");
+  revalidatePath(`/events/${team.eventId}`);
   return { ok: true };
+}
+
+/** Drop a player from a team's event roster when they leave / are kicked. */
+async function dropFromTeamEvent(teamId: string, eventId: string, playerId: string) {
+  const removed = await db.eventSignup.updateMany({
+    where: { eventId, teamId, playerId, state: { in: ["SIGNED_UP", "WAITLIST"] } },
+    data: { state: "WITHDRAWN", teamId: null },
+  });
+  if (removed.count) void revokeEventAccess(eventId, playerId);
 }
 
 export async function leaveTeam(teamId: string) {
   const playerId = await myPlayerId();
-  const team = await db.team.findUnique({ where: { id: teamId }, select: { leaderId: true } });
+  const team = await db.team.findUnique({
+    where: { id: teamId },
+    select: { leaderId: true, eventId: true },
+  });
   if (!team) return;
   if (team.leaderId === playerId) {
     throw new Error("Transfer leadership or disband the team first.");
   }
   await db.teamMember.deleteMany({ where: { teamId, playerId } });
+  await dropFromTeamEvent(teamId, team.eventId, playerId);
   await logAudit({ actorId: playerId, action: "team.leave", targetType: "Team", targetId: teamId });
   void syncMemberRolesByPlayer(playerId);
   void revokeTeamVoice(teamId, playerId);
   revalidatePath("/me/team");
   revalidatePath("/teams");
+  revalidatePath("/me/events");
 }
 
 export async function kickMember(teamId: string, memberPlayerId: string) {
@@ -138,6 +182,7 @@ export async function kickMember(teamId: string, memberPlayerId: string) {
   const team = await requireLeadership(playerId, teamId);
   if (memberPlayerId === team.leaderId) throw new Error("You can't remove yourself.");
   await db.teamMember.deleteMany({ where: { teamId, playerId: memberPlayerId } });
+  await dropFromTeamEvent(teamId, team.eventId, memberPlayerId);
   await logAudit({
     actorId: playerId,
     action: "team.kick",
@@ -149,6 +194,7 @@ export async function kickMember(teamId: string, memberPlayerId: string) {
   void revokeTeamVoice(teamId, memberPlayerId);
   revalidatePath("/me/team");
   revalidatePath("/teams");
+  revalidatePath("/me/events");
 }
 
 export async function renameTeam(_prev: TeamState, formData: FormData): Promise<TeamState> {
