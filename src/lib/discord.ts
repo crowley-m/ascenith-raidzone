@@ -463,6 +463,27 @@ export async function listGuildTextChannels(): Promise<{ id: string; name: strin
   }
 }
 
+/** Assignable guild roles (no @everyone, no bot-managed roles), for pickers. */
+export async function listGuildRoles(): Promise<{ id: string; name: string; color: number }[]> {
+  const gid = process.env.DISCORD_GUILD_ID;
+  if (!gid || !process.env.DISCORD_BOT_TOKEN) return [];
+  try {
+    const rows = (await discordFetch(`/guilds/${gid}/roles`, { method: "GET" })) as {
+      id: string;
+      name: string;
+      color: number;
+      managed: boolean;
+      position: number;
+    }[];
+    return rows
+      .filter((r) => r.id !== gid && !r.managed && r.name !== "@everyone")
+      .sort((a, b) => b.position - a.position)
+      .map((r) => ({ id: r.id, name: r.name, color: r.color }));
+  } catch {
+    return [];
+  }
+}
+
 /** Edit one of the bot's own messages (no Manage Messages needed). */
 export async function editChannelMessage(
   channelId: string,

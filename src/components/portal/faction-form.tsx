@@ -12,7 +12,15 @@ type FactionInit = {
   discordRoleId: string | null;
 };
 
-export function FactionForm({ faction }: { faction?: FactionInit }) {
+type Role = { id: string; name: string };
+
+export function FactionForm({
+  faction,
+  roles = [],
+}: {
+  faction?: FactionInit;
+  roles?: Role[];
+}) {
   const [state, action, pending] = useActionState(saveFaction, {});
   const ref = useRef<HTMLFormElement>(null);
   useEffect(() => {
@@ -42,17 +50,49 @@ export function FactionForm({ faction }: { faction?: FactionInit }) {
         </div>
       </div>
       <div>
-        <label className="label">Discord role ID (optional)</label>
-        <input
-          name="discordRoleId"
-          className="input font-mono text-xs"
-          inputMode="numeric"
-          placeholder="1234567890123456789"
-          defaultValue={faction?.discordRoleId ?? ""}
+        <label className="label">Description (shown on the public Factions page)</label>
+        <textarea
+          name="description"
+          rows={2}
+          className="input"
+          maxLength={500}
+          defaultValue={faction?.description ?? ""}
+          placeholder="Who they are, what they stand for."
         />
+      </div>
+      <div>
+        <label className="label">Discord role (optional)</label>
+        {roles.length > 0 ? (
+          <select
+            name="discordRoleId"
+            className="input"
+            defaultValue={faction?.discordRoleId ?? ""}
+          >
+            <option value="">— none —</option>
+            {roles.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.name}
+              </option>
+            ))}
+            {faction?.discordRoleId &&
+              !roles.some((r) => r.id === faction.discordRoleId) && (
+                <option value={faction.discordRoleId}>
+                  (deleted role {faction.discordRoleId})
+                </option>
+              )}
+          </select>
+        ) : (
+          <input
+            name="discordRoleId"
+            className="input font-mono text-xs"
+            inputMode="numeric"
+            placeholder="1234567890123456789"
+            defaultValue={faction?.discordRoleId ?? ""}
+          />
+        )}
         <p className="mt-1 text-xs text-slate-500">
-          Members of this faction get this Discord role automatically; leaving or switching
-          faction removes it. Right-click the role in Discord → Copy Role ID (Developer Mode on).
+          Members of this faction get this role automatically; leaving or switching faction
+          removes it.
         </p>
       </div>
       <div className="flex items-center gap-3">

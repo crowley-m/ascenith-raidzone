@@ -1,5 +1,6 @@
 import { requirePermission } from "@/lib/session";
 import { db } from "@/lib/db";
+import { listGuildRoles } from "@/lib/discord";
 import { FactionForm } from "@/components/portal/faction-form";
 import { ConfirmButton } from "@/components/portal/confirm-button";
 import { deleteFaction } from "@/app/(site)/portal/actions";
@@ -9,22 +10,29 @@ export const dynamic = "force-dynamic";
 export default async function FactionsPage() {
   await requirePermission("faction:manage");
 
-  const factions = await db.faction.findMany({
-    orderBy: { name: "asc" },
-    include: { _count: { select: { players: true } } },
-  });
+  const [factions, roles] = await Promise.all([
+    db.faction.findMany({
+      orderBy: { name: "asc" },
+      include: { _count: { select: { players: true } } },
+    }),
+    listGuildRoles(),
+  ]);
 
   return (
     <div className="max-w-2xl">
       <h2 className="font-display text-xl font-bold text-white">Factions</h2>
       <p className="mt-1 text-sm text-slate-400">
-        Groups players can be assigned to. Give a faction a Discord role ID and members get that
-        role automatically.
+        Houses players can join — a persistent allegiance, separate from per-event teams. Link a
+        Discord role and members get it automatically. They also show on the public{" "}
+        <a href="/factions" className="link">
+          Factions
+        </a>{" "}
+        page.
       </p>
 
       <div className="card mt-6">
         <p className="label mb-2">New faction</p>
-        <FactionForm />
+        <FactionForm roles={roles} />
       </div>
 
       <ul className="mt-6 space-y-3">
@@ -47,6 +55,7 @@ export default async function FactionsPage() {
               </summary>
               <div className="mt-4 border-t border-edge pt-4">
                 <FactionForm
+                  roles={roles}
                   faction={{
                     id: f.id,
                     name: f.name,

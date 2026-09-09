@@ -6,66 +6,114 @@ import { factionBoard } from "@/lib/factions";
 export const metadata: Metadata = {
   title: "Factions",
   description:
-    "The factions of ASCENITH RAIDZONE — rosters and standings across every event.",
+    "The houses of ASCENITH RAIDZONE and the Faction War — rosters, allegiances and the series record.",
 };
 export const dynamic = "force-dynamic";
 
-const ROMAN = ["", "I", "II", "III", "IV", "V", "VI"];
+const ROMAN = ["", "I", "II", "III", "IV", "V", "VI", "VII"];
 
 export default async function FactionsPage() {
-  const factions = await factionBoard();
-  const active = factions.filter((f) => f.memberCount > 0);
+  const { factions, seasons } = await factionBoard();
+  const withMembers = factions.filter((f) => f.memberCount > 0);
   const totalMembers = factions.reduce((n, f) => n + f.memberCount, 0);
 
   return (
     <div className="bg-void">
       <PageMasthead
         title="Factions"
-        kicker={`The banners — ${active.length} faction${active.length === 1 ? "" : "s"} · ${totalMembers} raider${totalMembers === 1 ? "" : "s"}`}
-        lead="Every raider flies a banner. Podiums and attendance across all events roll up to the faction — this is where they stand."
+        kicker={`The houses — ${factions.length} banner${factions.length === 1 ? "" : "s"}${
+          seasons.length ? ` · ${seasons.length} Faction War${seasons.length === 1 ? "" : "s"}` : ""
+        }`}
+        lead="Pick a house and it's your allegiance across every season — separate from the team you enter a given event with. The houses meet head-on in the Faction War."
       />
 
       <div className="mx-auto w-full max-w-6xl px-5 pb-24 pt-10">
         {factions.length === 0 && (
-          <p className="mt-8 text-sm text-slate-400">No factions yet.</p>
+          <p className="mt-8 text-sm text-slate-400">No factions set up yet.</p>
         )}
 
-        {/* standings */}
-        {active.length > 0 && (
-          <section data-reveal className="mt-8">
-            <h2 className="eyebrow">+ Standings</h2>
-            <ol className="mt-5 space-y-3">
-              {active.map((f, i) => (
-                <li
-                  key={f.id}
-                  className="grid grid-cols-[2rem_1fr_auto] items-center gap-4 border-b border-edge pb-3"
-                >
-                  <span className="font-poster text-2xl text-slate-600">{i + 1}</span>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span
-                        className="inline-block h-2.5 w-2.5 flex-none rounded-full"
-                        style={{ background: f.color ?? "#e5484d" }}
-                      />
-                      <span className="truncate font-display text-lg font-bold text-white">
-                        {f.name}
-                      </span>
-                      {f.tag && <span className="badge">{f.tag}</span>}
+        {/* the houses */}
+        {factions.length > 0 && (
+          <section data-reveal className="mt-8 grid gap-5 sm:grid-cols-2">
+            {factions.map((f) => (
+              <div key={f.id} className="border border-edge bg-panel/40 p-6">
+                <div className="flex items-center gap-3">
+                  <span
+                    className="inline-block h-3 w-3 flex-none rounded-full"
+                    style={{ background: f.color ?? "#e5484d" }}
+                  />
+                  <h2 className="font-poster text-3xl uppercase leading-none text-white">
+                    {f.name}
+                  </h2>
+                  {f.tag && <span className="badge">{f.tag}</span>}
+                </div>
+                {f.description && (
+                  <p className="mt-3 text-sm text-slate-400">{f.description}</p>
+                )}
+                <dl className="mt-5 grid grid-cols-3 gap-2 text-center">
+                  {[
+                    ["Titles", f.titles],
+                    ["Raiders", f.memberCount],
+                    ["Podiums", f.gold + f.silver + f.bronze],
+                  ].map(([k, v]) => (
+                    <div key={k as string} className="border border-edge bg-void/50 py-2">
+                      <div className="font-poster text-2xl text-white">{v as number}</div>
+                      <div className="text-[0.6rem] uppercase tracking-wide text-slate-500">
+                        {k as string}
+                      </div>
                     </div>
+                  ))}
+                </dl>
+                <p className="mt-3 font-mono text-[0.66rem] uppercase tracking-wide text-slate-500">
+                  {f.hasRole ? "Discord role linked" : "no Discord role"}
+                </p>
+              </div>
+            ))}
+          </section>
+        )}
+
+        {/* faction war record */}
+        {seasons.length > 0 && (
+          <section data-reveal className="mt-16">
+            <h2 className="eyebrow">+ The Faction War</h2>
+            <ul className="mt-5 divide-y divide-edge">
+              {seasons.map((s) => (
+                <li
+                  key={s.slug}
+                  className="grid grid-cols-[2.5rem_1fr_auto] items-center gap-4 py-3"
+                >
+                  <span className="font-poster text-2xl text-slate-600">S{s.number}</span>
+                  <div className="min-w-0">
+                    <Link
+                      href={`/seasons/${s.slug}`}
+                      className="font-display font-bold text-white hover:text-teal"
+                    >
+                      {s.name ?? `Faction War — Season ${s.number}`}
+                    </Link>
                     <p className="mt-0.5 font-mono text-[0.68rem] uppercase tracking-wide text-slate-500">
-                      {f.memberCount} raider{f.memberCount === 1 ? "" : "s"} · {f.gold}·{f.silver}·
-                      {f.bronze} podiums · {f.attended} attended
+                      {s.championName ? (
+                        <>
+                          🏆 {s.championName}
+                          {s.status !== "ENDED" && " · in progress"}
+                        </>
+                      ) : (
+                        "champion tbd"
+                      )}
                     </p>
                   </div>
-                  <span className="font-poster text-3xl tabular-nums text-white">{f.score}</span>
+                  {s.prizePoolText && (
+                    <span className="shrink-0 font-poster text-xl tabular-nums text-white">
+                      {s.prizePoolText}
+                    </span>
+                  )}
                 </li>
               ))}
-            </ol>
+            </ul>
           </section>
         )}
 
         {/* rosters */}
-        {active.map((f, i) => (
+        {withMembers.map((f, i) => (
           <section key={f.id} data-reveal className="mt-16">
             <div className="flex items-end justify-between gap-6 border-b-2 border-white/20 pb-3">
               <div className="flex items-baseline gap-4">
@@ -78,11 +126,6 @@ export default async function FactionsPage() {
                 {f.memberCount} raider{f.memberCount === 1 ? "" : "s"}
               </span>
             </div>
-
-            {f.description && (
-              <p className="mt-4 max-w-2xl text-sm text-slate-400">{f.description}</p>
-            )}
-
             <ul className="mt-6 divide-y divide-edge/60">
               {f.members.map((m) => (
                 <li
@@ -92,24 +135,20 @@ export default async function FactionsPage() {
                   <Link href={`/players/${m.id}`} className="text-slate-100 hover:text-teal">
                     {m.name}
                   </Link>
-                  <span className="font-mono text-xs text-slate-500">
-                    {m.gold + m.silver + m.bronze > 0 && (
-                      <span className="text-teal">
-                        {m.gold}·{m.silver}·{m.bronze} podium
-                        {" · "}
-                      </span>
-                    )}
-                    {m.attended} attended
-                  </span>
+                  <span className="font-mono text-xs text-slate-500">{m.attended} attended</span>
                 </li>
               ))}
             </ul>
           </section>
         ))}
 
-        {active.length === 0 && factions.length > 0 && (
-          <p className="mt-8 text-sm text-slate-400">
-            Factions are set up, but no raiders have been assigned yet.
+        {factions.length > 0 && totalMembers === 0 && (
+          <p className="mt-10 text-sm text-slate-400">
+            No raiders have joined a house yet — pick one on your{" "}
+            <Link href="/me/profile" className="link">
+              profile
+            </Link>
+            .
           </p>
         )}
       </div>
