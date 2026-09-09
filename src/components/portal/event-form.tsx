@@ -30,6 +30,7 @@ type EventInit = {
   announcePing: boolean;
   announcePingAll: boolean;
   announcementMd: string | null;
+  registrationMd: string | null;
   howToJoinMd: string | null;
   gameplayMd: string | null;
   wipeInfoMd: string | null;
@@ -106,6 +107,7 @@ export function EventForm({
       "announcementMd",
       "The purge is back. Two weeks, no rules, one board. Sign up on the website.",
     );
+    set("registrationMd", "Open to everyone. Register, add your in-game UID, then claim a slot.");
     set("howToJoinMd", "");
     set(
       "gameplayMd",
@@ -420,6 +422,13 @@ export function EventForm({
             4,
             "Extra text above the announcement embed (optional).",
             "The purge is back. Two weeks, no rules, one board.",
+          ],
+          [
+            "registrationMd",
+            "Registration",
+            4,
+            "Public channel with the sign-up button — anyone can see it. Blank = a sensible default.",
+            "Open to everyone. Solo entry — register, add your UID, claim a slot.",
           ],
           [
             "howToJoinMd",

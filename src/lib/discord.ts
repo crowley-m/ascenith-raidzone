@@ -276,7 +276,13 @@ export type EventSpace = {
 };
 
 // Channels members can read but not post in (staff bypass via role perms).
-export const READONLY_CHANNELS = new Set(["announcement", "how-to-join", "rules", "wipe-info"]);
+export const READONLY_CHANNELS = new Set([
+  "announcement",
+  "how-to-join",
+  "rules",
+  "wipe-info",
+  "registration",
+]);
 // Channels anyone can see even without the event role — the entry points.
 export const PUBLIC_EVENT_CHANNELS = new Set(["announcement", "how-to-join", "registration"]);
 const PERM_VIEW_CHANNEL = (1n << 10n).toString();
@@ -354,8 +360,6 @@ export async function applyEventChannelPerms(
   const SEND = BigInt(PERM_SEND_MESSAGES);
 
   for (const [name, id] of Object.entries(channels)) {
-    if (name === "registration") continue; // leave fully default
-
     const readonly = READONLY_CHANNELS.has(name);
     const isPublic = PUBLIC_EVENT_CHANNELS.has(name);
     const ow: Array<{ id: string; type: number; allow?: string; deny?: string }> = [];

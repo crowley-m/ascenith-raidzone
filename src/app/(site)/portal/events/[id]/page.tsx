@@ -451,6 +451,7 @@ export default async function PortalEventDetail({
                     announcePing: event.announcePing,
                     announcePingAll: event.announcePingAll,
                     announcementMd: event.announcementMd,
+                    registrationMd: event.registrationMd,
                     howToJoinMd: event.howToJoinMd,
                     gameplayMd: event.gameplayMd,
                     wipeInfoMd: event.wipeInfoMd,

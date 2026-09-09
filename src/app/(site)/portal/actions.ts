@@ -166,6 +166,7 @@ export async function saveEvent(_prev: FormState, formData: FormData): Promise<F
     announcePing: formData.get("announcePing") === "on",
     announcePingAll: formData.get("announcePingAll") === "on",
     announcementMd: str("announcementMd"),
+    registrationMd: str("registrationMd"),
     howToJoinMd: str("howToJoinMd"),
     gameplayMd: str("gameplayMd"),
     wipeInfoMd: str("wipeInfoMd"),
@@ -209,6 +210,7 @@ export async function saveEvent(_prev: FormState, formData: FormData): Promise<F
     announcePing: d.announcePing ?? false,
     announcePingAll: d.announcePingAll ?? false,
     announcementMd: d.announcementMd ?? null,
+    registrationMd: d.registrationMd ?? null,
     howToJoinMd: d.howToJoinMd ?? null,
     gameplayMd: d.gameplayMd ?? null,
     wipeInfoMd: d.wipeInfoMd ?? null,
@@ -327,6 +329,17 @@ function eventChannelPayloads(ev: FullEvent): Record<string, ChannelPayload> {
             ? `3. Team event: your team leader registers the whole team at ${url}`
             : `3. Sign up at ${url}`),
     ),
+  };
+
+  out.registration = {
+    content: clip(
+      `**Register — ${ev.title}**\n` +
+        (ev.registrationMd ??
+          (ev.format === "TEAM"
+            ? "Your team leader signs the whole team up on the website. Everyone else needs a profile with an in-game UID."
+            : "Open to everyone. Register once, add your in-game UID, then claim your slot below.")),
+    ),
+    components: [signupButtonRow(url, "Sign up on the website")],
   };
 
   if (ev.rulesMd) out.rules = { content: clip(`**Rules — ${ev.title}**\n\n${ev.rulesMd}`) };
@@ -687,6 +700,7 @@ export async function cloneEvent(eventId: string): Promise<void> {
       announcePing: src.announcePing,
       announcePingAll: src.announcePingAll,
       announcementMd: src.announcementMd,
+      registrationMd: src.registrationMd,
       howToJoinMd: src.howToJoinMd,
       gameplayMd: src.gameplayMd,
       wipeInfoMd: src.wipeInfoMd,

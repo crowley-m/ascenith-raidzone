@@ -333,11 +333,12 @@ model Event {
   announcePingAll Boolean @default(false) // ping @everyone in every event channel, not just announcement
 
   // per-Discord-channel content (posted to the event's channels)
-  announcementMd String?
-  howToJoinMd    String?
-  gameplayMd     String?
-  wipeInfoMd     String?
-  rewardsMd      String? // overrides the auto reward-tier post if set
+  announcementMd  String?
+  registrationMd  String?
+  howToJoinMd     String?
+  gameplayMd      String?
+  wipeInfoMd      String?
+  rewardsMd       String? // overrides the auto reward-tier post if set
 
   discordMessageId    String?
   discordChannelId    String?

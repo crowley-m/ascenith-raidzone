@@ -54,6 +54,7 @@ export const eventSchema = z.object({
   announcePing: z.coerce.boolean().optional(),
   announcePingAll: z.coerce.boolean().optional(),
   announcementMd: z.string().max(4000).nullable().optional(),
+  registrationMd: z.string().max(4000).nullable().optional(),
   howToJoinMd: z.string().max(4000).nullable().optional(),
   gameplayMd: z.string().max(20000).nullable().optional(),
   wipeInfoMd: z.string().max(20000).nullable().optional(),
