@@ -38,6 +38,17 @@ export type FactionWarSeason = {
 
 const norm = (s: string | null | undefined) => (s ?? "").trim().toLowerCase();
 
+/** Tolerant match of a season's champion text to a faction name (plurals, punctuation). */
+function championIsFaction(champ: string | null | undefined, faction: string): boolean {
+  const c = norm(champ).replace(/[^a-z0-9]/g, "");
+  const f = norm(faction).replace(/[^a-z0-9]/g, "");
+  if (!c || !f) return false;
+  if (c === f) return true;
+  const n = Math.min(c.length, f.length);
+  if (n >= 5 && c.slice(0, n - 1) === f.slice(0, n - 1)) return true; // MAYFLY ~ Mayflies
+  return c.includes(f) || f.includes(c);
+}
+
 /**
  * The two things the /factions page shows:
  *  - `factions`: each house with its roster + Faction War record (titles, and
@@ -108,11 +119,11 @@ export async function factionBoard(): Promise<{
     for (const m of pl.team?.members ?? []) bump(m.player.factionId, pl.rank);
   }
 
-  // resolve each Faction War season's champion to a faction by name
-  const byName = new Map(factions.map((f) => [norm(f.name), f.id]));
+  // resolve each Faction War season's champion to a faction
   const seasonsOut: FactionWarSeason[] = seasons.map((s) => ({
     ...s,
-    championFactionId: byName.get(norm(s.championName)) ?? null,
+    championFactionId:
+      factions.find((f) => championIsFaction(s.championName, f.name))?.id ?? null,
   }));
   const titleCount = new Map<string, number>();
   for (const s of seasonsOut) {
