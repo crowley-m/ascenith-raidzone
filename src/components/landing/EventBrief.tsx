@@ -267,10 +267,6 @@ export function EventBrief({ event }: { event: OpEvent | null }) {
                 <span className={s.arw}>{"→"}</span>
               </a>
             </div>
-
-            <Link href="/events" className={s.nextUpAll}>
-              See all events {"→"}
-            </Link>
           </>
         ) : (
           <>

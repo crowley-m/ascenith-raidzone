@@ -976,16 +976,6 @@
   color: var(--cream-2);
   white-space: nowrap;
 }
-.nextUpAll {
-  display: inline-block;
-  margin-top: 12px;
-  font-family: var(--f-mono);
-  font-size: 0.66rem;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--cream-2);
-}
-.nextUpAll:hover { color: var(--crimson); }
 .briefCol {
   display: flex;
   flex-direction: column;
