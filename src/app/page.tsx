@@ -32,8 +32,9 @@ const FALLBACK_EVENT: OpEvent = {
   seasonName: null,
 };
 
-// re-fetch the current op at most once a minute; the client ticker handles seconds
-export const revalidate = 60;
+// dynamic so metadata (metadataBase / OG URLs) resolves against the runtime
+// NEXTAUTH_URL, not the build-time placeholder; the client ticker handles seconds
+export const dynamic = "force-dynamic";
 
 async function eventData(): Promise<{ current: OpEvent | null; upcoming: UpcomingOp[] }> {
   const now = new Date();
