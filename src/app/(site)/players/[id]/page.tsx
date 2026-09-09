@@ -60,6 +60,10 @@ export default async function PublicPlayerPage({
             event: { select: { id: true, title: true, mode: true, startsAt: true } },
           },
         },
+        participation: {
+          orderBy: { playedAt: "desc" },
+          select: { id: true, eventId: true, eventName: true, eventMode: true, playedAt: true },
+        },
         _count: { select: { attendance: true } },
       },
     })
@@ -147,9 +151,36 @@ export default async function PublicPlayerPage({
           </section>
         )}
 
-        {teams.length === 0 && player.placements.length === 0 && (
-          <p className="mt-12 text-sm text-slate-400">No tournament history yet.</p>
+        {player.participation.length > 0 && (
+          <section className="mt-14 border-t border-edge pt-6">
+            <h2 className="eyebrow">+ Events competed in</h2>
+            <ul className="mt-4 flex flex-wrap gap-2">
+              {player.participation.map((c) => {
+                const label = c.eventMode ? `RAIDZONE ${c.eventMode}` : c.eventName;
+                return c.eventId ? (
+                  <li key={c.id}>
+                    <Link
+                      href={`/events/${c.eventId}`}
+                      className="badge border-edge hover:border-teal/50"
+                    >
+                      {label}
+                    </Link>
+                  </li>
+                ) : (
+                  <li key={c.id} className="badge border-edge text-slate-300">
+                    {label}
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
         )}
+
+        {teams.length === 0 &&
+          player.placements.length === 0 &&
+          player.participation.length === 0 && (
+            <p className="mt-12 text-sm text-slate-400">No tournament history yet.</p>
+          )}
       </div>
     </div>
   );

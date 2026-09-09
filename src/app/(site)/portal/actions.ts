@@ -22,7 +22,7 @@ import {
   signupButtonRow,
   createEventSpace,
   archiveEventSpace,
-  lockReadonlyChannels,
+  applyEventChannelPerms,
   postToChannel,
   editChannelMessage,
   deleteChannelMessage,
@@ -32,6 +32,13 @@ import { createMediaAsset } from "@/lib/media";
 import { getSettings } from "@/lib/settings";
 import { notify, notifyPlayer } from "@/lib/notify";
 import { syncMemberRolesByPlayer } from "@/lib/discord-roles";
+import {
+  ensureEventRole,
+  ensureTeamVoice,
+  grantEventAccess,
+  teardownEventAccess,
+  resyncEventAccess,
+} from "@/lib/event-space";
 import { BRACKET_SIZES, entrantsForEvent, roundCount, seedOrder } from "@/lib/bracket";
 import { DEFAULT_EVENT_TZ, isValidEventTz, zonedInputToUtc } from "@/lib/tz";
 import { Prisma } from "@prisma/client";
@@ -234,7 +241,7 @@ export async function saveEvent(_prev: FormState, formData: FormData): Promise<F
       if (ev.discordCategoryId) {
         // full space exists — resync every channel (announcement included)
         const chans = (ev.discordChannels as Record<string, string>) ?? {};
-        await lockReadonlyChannels(chans);
+        await applyEventChannelPerms(chans, ev.discordRoleId);
         await pushEventChannelContent(
           ev.id,
           chans,
@@ -418,9 +425,8 @@ export async function syncEventChannels(eventId: string): Promise<FormState> {
   const channels = (ev.discordChannels as Record<string, string>) ?? {};
   const seed = (ev.discordSeedMessages as Record<string, string>) ?? {};
   try {
-    // lock first — it grants the bot a send override so posts to the
-    // read-only channels (announcement / how-to-join / rules / wipe-info) land
-    await lockReadonlyChannels(channels);
+    // re-assert channel perms first — also grants the bot a send override
+    await applyEventChannelPerms(channels, ev.discordRoleId);
     await pushEventChannelContent(eventId, channels, seed);
   } catch (err) {
     return { error: `Discord: ${err instanceof Error ? err.message : "sync failed"}` };
@@ -497,7 +503,7 @@ export async function reannounceEventChannels(eventId: string): Promise<FormStat
       data: { discordSeedMessages: {} as Prisma.InputJsonValue },
     });
     // repost fresh (empty seed → new posts → pings per announcePing / announcePingAll)
-    await lockReadonlyChannels(channels);
+    await applyEventChannelPerms(channels, ev.discordRoleId);
     await pushEventChannelContent(eventId, channels, {});
   } catch (err) {
     return { error: `Discord: ${err instanceof Error ? err.message : "repost failed"}` };
@@ -544,12 +550,27 @@ export async function buildEventSpace(eventId: string): Promise<FormState> {
     },
   });
 
+  // per-event access role, then gate the channels to it, then seed
+  const roleId = await ensureEventRole(ev.id);
   try {
-    // lock first — it also grants the bot a send override so the seed posts land
-    await lockReadonlyChannels(space.channels);
+    await applyEventChannelPerms(space.channels, roleId);
     await pushEventChannelContent(ev.id, space.channels, {});
   } catch (err) {
     console.error("event space seed failed", err);
+  }
+
+  // grant access + build team voice channels for whoever's already registered
+  const signups = await db.eventSignup.findMany({
+    where: { eventId: ev.id, state: "SIGNED_UP" },
+    select: { playerId: true },
+  });
+  for (const s of signups) await grantEventAccess(ev.id, s.playerId);
+  if (ev.format === "TEAM") {
+    const teams = await db.team.findMany({
+      where: { eventId: ev.id, signups: { some: { state: "SIGNED_UP" } } },
+      select: { id: true },
+    });
+    for (const t of teams) await ensureTeamVoice(t.id);
   }
 
   await logAudit({
@@ -563,10 +584,22 @@ export async function buildEventSpace(eventId: string): Promise<FormState> {
   return { ok: true };
 }
 
+/** Re-grant the event access role to everyone currently signed up. */
+export async function resyncEventRoles(eventId: string): Promise<FormState> {
+  const actor = await assertPermission("event:manage");
+  const res = await resyncEventAccess(eventId).catch(() => ({ granted: 0 }));
+  await logAudit({ actorId: actor.id, action: "event.role_resync", targetType: "Event", targetId: eventId });
+  revalidatePath(`/portal/events/${eventId}`);
+  return { ok: true, count: res.granted };
+}
+
 export async function archiveEventDiscord(eventId: string): Promise<FormState> {
   const actor = await assertPermission("event:manage");
   const ev = await db.event.findUnique({ where: { id: eventId } });
   if (!ev?.discordCategoryId) return { error: "This event has no Discord space." };
+
+  // snapshot participation + delete the event / team roles + team voice channels
+  await teardownEventAccess(eventId).catch((err) => console.error("teardownEventAccess", err));
 
   const channels = Object.values((ev.discordChannels as Record<string, string>) ?? {});
   let result: { renamed: boolean; hidden: boolean };
@@ -697,11 +730,16 @@ export async function promoteSignup(signupId: string): Promise<void> {
     });
     const ev = await db.event.findUnique({ where: { id: s.eventId }, select: { title: true } });
     const msg = notify.waitlistPromoted(ev?.title ?? "the event", s.eventId);
-    for (const m of members) void notifyPlayer(m.playerId, msg);
+    for (const m of members) {
+      void notifyPlayer(m.playerId, msg);
+      void grantEventAccess(s.eventId, m.playerId);
+    }
+    void ensureTeamVoice(s.teamId);
   } else {
     await db.eventSignup.update({ where: { id: signupId }, data: { state: "SIGNED_UP" } });
     const ev = await db.event.findUnique({ where: { id: s.eventId }, select: { title: true } });
     void notifyPlayer(s.playerId, notify.waitlistPromoted(ev?.title ?? "the event", s.eventId));
+    void grantEventAccess(s.eventId, s.playerId);
   }
 
   await logAudit({

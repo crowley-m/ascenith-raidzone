@@ -14,6 +14,7 @@ import {
   ArchiveSpaceButton,
   SyncChannelsButton,
   ReannounceButton,
+  ResyncRolesButton,
 } from "@/components/portal/build-space-button";
 import { ResultsForm, AttendeeRewardForm } from "@/components/portal/results-form";
 import { BracketEditor } from "@/components/portal/bracket-editor";
@@ -178,6 +179,7 @@ export default async function PortalEventDetail({
                     channels
                   </span>
                   <SyncChannelsButton eventId={event.id} />
+                  <ResyncRolesButton eventId={event.id} />
                   <ReannounceButton eventId={event.id} />
                   <ArchiveSpaceButton eventId={event.id} />
                 </>

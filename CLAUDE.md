@@ -64,10 +64,17 @@ mutation writes an `AuditLog` row via `logAudit(...)`; viewer at `/portal/audit`
   into factions. Titles matched champion-name → faction-name fuzzily.
 - **Events → Discord** — "Build space" creates a category + channel set; content
   is pushed per channel. `announcement / how-to-join / rules / wipe-info` are
-  read-only (locked *after* seeding, with a bot send-override). `announcePing` /
-  `announcePingAll` control `@everyone`. "Repost + ping" deletes & reposts to
-  re-fire pings. Archive replaces every child channel's overwrites so nothing
-  shows to members.
+  read-only. `announcePing` / `announcePingAll` control `@everyone`. "Repost +
+  ping" deletes & reposts to re-fire pings.
+- **Event access roles** (`src/lib/event-space.ts`) — "Build space" also creates a
+  per-event Discord role (`Event.discordRoleId`); `applyEventChannelPerms` gates
+  every channel except `announcement / how-to-join / registration` to it. Signing
+  up (site or `/signup`) grants the role; withdrawing revokes it. TEAM events get
+  a private voice channel + role per team (`Team.discordRoleId` /
+  `discordVoiceChannelId`). **Archive** writes an `EventParticipation` row for
+  every signed-up player (survives event deletion → "Events competed in" on the
+  public profile), then deletes the event + team roles / voice channels.
+  "Resync event roles" re-grants to everyone signed up.
 - **Notifications** — players get Discord DMs (waitlist promotion, reward
   granted, event starting) unless `Player.dmNotifications` is off. `src/lib/notify.ts`.
 - **Bracket** — optional single-elimination bracket per event (`src/lib/bracket.ts`,

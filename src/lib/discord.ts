@@ -277,8 +277,11 @@ export type EventSpace = {
 
 // Channels members can read but not post in (staff bypass via role perms).
 export const READONLY_CHANNELS = new Set(["announcement", "how-to-join", "rules", "wipe-info"]);
+// Channels anyone can see even without the event role — the entry points.
+export const PUBLIC_EVENT_CHANNELS = new Set(["announcement", "how-to-join", "registration"]);
 const PERM_VIEW_CHANNEL = (1n << 10n).toString();
 const PERM_SEND_MESSAGES = (1n << 11n).toString();
+const PERM_CONNECT = (1n << 20n).toString();
 
 // The bot's own user id — needed so read-only channels can still deny @everyone
 // while letting the bot post the seed content. Cached for the process lifetime.
@@ -332,29 +335,117 @@ export async function createEventSpace(opts: {
 }
 
 /**
- * (Re)apply the read-only lock: deny @everyone SEND_MESSAGES, but explicitly
- * allow the bot so it can still post / repost the channel's seed content.
+ * Set the full permission state on an event's channels in one pass:
+ *  - public channels (announcement / how-to-join): @everyone can read, not post
+ *  - registration: default (open)
+ *  - every other channel: hidden from @everyone, visible to `eventRoleId`
+ *    (read-only ones stay read-only for role members too)
+ *  - the bot always keeps view + send so it can seed / re-sync content
+ * Needs Manage Roles + Manage Channels; per-channel failures are logged, not thrown.
  */
-export async function lockReadonlyChannels(channels: Record<string, string>): Promise<void> {
+export async function applyEventChannelPerms(
+  channels: Record<string, string>,
+  eventRoleId: string | null,
+): Promise<void> {
   const gid = process.env.DISCORD_GUILD_ID;
   if (!gid || !process.env.DISCORD_BOT_TOKEN) return;
   const botId = await botUserId();
+  const VIEW = BigInt(PERM_VIEW_CHANNEL);
+  const SEND = BigInt(PERM_SEND_MESSAGES);
+
   for (const [name, id] of Object.entries(channels)) {
-    if (!READONLY_CHANNELS.has(name)) continue;
-    if (botId) {
-      await discordFetch(`/channels/${id}/permissions/${botId}`, {
-        method: "PUT",
-        body: JSON.stringify({ type: 1, allow: PERM_SEND_MESSAGES }),
-      }).catch(() => {});
+    if (name === "registration") continue; // leave fully default
+
+    const readonly = READONLY_CHANNELS.has(name);
+    const isPublic = PUBLIC_EVENT_CHANNELS.has(name);
+    const ow: Array<{ id: string; type: number; allow?: string; deny?: string }> = [];
+
+    if (isPublic) {
+      ow.push({ id: gid, type: 0, deny: SEND.toString() });
+    } else {
+      ow.push({ id: gid, type: 0, deny: (readonly ? VIEW | SEND : VIEW).toString() });
+      if (eventRoleId) {
+        ow.push({
+          id: eventRoleId,
+          type: 0,
+          allow: (readonly ? VIEW : VIEW | SEND).toString(),
+        });
+      }
     }
-    await discordFetch(`/channels/${id}/permissions/${gid}`, {
-      method: "PUT",
-      body: JSON.stringify({ type: 0, deny: PERM_SEND_MESSAGES }),
-    }).catch(() => {});
+    if (botId) ow.push({ id: botId, type: 1, allow: (VIEW | SEND).toString() });
+
+    try {
+      await discordFetch(`/channels/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ permission_overwrites: ow }),
+      });
+    } catch (err) {
+      console.error(`applyEventChannelPerms ${name}`, err);
+    }
   }
 }
 
-const PERM_CONNECT = (1n << 20n).toString();
+/** Create a plain guild role. Returns the id, or null if the bot can't. */
+export async function createGuildRole(name: string, color = 0): Promise<string | null> {
+  const gid = process.env.DISCORD_GUILD_ID;
+  if (!gid || !process.env.DISCORD_BOT_TOKEN) return null;
+  try {
+    const r = (await discordFetch(`/guilds/${gid}/roles`, {
+      method: "POST",
+      body: JSON.stringify({
+        name: name.slice(0, 100),
+        color,
+        mentionable: false,
+        hoist: false,
+      }),
+    })) as { id?: string };
+    return r.id ?? null;
+  } catch (err) {
+    console.error("createGuildRole failed", err);
+    return null;
+  }
+}
+
+export async function deleteGuildRole(roleId: string): Promise<void> {
+  const gid = process.env.DISCORD_GUILD_ID;
+  if (!gid || !roleId || !process.env.DISCORD_BOT_TOKEN) return;
+  await discordFetch(`/guilds/${gid}/roles/${roleId}`, { method: "DELETE" }).catch(() => {});
+}
+
+/** Voice channel visible + joinable only by `roleId` (and staff / bot). */
+export async function createRoleVoiceChannel(
+  name: string,
+  parentId: string,
+  roleId: string,
+): Promise<string | null> {
+  const gid = process.env.DISCORD_GUILD_ID;
+  if (!gid || !process.env.DISCORD_BOT_TOKEN) return null;
+  const view = BigInt(PERM_VIEW_CHANNEL);
+  const connect = BigInt(PERM_CONNECT);
+  try {
+    const c = (await discordFetch(`/guilds/${gid}/channels`, {
+      method: "POST",
+      body: JSON.stringify({
+        name: name.slice(0, 100),
+        type: 2,
+        parent_id: parentId,
+        permission_overwrites: [
+          { id: gid, type: 0, deny: (view | connect).toString() },
+          { id: roleId, type: 0, allow: (view | connect).toString() },
+        ],
+      }),
+    })) as { id?: string };
+    return c.id ?? null;
+  } catch (err) {
+    console.error("createRoleVoiceChannel failed", err);
+    return null;
+  }
+}
+
+export async function deleteChannel(channelId: string): Promise<void> {
+  if (!channelId || !process.env.DISCORD_BOT_TOKEN) return;
+  await discordFetch(`/channels/${channelId}`, { method: "DELETE" }).catch(() => {});
+}
 
 /**
  * Archive an event's space: rename the category to mark it done, sink it to the

@@ -9,6 +9,8 @@ import { logAudit } from "@/lib/audit";
 import { teamCreateSchema, teamJoinSchema } from "@/lib/validation";
 import { uniqueInviteCode, teamForEvent } from "@/lib/team";
 import { syncMemberRolesByPlayer } from "@/lib/discord-roles";
+import { ensureTeamVoice, revokeTeamVoice } from "@/lib/event-space";
+import { deleteChannel, deleteGuildRole } from "@/lib/discord";
 
 export type TeamState = { ok?: boolean; error?: string };
 
@@ -110,6 +112,7 @@ export async function joinTeam(_prev: TeamState, formData: FormData): Promise<Te
   }
   await logAudit({ actorId: playerId, action: "team.join", targetType: "Team", targetId: team.id });
   void syncMemberRolesByPlayer(playerId);
+  void ensureTeamVoice(team.id);
   revalidatePath("/me/team");
   revalidatePath("/teams");
   return { ok: true };
@@ -125,6 +128,7 @@ export async function leaveTeam(teamId: string) {
   await db.teamMember.deleteMany({ where: { teamId, playerId } });
   await logAudit({ actorId: playerId, action: "team.leave", targetType: "Team", targetId: teamId });
   void syncMemberRolesByPlayer(playerId);
+  void revokeTeamVoice(teamId, playerId);
   revalidatePath("/me/team");
   revalidatePath("/teams");
 }
@@ -142,6 +146,7 @@ export async function kickMember(teamId: string, memberPlayerId: string) {
     meta: { memberPlayerId },
   });
   void syncMemberRolesByPlayer(memberPlayerId);
+  void revokeTeamVoice(teamId, memberPlayerId);
   revalidatePath("/me/team");
   revalidatePath("/teams");
 }
@@ -205,9 +210,15 @@ export async function disbandTeam(teamId: string) {
   const playerId = await myPlayerId();
   const team = await requireLeadership(playerId, teamId);
   const memberIds = team.members.map((m) => m.playerId);
+  const full = await db.team.findUnique({
+    where: { id: teamId },
+    select: { discordRoleId: true, discordVoiceChannelId: true },
+  });
   await db.team.delete({ where: { id: teamId } });
   await logAudit({ actorId: playerId, action: "team.disband", targetType: "Team", targetId: teamId });
   for (const pid of memberIds) void syncMemberRolesByPlayer(pid);
+  if (full?.discordVoiceChannelId) void deleteChannel(full.discordVoiceChannelId);
+  if (full?.discordRoleId) void deleteGuildRole(full.discordRoleId);
   revalidatePath("/me/team");
   revalidatePath("/teams");
 }

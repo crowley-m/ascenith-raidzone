@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { notify, notifyPlayer } from "@/lib/notify";
+import { grantEventAccess } from "@/lib/event-space";
 
 /**
  * After a withdrawal, pull the oldest waitlisted entrant(s) into open slots.
@@ -64,5 +65,8 @@ export async function promoteWaitlist(eventId: string): Promise<void> {
   }
 
   const msg = notify.waitlistPromoted(event.title, eventId);
-  for (const pid of promotedPlayerIds) void notifyPlayer(pid, msg);
+  for (const pid of promotedPlayerIds) {
+    void notifyPlayer(pid, msg);
+    void grantEventAccess(eventId, pid);
+  }
 }

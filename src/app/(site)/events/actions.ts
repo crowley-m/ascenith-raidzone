@@ -7,6 +7,11 @@ import { auth } from "@/auth";
 import { logAudit } from "@/lib/audit";
 import { teamForEvent } from "@/lib/team";
 import { promoteWaitlist } from "@/lib/events";
+import {
+  grantEventAccess,
+  revokeEventAccess,
+  ensureTeamVoice,
+} from "@/lib/event-space";
 
 async function callerPlayerId(eventId: string): Promise<string> {
   const session = await auth();
@@ -55,6 +60,7 @@ export async function signUpForEvent(eventId: string) {
     targetId: eventId,
     meta: { state },
   });
+  if (state === "SIGNED_UP") void grantEventAccess(eventId, playerId);
 
   revalidatePath(`/events/${eventId}`);
   revalidatePath("/me/events");
@@ -67,6 +73,7 @@ export async function withdrawFromEvent(eventId: string) {
     where: { eventId, playerId },
     data: { state: "WITHDRAWN" },
   });
+  void revokeEventAccess(eventId, playerId);
   await promoteWaitlist(eventId);
   await logAudit({ action: "event.withdraw", targetType: "Event", targetId: eventId });
   revalidatePath(`/events/${eventId}`);
@@ -122,6 +129,10 @@ export async function registerTeamForEvent(eventId: string) {
     targetId: eventId,
     meta: { teamId: team.id, members: memberIds.length, state },
   });
+  if (state === "SIGNED_UP") {
+    void ensureTeamVoice(team.id);
+    for (const pid of memberIds) void grantEventAccess(eventId, pid);
+  }
 
   revalidatePath(`/events/${eventId}`);
   revalidatePath("/me/events");
@@ -138,6 +149,7 @@ export async function withdrawTeamFromEvent(eventId: string) {
     where: { eventId, teamId: team.id },
     data: { state: "WITHDRAWN" },
   });
+  for (const m of team.members) void revokeEventAccess(eventId, m.playerId);
   await promoteWaitlist(eventId);
   await logAudit({
     action: "event.team_withdraw",

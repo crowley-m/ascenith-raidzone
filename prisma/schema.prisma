@@ -119,12 +119,13 @@ model Player {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  signups     EventSignup[]
-  attendance  EventAttendance[]
-  rewards     Reward[]
-  notes       StaffNote[]
-  flags       Flag[]
-  placements  EventPlacement[]
+  signups       EventSignup[]
+  attendance    EventAttendance[]
+  rewards       Reward[]
+  notes         StaffNote[]
+  flags         Flag[]
+  placements    EventPlacement[]
+  participation EventParticipation[]
 
   teamsLed        Team[]       @relation("TeamLeader")
   teamMemberships TeamMember[]
@@ -150,6 +151,9 @@ model Team {
   event      Event    @relation("TeamsForEvent", fields: [eventId], references: [id], onDelete: Cascade)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+
+  discordRoleId         String? // team's access role for its private voice channel
+  discordVoiceChannelId String?
 
   members    TeamMember[]
   signups    EventSignup[]
@@ -340,6 +344,7 @@ model Event {
   discordCategoryId   String? // event's Discord category, once the bot builds it
   discordChannels     Json? // { announcement: "id", rules: "id", ... }
   discordSeedMessages Json? // { announcement: "messageId", ... } — for re-sync
+  discordRoleId       String? // per-event access role — granted on sign-up, deleted on archive
   discordArchivedAt   DateTime? // when the space was archived (renamed + sunk)
   reminderSentAt      DateTime? // when the bot posted the "starts soon" reminder
 
@@ -349,15 +354,33 @@ model Event {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  signups    EventSignup[]
-  attendance EventAttendance[]
-  rewards    Reward[]
-  placements EventPlacement[]
-  teamsFor   Team[]           @relation("TeamsForEvent")
-  bracket    Bracket?
+  signups       EventSignup[]
+  attendance    EventAttendance[]
+  rewards       Reward[]
+  placements    EventPlacement[]
+  teamsFor      Team[]               @relation("TeamsForEvent")
+  bracket       Bracket?
+  participation EventParticipation[]
 
   @@index([status, startsAt])
   @@index([seasonId])
+}
+
+// Permanent "played in this event" record — kept when the event / Discord role
+// is deleted. Written on archive from whoever held the event's access role.
+model EventParticipation {
+  id        String   @id @default(cuid())
+  eventId   String?
+  event     Event?   @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  playerId  String
+  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  eventName String // snapshot
+  eventMode String? // snapshot
+  playedAt  DateTime // event start, snapshot
+  createdAt DateTime @default(now())
+
+  @@unique([eventId, playerId])
+  @@index([playerId])
 }
 
 model EventPlacement {

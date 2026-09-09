@@ -7,6 +7,7 @@ import {
   archiveEventDiscord,
   syncEventChannels,
   reannounceEvent,
+  resyncEventRoles,
 } from "@/app/(site)/portal/actions";
 
 export function SyncChannelsButton({ eventId }: { eventId: string }) {
@@ -32,6 +33,32 @@ export function SyncChannelsButton({ eventId }: { eventId: string }) {
         }}
       >
         {pending ? "Syncing…" : "Sync channels"}
+      </button>
+      {msg && <span className="text-[0.66rem] text-slate-400">{msg}</span>}
+    </span>
+  );
+}
+
+export function ResyncRolesButton({ eventId }: { eventId: string }) {
+  const router = useRouter();
+  const [pending, start] = useTransition();
+  const [msg, setMsg] = useState<string | null>(null);
+  return (
+    <span className="inline-flex flex-col items-start gap-1">
+      <button
+        type="button"
+        className="btn-ghost text-xs"
+        disabled={pending}
+        onClick={() => {
+          setMsg(null);
+          start(async () => {
+            const res = await resyncEventRoles(eventId);
+            setMsg(res?.error ?? `Access granted to ${res?.count ?? 0}.`);
+            router.refresh();
+          });
+        }}
+      >
+        {pending ? "Syncing…" : "Resync event roles"}
       </button>
       {msg && <span className="text-[0.66rem] text-slate-400">{msg}</span>}
     </span>
