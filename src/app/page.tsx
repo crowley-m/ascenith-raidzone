@@ -73,6 +73,10 @@ async function eventData(): Promise<{ current: OpEvent | null; upcoming: Upcomin
       mode: e.mode,
       startsAt: e.startsAt.toISOString(),
       endsAt: e.endsAt ? e.endsAt.toISOString() : null,
+      timezone: e.timezone ?? null,
+      format: e.format ?? null,
+      signups: e._count.signups,
+      maxSlots: e.maxSlots,
     }));
 
   if (!current) return { current: null, upcoming };

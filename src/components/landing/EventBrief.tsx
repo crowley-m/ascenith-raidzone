@@ -12,6 +12,10 @@ export type UpcomingOp = {
   mode: string | null;
   startsAt: string;
   endsAt: string | null;
+  timezone: string | null;
+  format: string | null;
+  signups: number;
+  maxSlots: number | null;
 };
 
 export type OpEvent = {
@@ -65,13 +69,7 @@ function fmtManila(iso: string, withTime = true) {
   }
 }
 
-export function EventBrief({
-  event,
-  upcoming = [],
-}: {
-  event: OpEvent | null;
-  upcoming?: UpcomingOp[];
-}) {
+export function EventBrief({ event }: { event: OpEvent | null }) {
   const [now, setNow] = useState<number | null>(null);
   useEffect(() => {
     setNow(Date.now());
@@ -254,29 +252,9 @@ export function EventBrief({
               </a>
             </div>
 
-            {upcoming.length > 0 && (
-              <div className={s.nextUp}>
-                <span className={s.nextUpHead}>Next up</span>
-                <ul>
-                  {upcoming.map((u) => (
-                    <li key={u.id}>
-                      <Link href={`/events/${u.id}`} className={s.nextUpRow}>
-                        <span className={s.nextUpName}>
-                          {u.mode ? <b>{u.mode}</b> : null} {u.title}
-                        </span>
-                        <span className={s.nextUpDate}>
-                          {fmtManila(u.startsAt, false)} GMT+8
-                        </span>
-                        <span className={s.arw}>{"→"}</span>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-                <Link href="/events" className={s.nextUpAll}>
-                  See all events {"→"}
-                </Link>
-              </div>
-            )}
+            <Link href="/events" className={s.nextUpAll}>
+              See all events {"→"}
+            </Link>
           </>
         ) : (
           <>
@@ -304,26 +282,6 @@ export function EventBrief({
               </a>
             </div>
 
-            {upcoming.length > 0 && (
-              <div className={s.nextUp}>
-                <span className={s.nextUpHead}>Next up</span>
-                <ul>
-                  {upcoming.map((u) => (
-                    <li key={u.id}>
-                      <Link href={`/events/${u.id}`} className={s.nextUpRow}>
-                        <span className={s.nextUpName}>
-                          {u.mode ? <b>{u.mode}</b> : null} {u.title}
-                        </span>
-                        <span className={s.nextUpDate}>
-                          {fmtManila(u.startsAt, false)} GMT+8
-                        </span>
-                        <span className={s.arw}>{"→"}</span>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
           </>
         )}
       </div>

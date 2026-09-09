@@ -665,42 +665,70 @@
   scroll-margin-top: 90px;
 }
 
-/* pre-register strip — sits above the current-event card */
+/* pre-register — small box above the current-event card */
 .prereg {
   position: relative;
   z-index: 10;
   padding-top: clamp(40px, 8vh, 88px);
   scroll-margin-top: 90px;
 }
-.preregInner {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: clamp(16px, 3vw, 32px);
+.preregBox {
+  max-width: 520px;
   border: 1px solid var(--rule);
-  background: rgba(0, 0, 0, 0.3);
-  padding: clamp(16px, 2.6vw, 26px) clamp(18px, 3vw, 32px);
+  background: rgba(0, 0, 0, 0.35);
+  padding: 14px 16px;
 }
-.preregLead {
+.preregBox .mark {
+  display: block;
+  margin-bottom: 10px;
+}
+.preregList {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 10px;
 }
-.preregTitle {
+.preregRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+.preregRow + .preregRow {
+  border-top: 1px solid var(--rule);
+  padding-top: 10px;
+}
+.preregRowMain {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.preregName {
   font-family: var(--f-poster);
-  font-size: clamp(1.5rem, 1rem + 2.4vw, 2.6rem);
-  line-height: 1;
+  font-size: 1.15rem;
+  line-height: 1.05;
   text-transform: uppercase;
   color: var(--cream);
 }
-.preregWhen {
+.preregMeta {
   font-family: var(--f-mono);
-  font-weight: 700;
-  font-size: 0.68rem;
-  letter-spacing: 0.14em;
+  font-size: 0.64rem;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--cream-dim);
+}
+.preregLink {
+  flex: none;
+  font-family: var(--f-mono);
+  font-weight: 700;
+  font-size: 0.66rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--crimson);
+  white-space: nowrap;
+}
+.preregLink:hover {
+  color: var(--cream);
 }
 .briefFrame {
   border: 1px solid var(--rule);

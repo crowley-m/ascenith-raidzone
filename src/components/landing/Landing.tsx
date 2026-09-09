@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { isStaff } from "@/lib/rbac";
+import { fmtInZone, DEFAULT_EVENT_TZ } from "@/lib/tz";
 import { NavOverlay } from "@/components/nav-overlay";
 import s from "./landing.module.css";
 import { useImmersive } from "./useImmersive";
@@ -70,38 +71,34 @@ function Box({
   );
 }
 
-function fmtWhen(iso: string) {
-  try {
-    return new Date(iso)
-      .toLocaleString("en-US", {
-        timeZone: "Asia/Manila",
-        weekday: "short",
-        month: "short",
-        day: "numeric",
-        hour: "numeric",
-        minute: "2-digit",
-      })
-      .toUpperCase();
-  } catch {
-    return "";
-  }
-}
-
-function PreRegister({ next }: { next: UpcomingOp }) {
+function PreRegister({ items }: { items: UpcomingOp[] }) {
   return (
     <section className={`${s.prereg} ${s.wrap}`} id="prereg">
-      <div className={s.preregInner} data-reveal>
-        <div className={s.preregLead}>
-          <span className={s.mark}>Pre-register — next event</span>
-          <h3 className={s.preregTitle}>
-            {next.mode ? `RAIDZONE ${next.mode}` : next.title}
-          </h3>
-          <p className={s.preregWhen}>{fmtWhen(next.startsAt)} GMT+8</p>
-        </div>
-        <a className={`${s.box} ${s.solid}`} href={`/events/${next.id}`}>
-          <span className={s.t}>Pre-register</span>
-          <span className={s.arw}>{"→"}</span>
-        </a>
+      <div className={s.preregBox} data-reveal>
+        <span className={s.mark}>Coming up</span>
+        <ul className={s.preregList}>
+          {items.map((e) => {
+            const tz = e.timezone ?? DEFAULT_EVENT_TZ;
+            const slots =
+              e.maxSlots != null ? `${e.signups}/${e.maxSlots}` : `${e.signups} signed up`;
+            return (
+              <li key={e.id} className={s.preregRow}>
+                <div className={s.preregRowMain}>
+                  <span className={s.preregName}>
+                    {e.mode ? `RAIDZONE ${e.mode}` : e.title}
+                  </span>
+                  <span className={s.preregMeta}>
+                    {fmtInZone(e.startsAt, tz)}
+                    {e.format === "TEAM" ? " · Team" : ""} · {slots}
+                  </span>
+                </div>
+                <a className={s.preregLink} href={`/events/${e.id}`}>
+                  Pre-register <span aria-hidden>→</span>
+                </a>
+              </li>
+            );
+          })}
+        </ul>
       </div>
     </section>
   );
@@ -332,9 +329,9 @@ export function Landing({
       </section>
 
       <div className={s.after}>
-        {upcoming.length > 0 && <PreRegister next={upcoming[0]} />}
+        {upcoming.length > 0 && <PreRegister items={upcoming.slice(0, 2)} />}
 
-        <EventBrief event={event} upcoming={upcoming} />
+        <EventBrief event={event} />
 
         {howToJoinVideo ? <HowToJoinVideo url={howToJoinVideo} /> : null}
 
