@@ -584,9 +584,31 @@ export async function buildEventSpace(eventId: string): Promise<FormState> {
   return { ok: true };
 }
 
-/** Re-grant the event access role to everyone currently signed up. */
+/**
+ * Create the event role if missing, re-gate the channels to it, rebuild any
+ * team voice channels, and grant access to everyone signed up. Also upgrades a
+ * space that was built before event roles existed.
+ */
 export async function resyncEventRoles(eventId: string): Promise<FormState> {
   const actor = await assertPermission("event:manage");
+  const ev = await db.event.findUnique({
+    where: { id: eventId },
+    select: { discordCategoryId: true, discordChannels: true, format: true },
+  });
+  if (!ev?.discordCategoryId) return { error: "Build the Discord space first." };
+
+  const roleId = await ensureEventRole(eventId);
+  const channels = (ev.discordChannels as Record<string, string>) ?? {};
+  await applyEventChannelPerms(channels, roleId).catch((e) => console.error("resync perms", e));
+
+  if (ev.format === "TEAM") {
+    const teams = await db.team.findMany({
+      where: { eventId, signups: { some: { state: "SIGNED_UP" } } },
+      select: { id: true },
+    });
+    for (const t of teams) await ensureTeamVoice(t.id);
+  }
+
   const res = await resyncEventAccess(eventId).catch(() => ({ granted: 0 }));
   await logAudit({ actorId: actor.id, action: "event.role_resync", targetType: "Event", targetId: eventId });
   revalidatePath(`/portal/events/${eventId}`);
