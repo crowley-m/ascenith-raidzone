@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { fmtDateTime, relative } from "@/lib/format";
+import { relative } from "@/lib/format";
+import { fmtInZone, DEFAULT_EVENT_TZ } from "@/lib/tz";
 
 export type EventCardData = {
   id: string;
@@ -7,6 +8,7 @@ export type EventCardData = {
   description?: string | null;
   startsAt: Date;
   endsAt?: Date | null;
+  timezone?: string | null;
   server?: string | null;
   format?: string | null;
   maxSlots?: number | null;
@@ -56,7 +58,7 @@ export function EventCard({ event, href }: { event: EventCardData; href?: string
       <dl className="mt-4 flex flex-wrap gap-x-6 gap-y-1 text-xs text-slate-400">
         <div>
           <dt className="inline text-slate-500">When: </dt>
-          <dd className="inline">{fmtDateTime(event.startsAt)}</dd>
+          <dd className="inline">{fmtInZone(event.startsAt, event.timezone ?? DEFAULT_EVENT_TZ)}</dd>
         </div>
         {event.server && (
           <div>

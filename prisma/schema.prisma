@@ -304,6 +304,7 @@ model Event {
   description    String?
   startsAt       DateTime
   endsAt         DateTime?
+  timezone       String? // IANA zone the start/end wall-clock times were entered in
   server         String? // which custom server / world
   format         EventFormat @default(SOLO)
   maxSlots       Int? // SOLO: max players · TEAM: max teams

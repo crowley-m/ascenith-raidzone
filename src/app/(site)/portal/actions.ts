@@ -33,6 +33,7 @@ import { getSettings } from "@/lib/settings";
 import { notify, notifyPlayer } from "@/lib/notify";
 import { syncMemberRolesByPlayer } from "@/lib/discord-roles";
 import { BRACKET_SIZES, entrantsForEvent, roundCount, seedOrder } from "@/lib/bracket";
+import { DEFAULT_EVENT_TZ, isValidEventTz, zonedInputToUtc } from "@/lib/tz";
 import { Prisma } from "@prisma/client";
 import type { PlayerStatus, Role } from "@prisma/client";
 
@@ -138,6 +139,7 @@ export async function saveEvent(_prev: FormState, formData: FormData): Promise<F
     startsAt: formData.get("startsAt"),
     endsAt: str("endsAt"),
     endsWeeks: str("endsWeeks"),
+    timezone: str("timezone"),
     server: str("server"),
     format: str("format") ?? "SOLO",
     maxSlots: str("maxSlots"),
@@ -166,18 +168,20 @@ export async function saveEvent(_prev: FormState, formData: FormData): Promise<F
     return { error: parsed.error.issues[0]?.message ?? "Invalid event." };
   }
   const d = parsed.data;
-  const startsAt = new Date(d.startsAt);
+  const tz = isValidEventTz(d.timezone) ? (d.timezone as string) : DEFAULT_EVENT_TZ;
+  const startsAt = zonedInputToUtc(d.startsAt, tz);
   const endsAt =
     d.endsWeeks && d.endsWeeks > 0
       ? new Date(startsAt.getTime() + d.endsWeeks * 7 * 24 * 60 * 60 * 1000)
       : d.endsAt
-        ? new Date(d.endsAt)
+        ? zonedInputToUtc(d.endsAt, tz)
         : null;
   const data = {
     title: d.title,
     description: d.description ?? null,
     startsAt,
     endsAt,
+    timezone: tz,
     server: d.server ?? null,
     format: d.format,
     maxSlots: d.maxSlots ?? null,
@@ -549,6 +553,7 @@ export async function cloneEvent(eventId: string): Promise<void> {
       description: src.description,
       startsAt,
       endsAt,
+      timezone: src.timezone,
       server: src.server,
       format: src.format,
       maxSlots: src.maxSlots,

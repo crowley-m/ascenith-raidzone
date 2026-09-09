@@ -33,6 +33,7 @@ export const eventSchema = z.object({
   startsAt: z.string().min(1),
   endsAt: z.string().nullable().optional(),
   endsWeeks: z.coerce.number().int().min(0).max(52).nullable().optional(),
+  timezone: z.string().max(60).nullable().optional(),
   server: z.string().max(120).nullable().optional(),
   format: z.enum(["SOLO", "TEAM"]).default("SOLO"),
   maxSlots: z.coerce.number().int().min(0).max(10000).nullable().optional(),

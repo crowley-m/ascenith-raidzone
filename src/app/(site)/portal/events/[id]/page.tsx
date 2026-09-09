@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { requirePermission } from "@/lib/session";
 import { db } from "@/lib/db";
 import { can } from "@/lib/rbac";
-import { toInputDateTime, fmtDateTime } from "@/lib/format";
+import { fmtInZone, DEFAULT_EVENT_TZ, utcToZonedInput } from "@/lib/tz";
 import { tiersToText } from "@/lib/validation";
 import { EventForm } from "@/components/portal/event-form";
 import { AttendanceToggle } from "@/components/portal/attendance-toggle";
@@ -54,6 +54,7 @@ export default async function PortalEventDetail({
     },
   });
   if (!event) notFound();
+  const eventTz = event.timezone ?? DEFAULT_EVENT_TZ;
 
   const [seasons, bracket, bracketEntrants] = await Promise.all([
     db.season.findMany({
@@ -187,7 +188,7 @@ export default async function PortalEventDetail({
         </div>
       </div>
       <p className="mt-1 text-sm text-slate-500">
-        {fmtDateTime(event.startsAt)}
+        {fmtInZone(event.startsAt, eventTz)}
         {event.discordMessageId && " · announced in Discord"}
       </p>
 
@@ -423,8 +424,9 @@ export default async function PortalEventDetail({
                     id: event.id,
                     title: event.title,
                     description: event.description,
-                    startsAt: toInputDateTime(event.startsAt),
-                    endsAt: toInputDateTime(event.endsAt),
+                    timezone: eventTz,
+                    startsAt: utcToZonedInput(event.startsAt, eventTz),
+                    endsAt: event.endsAt ? utcToZonedInput(event.endsAt, eventTz) : "",
                     server: event.server,
                     format: event.format,
                     maxSlots: event.maxSlots,

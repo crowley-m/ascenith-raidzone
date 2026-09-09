@@ -2,13 +2,15 @@
 
 import { useActionState, useRef } from "react";
 import { saveEvent } from "@/app/(site)/portal/actions";
+import { EVENT_TIMEZONES, DEFAULT_EVENT_TZ } from "@/lib/tz";
 
 type EventInit = {
   id: string;
   title: string;
   description: string | null;
-  startsAt: string; // datetime-local value
+  startsAt: string; // datetime-local value, in `timezone`
   endsAt: string;
+  timezone: string | null;
   server: string | null;
   format: string;
   maxSlots: number | null;
@@ -71,6 +73,7 @@ export function EventForm({
 
     set("title", "RAIDZONE Purge — Season 2");
     set("description", "Two-week no-rules purge wipe. Internal test event.");
+    set("timezone", DEFAULT_EVENT_TZ);
     set("startsAt", dtLocal(start));
     set("endsAt", dtLocal(end));
     set("server", "ASCENITH • RaidZone 01 (NA)");
@@ -144,6 +147,26 @@ export function EventForm({
           defaultValue={event?.description ?? ""}
           placeholder="A note for staff — not shown publicly."
         />
+      </div>
+
+      <div>
+        <label className="label">Timezone — the start / end times below are in this zone</label>
+        <select
+          name="timezone"
+          className="input sm:max-w-sm"
+          defaultValue={event?.timezone ?? DEFAULT_EVENT_TZ}
+        >
+          {EVENT_TIMEZONES.map((z) => (
+            <option key={z.id} value={z.id}>
+              {z.label}
+            </option>
+          ))}
+        </select>
+        <p className="mt-1 text-xs text-slate-500">
+          Enter the wall-clock time you&apos;d announce (e.g. 8:00 PM Manila). It&apos;s stored
+          as an absolute moment and shown to everyone in this zone; Discord shows it in each
+          member&apos;s own zone.
+        </p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">

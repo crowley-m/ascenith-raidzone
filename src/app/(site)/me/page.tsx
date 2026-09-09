@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/session";
 import { db } from "@/lib/db";
-import { fmtDateTime } from "@/lib/format";
+import { fmtInZone, DEFAULT_EVENT_TZ } from "@/lib/tz";
 import { teamsForPlayer } from "@/lib/team";
 import { JoinWipeButton } from "@/components/me/join-wipe-button";
 import { DmToggle } from "@/components/me/dm-toggle";
@@ -142,7 +142,7 @@ export default async function MeOverviewPage() {
                   {s.event.title}
                 </Link>
                 <span className="text-slate-500">
-                  {fmtDateTime(s.event.startsAt)}
+                  {fmtInZone(s.event.startsAt, s.event.timezone ?? DEFAULT_EVENT_TZ)}
                   {s.state === "WAITLIST" && (
                     <span className="ml-2 text-ember">waitlist #{waitlistPos.get(s.id) ?? "?"}</span>
                   )}

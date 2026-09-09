@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireStaff } from "@/lib/session";
 import { db } from "@/lib/db";
 import { fmtDateTime } from "@/lib/format";
+import { fmtInZone, DEFAULT_EVENT_TZ } from "@/lib/tz";
 import { hiddenActorIds, maskName } from "@/lib/staff-mask";
 import { topRaiders } from "@/lib/leaderboard";
 import { TopRaiders } from "@/components/top-raiders";
@@ -122,7 +123,7 @@ export default async function PortalOverview() {
                   </span>
                 </Link>
                 <span className="text-slate-500">
-                  {fmtDateTime(e.startsAt)} · {e._count.signups} in
+                  {fmtInZone(e.startsAt, e.timezone ?? DEFAULT_EVENT_TZ)} · {e._count.signups} in
                   {e.maxSlots ? ` / ${e.maxSlots}` : ""}
                 </span>
               </li>

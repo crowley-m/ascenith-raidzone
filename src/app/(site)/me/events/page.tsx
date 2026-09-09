@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/session";
 import { db } from "@/lib/db";
-import { fmtDateTime } from "@/lib/format";
+import { fmtInZone, DEFAULT_EVENT_TZ } from "@/lib/tz";
 import { WithdrawButton } from "@/components/withdraw-button";
 
 export default async function MyEventsPage() {
@@ -33,7 +33,7 @@ export default async function MyEventsPage() {
                   {s.event.title}
                 </Link>
                 <p className="text-xs text-slate-500">
-                  {fmtDateTime(s.event.startsAt)}
+                  {fmtInZone(s.event.startsAt, s.event.timezone ?? DEFAULT_EVENT_TZ)}
                   {s.state === "WAITLIST" && <span className="ml-2 text-ember">waitlist</span>}
                 </p>
               </div>
@@ -52,7 +52,7 @@ export default async function MyEventsPage() {
                 <Link href={`/events/${s.eventId}`} className="text-slate-300 hover:text-teal">
                   {s.event.title}
                 </Link>
-                <span className="text-slate-500">{fmtDateTime(s.event.startsAt)}</span>
+                <span className="text-slate-500">{fmtInZone(s.event.startsAt, s.event.timezone ?? DEFAULT_EVENT_TZ)}</span>
               </li>
             ))}
           </ul>

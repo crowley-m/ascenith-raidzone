@@ -2,7 +2,7 @@ import Link from "next/link";
 import { requirePermission } from "@/lib/session";
 import { db } from "@/lib/db";
 import { can } from "@/lib/rbac";
-import { fmtDateTime } from "@/lib/format";
+import { fmtInZone, DEFAULT_EVENT_TZ } from "@/lib/tz";
 
 export const dynamic = "force-dynamic";
 
@@ -58,7 +58,9 @@ export default async function PortalEventsPage() {
                     <span className="ml-2 badge border-teal/40 text-teal">On landing</span>
                   )}
                 </td>
-                <td className="py-3 text-slate-400">{fmtDateTime(e.startsAt)}</td>
+                <td className="py-3 text-slate-400">
+                  {fmtInZone(e.startsAt, e.timezone ?? DEFAULT_EVENT_TZ)}
+                </td>
                 <td className="py-3">
                   <span
                     className={`badge ${

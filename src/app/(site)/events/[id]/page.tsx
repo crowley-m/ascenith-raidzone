@@ -3,7 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { auth } from "@/auth";
-import { fmtDateTime, relative } from "@/lib/format";
+import { relative } from "@/lib/format";
+import { fmtInZone, DEFAULT_EVENT_TZ } from "@/lib/tz";
 import { SignupButton } from "@/components/signup-button";
 import { TeamSignup } from "@/components/team/team-signup";
 import { Markdown } from "@/components/markdown";
@@ -133,8 +134,9 @@ export default async function EventDetailPage({
 
   const tiers = (Array.isArray(event.rewardTiers) ? event.rewardTiers : []) as RewardTier[];
 
-  const facts: [string, string][] = [["Starts", fmtDateTime(event.startsAt)]];
-  if (event.endsAt) facts.push(["Wipe / ends", fmtDateTime(event.endsAt)]);
+  const tz = event.timezone ?? DEFAULT_EVENT_TZ;
+  const facts: [string, string][] = [["Starts", fmtInZone(event.startsAt, tz)]];
+  if (event.endsAt) facts.push(["Wipe / ends", fmtInZone(event.endsAt, tz)]);
   if (event.wipeCycle) facts.push(["Cycle", event.wipeCycle]);
   if (event.raidWindow) facts.push(["Raid window", event.raidWindow]);
   if (event.server) facts.push(["Server", event.server]);
