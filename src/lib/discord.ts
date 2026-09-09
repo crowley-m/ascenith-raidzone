@@ -150,6 +150,43 @@ const lines = (s: string | null | undefined) =>
     .map((l) => l.trim())
     .filter(Boolean);
 
+/**
+ * Turn free-typed content into a clean point-wise list for a Discord embed.
+ * - a single line / sentence is left as-is
+ * - `# Heading` and lone `Label:` lines become **bold** standalone lines
+ * - existing `-` / `*` / `1.` list markers are normalised to `•`
+ * - every other non-empty line gets a `•` bullet
+ * - blank lines are kept (collapsed to one) as visual breaks
+ */
+export function bulletize(md: string | null | undefined): string {
+  const raw = (md ?? "").replace(/\r/g, "");
+  if (lines(raw).length <= 1) return raw.trim();
+
+  const out: string[] = [];
+  let prevBlank = true;
+  for (const src of raw.split("\n")) {
+    const line = src.trim();
+    if (!line) {
+      if (!prevBlank) out.push("");
+      prevBlank = true;
+      continue;
+    }
+    prevBlank = false;
+    const heading = line.match(/^#{1,6}\s+(.*)$/);
+    if (heading) {
+      out.push(`**${heading[1]}**`);
+    } else if (/^([-*•]|\d+[.)])\s+/.test(line)) {
+      out.push(line.replace(/^[-*•]\s+/, "• "));
+    } else if (/^[A-Za-z0-9][^:]{0,40}:$/.test(line)) {
+      out.push(`**${line}**`);
+    } else {
+      out.push(`• ${line}`);
+    }
+  }
+  while (out.length && out[out.length - 1] === "") out.pop();
+  return out.join("\n");
+}
+
 /** Rich, auto-composed announcement embed built from the event's structured fields. */
 export function eventEmbed(e: {
   title: string;

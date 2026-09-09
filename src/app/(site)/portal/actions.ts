@@ -20,6 +20,7 @@ import {
   editAnnouncement,
   eventEmbed,
   contentEmbed,
+  bulletize,
   signupButtonRow,
   createEventSpace,
   archiveEventSpace,
@@ -253,7 +254,7 @@ export async function saveEvent(_prev: FormState, formData: FormData): Promise<F
       } else {
         const embed = eventEmbed({
           ...ev,
-          summary: ev.announcementMd || ev.summary,
+          summary: bulletize(ev.announcementMd) || ev.summary,
           signupCount: ev._count.signups,
           url: `${APP_URL}/events/${ev.id}`,
         });
@@ -323,7 +324,7 @@ function eventChannelPayloads(ev: FullEvent): Record<string, ChannelPayload> {
   out.announcement = {
     embed: eventEmbed({
       ...ev,
-      summary: ev.announcementMd || ev.summary,
+      summary: bulletize(ev.announcementMd) || ev.summary,
       signupCount: 0,
       url,
     }),
@@ -334,12 +335,13 @@ function eventChannelPayloads(ev: FullEvent): Record<string, ChannelPayload> {
   out["how-to-join"] = {
     embed: contentEmbed(
       "🧭 How to join",
-      ev.howToJoinMd ??
-        `**1.** Register once at ${APP_URL}/register — Discord login links automatically.\n` +
-          `**2.** Add your in-game UID on your profile — that's where rewards go.\n` +
-          (ev.format === "TEAM"
-            ? `**3.** Team event — your team leader registers the whole team on the event page.`
-            : `**3.** Claim your slot on the event page.`),
+      ev.howToJoinMd
+        ? bulletize(ev.howToJoinMd)
+        : `**1.** Register once at ${APP_URL}/register — Discord login links automatically.\n` +
+            `**2.** Add your in-game UID on your profile — that's where rewards go.\n` +
+            (ev.format === "TEAM"
+              ? `**3.** Team event — your team leader registers the whole team on the event page.`
+              : `**3.** Claim your slot on the event page.`),
     ),
     components: [signupButtonRow(url, "Open the event page")],
   };
@@ -347,16 +349,17 @@ function eventChannelPayloads(ev: FullEvent): Record<string, ChannelPayload> {
   out.registration = {
     embed: contentEmbed(
       `📝 Registration — ${ev.title}`,
-      ev.registrationMd ??
-        (ev.format === "TEAM"
+      ev.registrationMd
+        ? bulletize(ev.registrationMd)
+        : ev.format === "TEAM"
           ? "Your team leader signs the whole team up on the website. Everyone else needs a profile with an in-game UID set."
-          : "Open to everyone. Register once, add your in-game UID, then claim your slot below."),
+          : "Open to everyone. Register once, add your in-game UID, then claim your slot below.",
     ),
     components: [signupButtonRow(url, "Sign up on the website")],
   };
 
-  if (ev.rulesMd) out.rules = { embed: contentEmbed(`📜 Rules — ${ev.title}`, ev.rulesMd) };
-  if (ev.gameplayMd) out.gameplay = { embed: contentEmbed("🎮 Gameplay", ev.gameplayMd) };
+  if (ev.rulesMd) out.rules = { embed: contentEmbed(`📜 Rules — ${ev.title}`, bulletize(ev.rulesMd)) };
+  if (ev.gameplayMd) out.gameplay = { embed: contentEmbed("🎮 Gameplay", bulletize(ev.gameplayMd)) };
 
   if (ev.wipeInfoMd || ev.wipeCycle || ev.raidWindow) {
     const parts: string[] = [];
@@ -365,7 +368,7 @@ function eventChannelPayloads(ev: FullEvent): Record<string, ChannelPayload> {
     if (windows.length === 1) parts.push(`**Raid window** — ${windows[0]}`);
     else if (windows.length > 1)
       parts.push(`**Raid window**\n${windows.map((w) => `• ${w}`).join("\n")}`);
-    if (ev.wipeInfoMd) parts.push(ev.wipeInfoMd);
+    if (ev.wipeInfoMd) parts.push(bulletize(ev.wipeInfoMd));
     out["wipe-info"] = { embed: contentEmbed("♻ Wipe info", parts.join("\n\n")) };
   }
 
@@ -471,7 +474,7 @@ export async function reannounceEvent(eventId: string): Promise<FormState> {
   const url = `${APP_URL}/events/${ev.id}`;
   const embed = eventEmbed({
     ...ev,
-    summary: ev.announcementMd || ev.summary,
+    summary: bulletize(ev.announcementMd) || ev.summary,
     signupCount: ev._count.signups,
     url,
   });
