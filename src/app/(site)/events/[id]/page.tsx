@@ -135,10 +135,17 @@ export default async function EventDetailPage({
   const tiers = (Array.isArray(event.rewardTiers) ? event.rewardTiers : []) as RewardTier[];
 
   const tz = event.timezone ?? DEFAULT_EVENT_TZ;
-  const facts: [string, string][] = [["Starts", fmtInZone(event.startsAt, tz)]];
+  const multiline = (text: string) => {
+    const rows = text.split("\n").map((l) => l.trim()).filter(Boolean);
+    return rows.length > 1
+      ? rows.map((l, i) => <span key={i} className="block">{l}</span>)
+      : text;
+  };
+
+  const facts: [string, React.ReactNode][] = [["Starts", fmtInZone(event.startsAt, tz)]];
   if (event.endsAt) facts.push(["Wipe / ends", fmtInZone(event.endsAt, tz)]);
   if (event.wipeCycle) facts.push(["Cycle", event.wipeCycle]);
-  if (event.raidWindow) facts.push(["Raid window", event.raidWindow]);
+  if (event.raidWindow) facts.push(["Raid window", multiline(event.raidWindow)]);
   if (event.server) facts.push(["Server", event.server]);
   facts.push(["Format", isTeamEvent ? "Team event" : "Solo event"]);
   if (isTeamEvent && event.teamSize) facts.push(["Team size", `up to ${event.teamSize}`]);

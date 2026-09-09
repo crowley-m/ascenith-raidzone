@@ -328,7 +328,15 @@ function eventChannelPayloads(ev: FullEvent): Record<string, ChannelPayload> {
   if (ev.wipeInfoMd || ev.wipeCycle || ev.raidWindow) {
     const lines: string[] = ["**Wipe info**"];
     if (ev.wipeCycle) lines.push(`Cycle: ${ev.wipeCycle}`);
-    if (ev.raidWindow) lines.push(`Raid window: ${ev.raidWindow}`);
+    const windows = (ev.raidWindow ?? "")
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean);
+    if (windows.length === 1) lines.push(`Raid window: ${windows[0]}`);
+    else if (windows.length > 1) {
+      lines.push("Raid window:");
+      for (const w of windows) lines.push(`• ${w}`);
+    }
     if (ev.wipeInfoMd) lines.push("", ev.wipeInfoMd);
     out["wipe-info"] = { content: clip(lines.join("\n")) };
   }

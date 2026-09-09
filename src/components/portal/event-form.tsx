@@ -84,7 +84,7 @@ export function EventForm({
     set("summary", "No rules, no limits. 2-week wipe. Top 3 on the Glory board take the pool.");
     set("mode", "PURGE");
     set("wipeCycle", "2 weeks");
-    set("raidWindow", "15:30 – 21:29 · 6 hrs/day");
+    set("raidWindow", "Days 1–4 · 15:30 – 21:29 (6 hrs/day)\nFinal weekend · no safe window");
     set("rewardTiersText", "1st | 30K Crystgin\n2nd | 20K Crystgin\n3rd | 10K Crystgin");
     set(
       "bonusText",
@@ -279,7 +279,7 @@ export function EventForm({
         <textarea name="summary" rows={2} className="input" defaultValue={event?.summary ?? ""} placeholder="No rules, no limits. 2-week wipe. Top 3 on the Glory Points board take the pool." />
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className="label">Mode (next to RAIDZONE)</label>
           <input name="mode" className="input" defaultValue={event?.mode ?? ""} placeholder="PURGE" />
@@ -288,10 +288,17 @@ export function EventForm({
           <label className="label">Wipe cycle</label>
           <input name="wipeCycle" className="input" defaultValue={event?.wipeCycle ?? ""} placeholder="2 weeks" />
         </div>
-        <div>
-          <label className="label">Raid window</label>
-          <input name="raidWindow" className="input" defaultValue={event?.raidWindow ?? ""} placeholder="15:30 – 21:29 · 6 hrs/day" />
-        </div>
+      </div>
+
+      <div>
+        <label className="label">Raid window — one per line</label>
+        <textarea
+          name="raidWindow"
+          rows={2}
+          className="input"
+          defaultValue={event?.raidWindow ?? ""}
+          placeholder={"Days 1–4 · 6 PM – 11:59 PM\nDays 5–7 · all day"}
+        />
       </div>
 
       <div>

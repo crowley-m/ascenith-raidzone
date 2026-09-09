@@ -220,7 +220,15 @@ export function EventBrief({ event }: { event: OpEvent | null }) {
               {event.raidWindow && (
                 <div>
                   <b>Raid</b>
-                  {event.raidWindow}
+                  {event.raidWindow
+                    .split("\n")
+                    .map((l) => l.trim())
+                    .filter(Boolean)
+                    .map((l, i) => (
+                      <span key={i} style={{ display: "block" }}>
+                        {l}
+                      </span>
+                    ))}
                 </div>
               )}
               {event.maxSlots ? (
