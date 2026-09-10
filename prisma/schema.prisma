@@ -91,6 +91,7 @@ enum Platform {
   PC
   PLAYSTATION
   XBOX
+  MOBILE
 }
 
 model Player {

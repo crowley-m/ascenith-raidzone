@@ -3,7 +3,7 @@ import { z } from "zod";
 export const profileSchema = z.object({
   characterName: z.string().min(1).max(60),
   gameUid: z.string().max(40).nullable().optional(),
-  platform: z.enum(["PC", "PLAYSTATION", "XBOX"]).nullable().optional(),
+  platform: z.enum(["PC", "PLAYSTATION", "XBOX", "MOBILE"]).nullable().optional(),
   region: z.string().max(80).nullable().optional(),
   timezone: z.string().max(60).nullable().optional(),
   playHours: z.string().max(200).nullable().optional(),

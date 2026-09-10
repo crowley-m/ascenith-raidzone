@@ -39,6 +39,7 @@ const PLATFORM_LABEL: Record<string, string> = {
   PC: "PC",
   PLAYSTATION: "PlayStation",
   XBOX: "Xbox",
+  MOBILE: "Mobile",
 };
 
 function withCurrent(list: string[], current: string) {
@@ -182,6 +183,7 @@ export function ProfileForm({
             <option value="PC">PC</option>
             <option value="PLAYSTATION">PlayStation</option>
             <option value="XBOX">Xbox</option>
+            <option value="MOBILE">Mobile</option>
           </select>
         </div>
         <div>
