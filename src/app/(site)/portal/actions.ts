@@ -19,6 +19,7 @@ import {
   postAnnouncement,
   editAnnouncement,
   eventEmbed,
+  resultsEmbed,
   bulletize,
   signupButtonRow,
   createEventSpace,
@@ -227,7 +228,10 @@ export async function saveEvent(_prev: FormState, formData: FormData): Promise<F
   };
 
   let eventId: string;
+  let prevStatus: string | null = null;
   if (id) {
+    const before = await db.event.findUnique({ where: { id }, select: { status: true } });
+    prevStatus = before?.status ?? null;
     await db.event.update({ where: { id }, data });
     eventId = id;
   } else {
@@ -240,6 +244,11 @@ export async function saveEvent(_prev: FormState, formData: FormData): Promise<F
     targetType: "Event",
     targetId: eventId,
   });
+
+  // Just cancelled — tell the roster and mark the announcement cancelled.
+  if (id && data.status === "CANCELLED" && prevStatus !== "CANCELLED") {
+    await handleEventCancelled(eventId).catch((e) => console.error("handleEventCancelled", e));
+  }
 
   // Post or update the Discord announcement when published.
   const ev = await db.event.findUnique({
@@ -302,6 +311,55 @@ export async function saveEvent(_prev: FormState, formData: FormData): Promise<F
   revalidatePath(`/events/${eventId}`);
   revalidatePath("/"); // landing shows the current / next published event
   redirect(`/portal/events/${eventId}`);
+}
+
+/**
+ * Event just moved to CANCELLED: DM everyone on the roster / waitlist and
+ * overwrite the Discord announcement so it no longer invites sign-ups.
+ */
+async function handleEventCancelled(eventId: string): Promise<void> {
+  const ev = await db.event.findUnique({
+    where: { id: eventId },
+    include: {
+      signups: {
+        where: { state: { in: ["SIGNED_UP", "WAITLIST"] } },
+        select: { playerId: true },
+      },
+    },
+  });
+  if (!ev) return;
+
+  const msg = notify.eventCancelled(ev.title);
+  const seen = new Set<string>();
+  for (const s of ev.signups) {
+    if (seen.has(s.playerId)) continue;
+    seen.add(s.playerId);
+    void notifyPlayer(s.playerId, msg);
+  }
+
+  const channels = (ev.discordChannels as Record<string, string>) ?? {};
+  const cancelledEmbed = {
+    title: `❌ ${ev.title} — CANCELLED`,
+    description:
+      "This event has been cancelled. Sorry for the change — watch the announcements channel for what's next.",
+    color: 0x6b7280,
+  };
+
+  try {
+    if (ev.discordMessageId && ev.discordChannelId) {
+      await editAnnouncement(ev.discordChannelId, ev.discordMessageId, cancelledEmbed, "", []);
+    }
+    const annId = channels.announcement;
+    const seed = (ev.discordSeedMessages as Record<string, string>) ?? {};
+    if (annId && seed.announcement) {
+      await editChannelMessage(annId, seed.announcement, { embed: cancelledEmbed, components: [] });
+    }
+    if (annId) {
+      await postToChannel(annId, { content: `**${ev.title} is cancelled.** ${msg.split("\n")[0]}` });
+    }
+  } catch (err) {
+    console.error("cancel announce failed", err);
+  }
 }
 
 /**
@@ -950,9 +1008,95 @@ export async function savePlacements(_prev: FormState, formData: FormData): Prom
     ...rows.map((r) => db.eventPlacement.create({ data: { eventId, ...r } })),
   ]);
   await logAudit({ actorId: actor.id, action: "event.placements", targetType: "Event", targetId: eventId, meta: { count: rows.length } });
+
+  // announce the podium to Discord + DM everyone who placed (best-effort)
+  await announceResults(eventId).catch((e) => console.error("announceResults", e));
+
   revalidatePath(`/portal/events/${eventId}`);
   revalidatePath("/winners");
-  revalidatePath("/winners");
+  revalidatePath(`/events/${eventId}`);
+  return { ok: true };
+}
+
+/**
+ * Post (or update) the event's podium embed to its Discord announcement channel
+ * and DM every placed player. Called from savePlacements; also exposed as a
+ * button so staff can re-fire it.
+ */
+export async function announceResults(eventId: string): Promise<FormState> {
+  const ev = await db.event.findUnique({
+    where: { id: eventId },
+    include: {
+      season: { select: { number: true } },
+      placements: {
+        orderBy: { rank: "asc" },
+        include: {
+          team: { select: { name: true, tag: true, members: { select: { playerId: true } } } },
+          player: { select: { id: true, characterName: true } },
+        },
+      },
+    },
+  });
+  if (!ev) return { error: "Event not found." };
+  if (ev.placements.length === 0) return { error: "Set the results first." };
+
+  const url = `${APP_URL}/events/${ev.id}`;
+  const tiers = Array.isArray(ev.rewardTiers)
+    ? (ev.rewardTiers as Array<{ place: string; reward: string }>)
+    : [];
+  const embed = resultsEmbed({
+    title: ev.title,
+    mode: ev.mode,
+    seasonNumber: ev.season?.number ?? null,
+    url,
+    placements: ev.placements.map((p) => ({
+      rank: p.rank,
+      name: p.team
+        ? `${p.team.tag ? `[${p.team.tag}] ` : ""}${p.team.name}`
+        : (p.player?.characterName ?? "—"),
+      reward: tiers[p.rank - 1]?.reward ?? null,
+    })),
+  });
+
+  const seed = (ev.discordSeedMessages as Record<string, string>) ?? {};
+  const channels = (ev.discordChannels as Record<string, string>) ?? {};
+  const settings = await getSettings();
+  const channelId =
+    channels.announcement || ev.discordChannelId || settings.announceChannelId || undefined;
+
+  if (channelId) {
+    try {
+      if (seed.results) {
+        await editChannelMessage(channelId, seed.results, {
+          embed,
+          components: [signupButtonRow(url, "Full results & rewards")],
+        });
+      } else {
+        const m = await postToChannel(channelId, {
+          embed,
+          components: [signupButtonRow(url, "Full results & rewards")],
+        });
+        if (m) {
+          await db.event.update({
+            where: { id: ev.id },
+            data: {
+              discordSeedMessages: { ...seed, results: m.id } as Prisma.InputJsonValue,
+            },
+          });
+        }
+      }
+    } catch (err) {
+      console.error("results announce failed", err);
+    }
+  }
+
+  // DM the placed players (team → every member)
+  for (const p of ev.placements) {
+    const msg = notify.placed(p.rank, ev.title, ev.id);
+    const targets = p.team ? p.team.members.map((m) => m.playerId) : p.playerId ? [p.playerId] : [];
+    for (const pid of targets) void notifyPlayer(pid, msg);
+  }
+
   return { ok: true };
 }
 

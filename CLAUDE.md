@@ -95,7 +95,13 @@ mutation writes an `AuditLog` row via `logAudit(...)`; viewer at `/portal/audit`
   public profile), then deletes the event + team roles / voice channels.
   "Resync event roles" re-grants to everyone signed up.
 - **Notifications** — players get Discord DMs (waitlist promotion, reward
-  granted, event starting) unless `Player.dmNotifications` is off. `src/lib/notify.ts`.
+  granted, event starting, placed in results, event cancelled, teammate
+  joined / left) unless `Player.dmNotifications` is off. `src/lib/notify.ts`.
+- **Results** — `savePlacements` also posts a `resultsEmbed` podium to the
+  event's `#announcement` (stored as `discordSeedMessages.results`, editable
+  via "Repost results to Discord") and DMs everyone who placed. The public
+  event page shows a Results block whenever placements exist. Cancelling an
+  event (`status` → `CANCELLED`) DMs the roster + overwrites the announcement.
 - **Bracket** — optional single-elimination bracket per event (`src/lib/bracket.ts`,
   `Bracket` / `BracketMatch`). Staff draw it from the roster (`generateBracket`),
   set winners (`setBracketMatch` propagates the winner into the next match).

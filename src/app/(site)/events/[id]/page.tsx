@@ -53,6 +53,13 @@ export default async function EventDetailPage({
         },
         orderBy: { createdAt: "asc" },
       },
+      placements: {
+        orderBy: { rank: "asc" },
+        include: {
+          team: { select: { name: true, tag: true } },
+          player: { select: { id: true, characterName: true } },
+        },
+      },
     },
   });
 
@@ -220,6 +227,35 @@ export default async function EventDetailPage({
               {event.maxSlots ? ` / ${event.maxSlots}` : ""}
             </span>
           </div>
+
+          {event.placements.length > 0 && (
+            <div className="mt-8 max-w-2xl border border-teal/40 bg-panel/70 p-5">
+              <div className="eyebrow text-teal">Results</div>
+              <ol className="mt-3 divide-y divide-edge">
+                {event.placements.map((p) => {
+                  const medal = ["🥇", "🥈", "🥉"][p.rank - 1] ?? `#${p.rank}`;
+                  const label = p.team
+                    ? `${p.team.tag ? `[${p.team.tag}] ` : ""}${p.team.name}`
+                    : (p.player?.characterName ?? "—");
+                  const reward = tiers[p.rank - 1]?.reward;
+                  return (
+                    <li
+                      key={p.id}
+                      className="flex items-baseline justify-between gap-4 py-2.5 font-mono text-sm"
+                    >
+                      <span className="uppercase text-slate-100">
+                        <span className="mr-2">{medal}</span>
+                        {label}
+                      </span>
+                      {reward && (
+                        <span className="text-right uppercase text-teal">{reward}</span>
+                      )}
+                    </li>
+                  );
+                })}
+              </ol>
+            </div>
+          )}
 
           {event.posterUrl && /^https?:\/\//.test(event.posterUrl) && (
             <div className="mt-8 max-w-2xl overflow-hidden border border-edge bg-panel/40 text-center">

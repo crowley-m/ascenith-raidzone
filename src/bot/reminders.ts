@@ -55,17 +55,22 @@ async function tick(client: Client) {
       const roster = await db.eventSignup.findMany({
         where: { eventId: ev.id, state: "SIGNED_UP" },
         select: {
+          teamId: true,
           player: { select: { dmNotifications: true, user: { select: { discordId: true } } } },
         },
       });
+      const rel = `<t:${Math.floor(ev.startsAt.getTime() / 1000)}:R>`;
       for (const s of roster) {
         if (!s.player.dmNotifications || !s.player.user.discordId) continue;
+        const teamless = ev.format === "TEAM" && !s.teamId;
+        const body = teamless
+          ? `⏰ **${ev.title}** starts ${rel} (in ~${mins} min) — you're registered but still` +
+            ` need a team. Find one now: ${APP_URL}/me/team`
+          : `⏰ **${ev.title}** starts ${rel} (in ~${mins} min) — you're on the roster.\n` +
+            `${APP_URL}/events/${ev.id}`;
         try {
           const u = await client.users.fetch(s.player.user.discordId);
-          await u.send(
-            `⏰ **${ev.title}** starts <t:${Math.floor(ev.startsAt.getTime() / 1000)}:R>` +
-              ` (in ~${mins} min) — you're on the roster.\n${APP_URL}/events/${ev.id}`,
-          );
+          await u.send(body);
         } catch {
           /* DMs closed — skip */
         }

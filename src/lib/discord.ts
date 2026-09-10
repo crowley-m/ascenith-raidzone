@@ -289,6 +289,32 @@ export function contentEmbed(title: string, body: string): Embed {
   return { title, description: body.slice(0, 4000), color: BRAND };
 }
 
+/** Podium embed for a finished event's results. */
+export function resultsEmbed(e: {
+  title: string;
+  mode?: string | null;
+  seasonNumber?: number | null;
+  url: string;
+  placements: { rank: number; name: string; reward?: string | null }[];
+}): Embed {
+  const medals = ["🥇", "🥈", "🥉"];
+  const lines = e.placements
+    .sort((a, b) => a.rank - b.rank)
+    .map((p) => {
+      const m = medals[p.rank - 1] ?? `#${p.rank}`;
+      return `${m} **${p.name}**${p.reward ? ` — ${p.reward}` : ""}`;
+    });
+  return {
+    author: { name: e.mode ? `RAIDZONE · ${e.mode}` : "ASCENITH RAIDZONE" },
+    title: `🏆 ${e.title} — Results`,
+    description: lines.join("\n") || "No placements recorded.",
+    url: e.url,
+    color: BRAND,
+    timestamp: new Date().toISOString(),
+    footer: { text: e.seasonNumber ? `Season ${e.seasonNumber}` : "ASCENITH RAIDZONE" },
+  };
+}
+
 /**
  * Live member / online counts for the guild.
  * Uses the bot token + `?with_counts=true` — no privileged intents, no widget

@@ -40,4 +40,24 @@ export const notify = {
       `${APP_URL}/events/${eventId}`
     );
   },
+  placed(rank: number, eventTitle: string, eventId: string) {
+    const medal = ["🥇", "🥈", "🥉"][rank - 1] ?? "🏅";
+    const ord = rank === 1 ? "1st" : rank === 2 ? "2nd" : rank === 3 ? "3rd" : `${rank}th`;
+    return (
+      `${medal} **You placed ${ord} in ${eventTitle}!** Congratulations.\n` +
+      `${APP_URL}/events/${eventId}`
+    );
+  },
+  eventCancelled(eventTitle: string) {
+    return (
+      `❌ **${eventTitle} has been cancelled.** Sorry for the change — ` +
+      `keep an eye on Discord for the next one.`
+    );
+  },
+  teamMemberJoined(memberName: string, teamName: string) {
+    return `👥 **${memberName}** joined your team **${teamName}**.`;
+  },
+  teamMemberLeft(memberName: string, teamName: string) {
+    return `👋 **${memberName}** left your team **${teamName}**.`;
+  },
 };

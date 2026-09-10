@@ -6,6 +6,7 @@ import {
   savePlacements,
   grantPlacementRewards,
   grantAttendeeRewards,
+  announceResults,
 } from "@/app/(site)/portal/actions";
 
 type Entrant = { value: string; label: string };
@@ -61,8 +62,10 @@ export function ResultsForm({
           </div>
         ))}
         {state.error && <p className="text-sm text-ember">{state.error}</p>}
-        {state.ok && <p className="text-sm text-teal">Results saved.</p>}
-        <div>
+        {state.ok && (
+          <p className="text-sm text-teal">Results saved — podium posted to Discord.</p>
+        )}
+        <div className="flex flex-wrap gap-2">
           <button
             className="btn-primary text-xs"
             disabled={pending}
@@ -73,9 +76,35 @@ export function ResultsForm({
         </div>
       </form>
 
+      {Object.keys(current).length > 0 && <RepostResultsButton eventId={eventId} />}
+
       {canReward && Object.keys(current).length > 0 && (
         <PlacementRewardButton eventId={eventId} />
       )}
+    </div>
+  );
+}
+
+function RepostResultsButton({ eventId }: { eventId: string }) {
+  const router = useRouter();
+  const [pending, start] = useTransition();
+  const [msg, setMsg] = useState<string | null>(null);
+  return (
+    <div className="border-t border-edge pt-3">
+      <button
+        className="btn-ghost text-xs"
+        disabled={pending}
+        onClick={() =>
+          start(async () => {
+            const res = await announceResults(eventId);
+            setMsg(res.error ?? "Podium updated in Discord + DMs sent.");
+            router.refresh();
+          })
+        }
+      >
+        {pending ? "…" : "Repost results to Discord"}
+      </button>
+      {msg && <p className="mt-1 text-xs text-slate-400">{msg}</p>}
     </div>
   );
 }

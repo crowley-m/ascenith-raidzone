@@ -9,6 +9,7 @@ import { logAudit } from "@/lib/audit";
 import { teamCreateSchema, teamJoinSchema } from "@/lib/validation";
 import { uniqueInviteCode, teamForEvent } from "@/lib/team";
 import { registerTeam } from "@/lib/events";
+import { notify, notifyPlayer } from "@/lib/notify";
 import { syncMemberRolesByPlayer } from "@/lib/discord-roles";
 import { ensureTeamVoice, revokeTeamVoice, revokeEventAccess } from "@/lib/event-space";
 import { deleteChannel, deleteGuildRole } from "@/lib/discord";
@@ -109,7 +110,7 @@ export async function joinTeam(_prev: TeamState, formData: FormData): Promise<Te
 
   const team = await db.team.findUnique({
     where: { inviteCode: parsed.data.code },
-    select: { id: true, name: true, eventId: true },
+    select: { id: true, name: true, eventId: true, leaderId: true },
   });
   if (!team) return { error: "No team matches that code." };
   if (await teamForEvent(playerId, team.eventId)) {
@@ -127,6 +128,15 @@ export async function joinTeam(_prev: TeamState, formData: FormData): Promise<Te
   await logAudit({ actorId: playerId, action: "team.join", targetType: "Team", targetId: team.id });
   void syncMemberRolesByPlayer(playerId);
   void ensureTeamVoice(team.id);
+
+  // tell the leader
+  if (team.leaderId !== playerId) {
+    const me = await db.player.findUnique({
+      where: { id: playerId },
+      select: { characterName: true },
+    });
+    void notifyPlayer(team.leaderId, notify.teamMemberJoined(me?.characterName ?? "A player", team.name));
+  }
 
   // if the team is already registered for its event, pull the new member onto the roster
   const registered = await db.eventSignup.findFirst({
@@ -161,7 +171,7 @@ export async function leaveTeam(teamId: string) {
   const playerId = await myPlayerId();
   const team = await db.team.findUnique({
     where: { id: teamId },
-    select: { leaderId: true, eventId: true },
+    select: { leaderId: true, eventId: true, name: true },
   });
   if (!team) return;
   if (team.leaderId === playerId) {
@@ -170,6 +180,11 @@ export async function leaveTeam(teamId: string) {
   await db.teamMember.deleteMany({ where: { teamId, playerId } });
   await dropFromTeamEvent(teamId, team.eventId, playerId);
   await logAudit({ actorId: playerId, action: "team.leave", targetType: "Team", targetId: teamId });
+  const me = await db.player.findUnique({
+    where: { id: playerId },
+    select: { characterName: true },
+  });
+  void notifyPlayer(team.leaderId, notify.teamMemberLeft(me?.characterName ?? "A player", team.name));
   void syncMemberRolesByPlayer(playerId);
   void revokeTeamVoice(teamId, playerId);
   revalidatePath("/me/team");
