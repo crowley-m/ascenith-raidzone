@@ -2,6 +2,7 @@ import { requirePermission } from "@/lib/session";
 import { getSettings } from "@/lib/settings";
 import { listGuildTextChannels, listGuildRoles, botGuildPermissions } from "@/lib/discord";
 import { SettingsForm } from "@/components/portal/settings-form";
+import { SyncAllRolesButton } from "@/components/portal/sync-all-roles-button";
 
 export const dynamic = "force-dynamic";
 
@@ -42,6 +43,8 @@ export default async function PortalSettingsPage() {
           )}
         </div>
       )}
+
+      <SyncAllRolesButton />
 
       <div className="mt-6">
         <SettingsForm settings={settings} channels={channels} roles={roles} />

@@ -65,3 +65,26 @@ export async function syncMemberRolesByPlayer(playerId: string): Promise<void> {
   const p = await db.player.findUnique({ where: { id: playerId }, select: { userId: true } });
   if (p) await syncMemberRoles(p.userId);
 }
+
+/**
+ * Reconcile managed roles for every linked member — a full backfill. Run after
+ * first setting the role ids in Settings, or on a schedule. Serial + paced so
+ * we stay well under Discord's rate limits. Returns how many members it touched.
+ */
+export async function syncAllMemberRoles(): Promise<{ synced: number }> {
+  const { registeredRoleId, teamLeaderRoleId } = await getSettings();
+  const anyFaction = await db.faction.count({ where: { discordRoleId: { not: null } } });
+  if (!registeredRoleId && !teamLeaderRoleId && anyFaction === 0) return { synced: 0 };
+
+  const users = await db.user.findMany({
+    where: { discordId: { not: null } },
+    select: { id: true },
+  });
+  let synced = 0;
+  for (const u of users) {
+    await syncMemberRoles(u.id);
+    synced++;
+    await new Promise((r) => setTimeout(r, 250));
+  }
+  return { synced };
+}

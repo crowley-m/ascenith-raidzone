@@ -76,6 +76,35 @@ async function tick(client: Client) {
         }
       }
 
+      // Nudge leaders of short teams
+      if (ev.format === "TEAM" && ev.teamSize && ev.teamSize > 1) {
+        const teams = await db.team.findMany({
+          where: { eventId: ev.id, signups: { some: { state: "SIGNED_UP" } } },
+          select: {
+            name: true,
+            leaderId: true,
+            _count: { select: { members: true } },
+            leader: {
+              select: { dmNotifications: true, user: { select: { discordId: true } } },
+            },
+          },
+        });
+        for (const t of teams) {
+          const have = t._count.members;
+          if (have >= ev.teamSize) continue;
+          if (!t.leader?.dmNotifications || !t.leader.user.discordId) continue;
+          try {
+            const u = await client.users.fetch(t.leader.user.discordId);
+            await u.send(
+              `⚠️ **${t.name}** has ${have}/${ev.teamSize} players and **${ev.title}** starts ` +
+                `${rel} (in ~${mins} min). Recruit from the free-agent list: ${APP_URL}/events/${ev.id}`,
+            );
+          } catch {
+            /* DMs closed — skip */
+          }
+        }
+      }
+
       await db.event.update({ where: { id: ev.id }, data: { reminderSentAt: now } });
     } catch (err) {
       console.error(`reminder failed for ${ev.id}`, err);

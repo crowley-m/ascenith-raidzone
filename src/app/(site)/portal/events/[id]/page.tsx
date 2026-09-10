@@ -19,6 +19,7 @@ import {
 import { ResultsForm, AttendeeRewardForm } from "@/components/portal/results-form";
 import { DiscordPreview } from "@/components/portal/discord-preview";
 import { LandingPreview } from "@/components/portal/landing-preview";
+import { RosterTools } from "@/components/portal/roster-tools";
 import { BracketEditor } from "@/components/portal/bracket-editor";
 import { bracketForEvent, entrantsForEvent } from "@/lib/bracket";
 import { ConfirmButton } from "@/components/portal/confirm-button";
@@ -420,6 +421,10 @@ export default async function PortalEventDetail({
             <p className="mt-3 text-xs text-slate-500">
               + {waitlist.length} on the waitlist
             </p>
+          )}
+
+          {(canMark || canManage) && confirmed.length > 0 && (
+            <RosterTools eventId={event.id} canMark={canMark} canManage={canManage} />
           )}
 
           {canManage && (

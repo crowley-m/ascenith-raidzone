@@ -60,4 +60,13 @@ export const notify = {
   teamMemberLeft(memberName: string, teamName: string) {
     return `👋 **${memberName}** left your team **${teamName}**.`;
   },
+  teamShort(teamName: string, have: number, cap: number, eventTitle: string, eventId: string) {
+    return (
+      `⚠️ **${teamName}** has ${have}/${cap} players and **${eventTitle}** starts soon.\n` +
+      `Recruit from the free-agent list or share your invite code: ${APP_URL}/events/${eventId}`
+    );
+  },
+  fromStaff(eventTitle: string, body: string, eventId: string) {
+    return `📣 **${eventTitle}** — staff update:\n\n${body}\n\n${APP_URL}/events/${eventId}`;
+  },
 };

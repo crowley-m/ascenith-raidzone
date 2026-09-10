@@ -37,7 +37,7 @@ import { eventChannelPayloads, EVENT_CHANNEL_ORDER } from "@/lib/event-channels"
 import { createMediaAsset } from "@/lib/media";
 import { getSettings } from "@/lib/settings";
 import { notify, notifyPlayer } from "@/lib/notify";
-import { syncMemberRolesByPlayer } from "@/lib/discord-roles";
+import { syncMemberRolesByPlayer, syncAllMemberRoles } from "@/lib/discord-roles";
 import {
   ensureEventRole,
   ensureTeamVoice,
@@ -834,6 +834,81 @@ export async function markAttendance(eventId: string, playerId: string, attended
     meta: { playerId, attended },
   });
   revalidatePath(`/portal/events/${eventId}`);
+}
+
+/** Mark every SIGNED_UP player attended / no-show in one go. */
+export async function markAllAttendance(
+  eventId: string,
+  attended: boolean,
+): Promise<FormState> {
+  const actor = await assertPermission("attendance:mark");
+  const roster = await db.eventSignup.findMany({
+    where: { eventId, state: "SIGNED_UP" },
+    select: { playerId: true },
+  });
+  if (roster.length === 0) return { error: "Nobody is signed up." };
+  await db.$transaction(
+    roster.map((r) =>
+      db.eventAttendance.upsert({
+        where: { eventId_playerId: { eventId, playerId: r.playerId } },
+        create: { eventId, playerId: r.playerId, attended, markedById: actor.id },
+        update: { attended, markedById: actor.id, markedAt: new Date() },
+      }),
+    ),
+  );
+  await logAudit({
+    actorId: actor.id,
+    action: "event.attendance_bulk",
+    targetType: "Event",
+    targetId: eventId,
+    meta: { count: roster.length, attended },
+  });
+  revalidatePath(`/portal/events/${eventId}`);
+  return { ok: true, count: roster.length };
+}
+
+/** DM the whole roster (SIGNED_UP) a free-text staff message. */
+export async function dmRoster(_prev: FormState, formData: FormData): Promise<FormState> {
+  const actor = await assertPermission("event:manage");
+  const eventId = (formData.get("eventId") as string) || "";
+  const body = ((formData.get("body") as string) || "").trim();
+  if (!eventId || !body) return { error: "Write a message first." };
+  if (body.length > 1500) return { error: "Keep it under 1500 characters." };
+
+  const ev = await db.event.findUnique({ where: { id: eventId }, select: { title: true } });
+  if (!ev) return { error: "Event not found." };
+
+  const roster = await db.eventSignup.findMany({
+    where: { eventId, state: "SIGNED_UP" },
+    select: { playerId: true },
+    distinct: ["playerId"],
+  });
+  const msg = notify.fromStaff(ev.title, body, eventId);
+  for (const r of roster) void notifyPlayer(r.playerId, msg);
+
+  await logAudit({
+    actorId: actor.id,
+    action: "event.dm_roster",
+    targetType: "Event",
+    targetId: eventId,
+    meta: { recipients: roster.length },
+  });
+  return { ok: true, count: roster.length };
+}
+
+/** Reconcile every linked member's managed Discord roles. */
+export async function syncAllDiscordRoles(): Promise<FormState> {
+  const actor = await assertPermission("settings:manage");
+  const { synced } = await syncAllMemberRoles();
+  await logAudit({
+    actorId: actor.id,
+    action: "settings.role_backfill",
+    targetType: "Setting",
+    targetId: "discord",
+    meta: { synced },
+  });
+  revalidatePath("/portal/settings");
+  return { ok: true, count: synced };
 }
 
 // --------------------------------------------------------------------------
