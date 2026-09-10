@@ -25,7 +25,7 @@ export async function generateMetadata({
   const { id } = await params;
   try {
     const event = await db.event.findUnique({
-      where: { id, status: { in: ["PUBLISHED", "COMPLETED"] } },
+      where: { id, status: { in: ["PUBLISHED", "COMPLETED", "CANCELLED"] } },
       select: { title: true },
     });
     return { title: event?.title ?? "Event" };
@@ -63,9 +63,15 @@ export default async function EventDetailPage({
     },
   });
 
-  if (!event || (event.status !== "PUBLISHED" && event.status !== "COMPLETED")) {
+  if (
+    !event ||
+    (event.status !== "PUBLISHED" &&
+      event.status !== "COMPLETED" &&
+      event.status !== "CANCELLED")
+  ) {
     notFound();
   }
+  const cancelled = event.status === "CANCELLED";
 
   const isTeamEvent = event.format === "TEAM";
 
@@ -141,8 +147,9 @@ export default async function EventDetailPage({
   const open =
     event.status === "PUBLISHED" && (!event.endsAt || event.endsAt.getTime() > now);
   const upcoming = event.startsAt.getTime() > now;
-  const statusWord =
-    event.status === "COMPLETED"
+  const statusWord = cancelled
+    ? "Cancelled"
+    : event.status === "COMPLETED"
       ? "Over"
       : live
         ? "Live"
@@ -198,6 +205,12 @@ export default async function EventDetailPage({
               event.title
             )}
           </h1>
+          {cancelled && (
+            <div className="mt-4 max-w-2xl border border-ember/50 bg-ember/10 p-3 font-mono text-xs uppercase tracking-wide text-ember">
+              This event has been cancelled.
+            </div>
+          )}
+
           {event.summary && (
             <p className="mt-4 max-w-2xl font-mono text-sm uppercase leading-relaxed tracking-wide text-slate-300">
               {event.summary}
@@ -471,22 +484,26 @@ export default async function EventDetailPage({
         <aside className="lg:sticky lg:top-24 lg:self-start">
           <div className="border border-edge bg-panel/70 p-5">
             <h2 className="font-poster text-xl uppercase text-white">
-              {event.status === "COMPLETED"
-                ? "This event is over"
-                : open
-                  ? live
-                    ? "Join the wipe"
-                    : "Claim a slot"
-                  : "Sign-ups closed"}
+              {cancelled
+                ? "Event cancelled"
+                : event.status === "COMPLETED"
+                  ? "This event is over"
+                  : open
+                    ? live
+                      ? "Join the wipe"
+                      : "Claim a slot"
+                    : "Sign-ups closed"}
             </h2>
             <p className="mt-1 font-mono text-xs uppercase tracking-wide text-slate-400">
-              {event.status === "COMPLETED"
-                ? "Thanks to everyone who came out."
-                : open
-                  ? live
-                    ? "Wipe's running — sign up and jump in. Withdraw any time."
-                    : "You can withdraw any time before it starts."
-                  : "The roster is locked."}
+              {cancelled
+                ? "This wipe isn't happening. Watch Discord for the next one."
+                : event.status === "COMPLETED"
+                  ? "Thanks to everyone who came out."
+                  : open
+                    ? live
+                      ? "Wipe's running — sign up and jump in. Withdraw any time."
+                      : "You can withdraw any time before it starts."
+                    : "The roster is locked."}
             </p>
             <div className="mt-4">
               {open ? (

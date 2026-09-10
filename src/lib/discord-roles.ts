@@ -76,15 +76,18 @@ export async function syncAllMemberRoles(): Promise<{ synced: number }> {
   const anyFaction = await db.faction.count({ where: { discordRoleId: { not: null } } });
   if (!registeredRoleId && !teamLeaderRoleId && anyFaction === 0) return { synced: 0 };
 
+  // cap the batch so the request stays well under any proxy timeout
   const users = await db.user.findMany({
     where: { discordId: { not: null } },
     select: { id: true },
+    orderBy: { createdAt: "asc" },
+    take: 400,
   });
   let synced = 0;
   for (const u of users) {
     await syncMemberRoles(u.id);
     synced++;
-    await new Promise((r) => setTimeout(r, 250));
+    await new Promise((r) => setTimeout(r, 150));
   }
   return { synced };
 }
