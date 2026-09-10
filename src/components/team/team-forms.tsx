@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -29,7 +30,7 @@ export function CreateTeamForm({ events = [] }: { events?: TeamEvent[] }) {
       </div>
       <div>
         <label className="label" htmlFor="eventId">
-          For which event?
+          For which event? <span className="text-slate-500">(registers your team for it)</span>
         </label>
         <select id="eventId" name="eventId" required className="input" defaultValue="">
           <option value="" disabled>
@@ -92,7 +93,9 @@ export function TeamPanel({
     tag: string | null;
     inviteCode: string;
     leaderId: string;
+    eventId: string;
     eventLabel: string;
+    registration: "SIGNED_UP" | "WAITLIST" | null;
     members: Member[];
   };
 }) {
@@ -114,15 +117,28 @@ export function TeamPanel({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="font-mono text-[0.62rem] uppercase tracking-[0.2em] text-slate-500">
-            {team.eventLabel}
+            <Link href={`/events/${team.eventId}`} className="hover:text-teal">
+              {team.eventLabel}
+            </Link>
           </p>
           <h3 className="mt-1 font-display text-xl font-bold text-white">
             {team.tag && <span className="text-teal">[{team.tag}] </span>}
             {team.name}
           </h3>
-          <p className="mt-1 text-sm text-slate-500">
-            {team.members.length} member{team.members.length === 1 ? "" : "s"} ·{" "}
-            {isLeader ? "you lead this team" : "you're a member"}
+          <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-slate-500">
+            <span>
+              {team.members.length} member{team.members.length === 1 ? "" : "s"} ·{" "}
+              {isLeader ? "you lead this team" : "you're a member"}
+            </span>
+            {team.registration === "SIGNED_UP" && (
+              <span className="badge border-teal/40 text-teal">Registered ✓</span>
+            )}
+            {team.registration === "WAITLIST" && (
+              <span className="badge border-ember/40 text-ember">Waitlisted</span>
+            )}
+            {team.registration === null && (
+              <span className="badge border-edge text-slate-400">Not registered</span>
+            )}
           </p>
         </div>
         {isLeader && (

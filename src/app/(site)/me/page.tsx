@@ -51,15 +51,20 @@ export default async function MeOverviewPage() {
         status: "PUBLISHED",
         startsAt: { lte: now },
         OR: [{ endsAt: null }, { endsAt: { gte: now } }],
-        format: "SOLO",
       },
       orderBy: { startsAt: "asc" },
-      select: { id: true, title: true, mode: true, endsAt: true },
+      select: { id: true, title: true, mode: true, endsAt: true, format: true },
     }),
   ]);
 
   const signedEventIds = new Set(player.signups.map((s) => s.eventId));
-  const runningJoinable = liveEvents.filter((e) => !signedEventIds.has(e.id));
+  const teamEventIds = new Set(teams.map((t) => t.event.id));
+  const runningJoinable = liveEvents.filter(
+    (e) => e.format === "SOLO" && !signedEventIds.has(e.id),
+  );
+  const runningTeamJoinable = liveEvents.filter(
+    (e) => e.format === "TEAM" && !signedEventIds.has(e.id) && !teamEventIds.has(e.id),
+  );
 
   // waitlist position per signup
   const waitlistPos = new Map<string, number>();
@@ -94,7 +99,9 @@ export default async function MeOverviewPage() {
           <p className="text-sm text-slate-200">{STATUS_COPY[player.status]}</p>
         </div>
 
-        {(running.length > 0 || runningJoinable.length > 0) && (
+        {(running.length > 0 ||
+          runningJoinable.length > 0 ||
+          runningTeamJoinable.length > 0) && (
           <div className="card border-teal/30">
             <h2 className="font-display font-bold text-white">
               <span className="mr-2 inline-block h-2 w-2 rounded-full bg-teal align-middle" />
@@ -119,6 +126,16 @@ export default async function MeOverviewPage() {
                     {e.mode ? `RAIDZONE ${e.mode}` : e.title}
                   </Link>
                   <JoinWipeButton eventId={e.id} />
+                </li>
+              ))}
+              {runningTeamJoinable.map((e) => (
+                <li key={e.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm">
+                  <Link href={`/events/${e.id}`} className="text-slate-200 hover:text-teal">
+                    {e.mode ? `RAIDZONE ${e.mode}` : e.title}
+                  </Link>
+                  <Link href="/me/team" className="btn-ghost text-xs">
+                    Find a team
+                  </Link>
                 </li>
               ))}
             </ul>

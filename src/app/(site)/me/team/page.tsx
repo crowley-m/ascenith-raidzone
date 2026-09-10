@@ -32,13 +32,29 @@ export default async function MyTeamPage() {
     }),
   ]);
 
+  // registration state per team (forming a team signs it up for its event)
+  const regRows = teams.length
+    ? await db.eventSignup.findMany({
+        where: {
+          teamId: { in: teams.map((t) => t.id) },
+          state: { in: ["SIGNED_UP", "WAITLIST"] },
+        },
+        select: { teamId: true, state: true },
+        distinct: ["teamId"],
+      })
+    : [];
+  const regByTeam = new Map(
+    regRows.map((r) => [r.teamId, r.state as "SIGNED_UP" | "WAITLIST"]),
+  );
+
   return (
     <div className="max-w-2xl space-y-8">
       <div>
         <h2 className="font-display text-lg font-bold text-white">Your teams</h2>
         <p className="mt-1 text-sm text-slate-400">
-          Team events are entered by a team leader. You can be in a different team for each event —
-          just not two teams for the same one.
+          Forming a team signs it up for that event straight away — teammates who join with your
+          code are added too. You can be in a different team for each event, just not two for the
+          same one.
         </p>
       </div>
 
@@ -53,7 +69,9 @@ export default async function MyTeamPage() {
             tag: team.tag,
             inviteCode: team.inviteCode,
             leaderId: team.leaderId,
+            eventId: team.event.id,
             eventLabel: team.event.mode ? `RAIDZONE ${team.event.mode}` : team.event.title,
+            registration: regByTeam.get(team.id) ?? null,
             members: team.members.map((m) => ({
               playerId: m.playerId,
               name: m.player.characterName ?? "Unnamed",
@@ -70,6 +88,10 @@ export default async function MyTeamPage() {
 
       <div className="card">
         <h3 className="font-display font-bold text-white">Create a team</h3>
+        <p className="mt-1 text-xs text-slate-500">
+          Picking an event here registers your team for it — you don&apos;t need a separate
+          sign-up step.
+        </p>
         {openEvents.length > 0 ? (
           <CreateTeamForm events={openEvents} />
         ) : anyTeamEvents === 0 ? (

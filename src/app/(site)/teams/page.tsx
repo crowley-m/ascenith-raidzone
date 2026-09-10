@@ -12,8 +12,15 @@ export const dynamic = "force-dynamic";
 export default async function TeamsPage() {
   let teams: Awaited<ReturnType<typeof db.team.findMany>> = [];
   try {
+    const nowTs = new Date();
     teams = await db.team.findMany({
-      orderBy: { createdAt: "asc" },
+      where: {
+        event: {
+          status: "PUBLISHED",
+          OR: [{ endsAt: null }, { endsAt: { gte: nowTs } }],
+        },
+      },
+      orderBy: { createdAt: "desc" },
       include: {
         leader: { select: { characterName: true } },
         event: { select: { title: true, mode: true } },
@@ -28,7 +35,7 @@ export default async function TeamsPage() {
     <div className="bg-void">
       <PageMasthead
         title="The squads"
-        kicker={`The roster — ${teams.length} team${teams.length === 1 ? "" : "s"} formed`}
+        kicker={`The roster — ${teams.length} team${teams.length === 1 ? "" : "s"} in current events`}
         lead={
           <>
             Teams enter RAIDZONE team events as a unit. Anyone can start one —{" "}
@@ -42,7 +49,9 @@ export default async function TeamsPage() {
 
       <div className="mx-auto w-full max-w-6xl px-5 pb-24">
       {teams.length === 0 ? (
-        <p className="mt-12 text-sm text-slate-400">No teams yet. Be the first.</p>
+        <p className="mt-12 text-sm text-slate-400">
+          No teams in a current event. Start one from your account.
+        </p>
       ) : (
         <div data-reveal className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {teams.map((t) => {

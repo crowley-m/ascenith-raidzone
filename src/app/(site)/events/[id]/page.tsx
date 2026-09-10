@@ -222,12 +222,12 @@ export default async function EventDetailPage({
           </div>
 
           {event.posterUrl && /^https?:\/\//.test(event.posterUrl) && (
-            <div className="mt-8 max-w-2xl overflow-hidden border border-edge">
+            <div className="mt-8 max-w-2xl overflow-hidden border border-edge bg-panel/40 text-center">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={event.posterUrl}
                 alt={`${event.title} key art`}
-                className="w-full object-cover"
+                className="mx-auto max-h-[26rem] w-auto max-w-full object-contain"
               />
             </div>
           )}
