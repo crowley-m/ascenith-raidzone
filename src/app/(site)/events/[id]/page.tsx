@@ -6,6 +6,7 @@ import { auth } from "@/auth";
 import { relative } from "@/lib/format";
 import { fmtInZone, DEFAULT_EVENT_TZ } from "@/lib/tz";
 import { SignupButton } from "@/components/signup-button";
+import { CheckInButton } from "@/components/check-in-button";
 import { TeamSignup } from "@/components/team/team-signup";
 import { Markdown } from "@/components/markdown";
 import { EventProse } from "@/components/event-prose";
@@ -91,6 +92,14 @@ export default async function EventDetailPage({
     ? event.signups.find((s) => s.playerId === myPlayerId)
     : undefined;
 
+  const myAttendance =
+    myPlayerId && mySignup?.state === "SIGNED_UP"
+      ? await db.eventAttendance.findUnique({
+          where: { eventId_playerId: { eventId: id, playerId: myPlayerId } },
+          select: { attended: true },
+        })
+      : null;
+
   const confirmed = event.signups.filter((s) => s.state === "SIGNED_UP");
   const waitlist = event.signups.filter((s) => s.state === "WAITLIST");
 
@@ -147,6 +156,13 @@ export default async function EventDetailPage({
   const open =
     event.status === "PUBLISHED" && (!event.endsAt || event.endsAt.getTime() > now);
   const upcoming = event.startsAt.getTime() > now;
+  const checkInCloses = event.endsAt
+    ? event.endsAt.getTime()
+    : event.startsAt.getTime() + 864e5;
+  const checkInOpen =
+    event.status === "PUBLISHED" &&
+    now >= event.startsAt.getTime() - 30 * 60 * 1000 &&
+    now <= checkInCloses;
   const statusWord = cancelled
     ? "Cancelled"
     : event.status === "COMPLETED"
@@ -525,6 +541,20 @@ export default async function EventDetailPage({
                 )
               )}
             </div>
+            {checkInOpen && mySignup?.state === "SIGNED_UP" && (
+              <div className="mt-4 border-t border-edge pt-4">
+                <div className="eyebrow">Check in</div>
+                <p className="mt-1 font-mono text-[0.7rem] uppercase tracking-wide text-slate-500">
+                  Confirm you turned up — it marks your attendance.
+                </p>
+                <div className="mt-2">
+                  <CheckInButton
+                    eventId={event.id}
+                    checkedIn={myAttendance?.attended === true}
+                  />
+                </div>
+              </div>
+            )}
             {!session?.user && (
               <p className="mt-3 font-mono text-[0.7rem] uppercase tracking-wide text-slate-500">
                 No account?{" "}

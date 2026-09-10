@@ -975,6 +975,35 @@ export async function grantReward(_prev: FormState, formData: FormData): Promise
   return { ok: true };
 }
 
+/** Staff resolves a player's "didn't get it" flag — sent = mark received, else dismiss. */
+export async function resolveRewardDispute(
+  rewardId: string,
+  playerId: string,
+  sent: boolean,
+): Promise<FormState> {
+  const actor = await assertPermission("reward:grant");
+  await db.reward.update({
+    where: { id: rewardId },
+    data: { disputedAt: null, receivedAt: sent ? new Date() : null },
+  });
+  await logAudit({
+    actorId: actor.id,
+    action: sent ? "reward.dispute_sent" : "reward.dispute_dismissed",
+    targetType: "Reward",
+    targetId: rewardId,
+  });
+  if (sent) {
+    void notifyPlayer(
+      playerId,
+      "✅ Staff re-sent your reward — check in-game and mark it received once it lands.",
+    );
+  }
+  revalidatePath("/portal/rewards");
+  revalidatePath(`/portal/players/${playerId}`);
+  revalidatePath("/me/rewards");
+  return { ok: true };
+}
+
 export async function deleteReward(rewardId: string, playerId: string) {
   const actor = await assertPermission("reward:grant");
   const existing = await db.reward.findUnique({

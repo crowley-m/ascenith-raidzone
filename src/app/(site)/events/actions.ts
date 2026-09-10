@@ -101,6 +101,43 @@ export async function registerAsFreeAgent(eventId: string) {
   return { ok: true };
 }
 
+/** Player marks their own attendance once the event is live. */
+export async function checkInToEvent(eventId: string) {
+  const session = await auth();
+  if (!session?.user) redirect(`/login?callbackUrl=/events/${eventId}`);
+  const playerId = await callerPlayerId(eventId);
+
+  const event = await db.event.findUnique({ where: { id: eventId } });
+  if (!event || event.status !== "PUBLISHED") return { error: "This event isn't running." };
+
+  const now = Date.now();
+  const opensAt = event.startsAt.getTime() - 30 * 60 * 1000; // 30 min before start
+  const closesAt = event.endsAt ? event.endsAt.getTime() : event.startsAt.getTime() + 864e5;
+  if (now < opensAt) return { error: "Check-in opens 30 minutes before the start." };
+  if (now > closesAt) return { error: "Check-in for this event has closed." };
+
+  const signup = await db.eventSignup.findUnique({
+    where: { eventId_playerId: { eventId, playerId } },
+    select: { state: true },
+  });
+  if (signup?.state !== "SIGNED_UP") return { error: "You're not on the roster for this event." };
+
+  await db.eventAttendance.upsert({
+    where: { eventId_playerId: { eventId, playerId } },
+    create: { eventId, playerId, attended: true, markedById: session.user.id },
+    update: { attended: true, markedById: session.user.id, markedAt: new Date() },
+  });
+  await logAudit({
+    actorId: session.user.id,
+    action: "event.checkin",
+    targetType: "Event",
+    targetId: eventId,
+  });
+  revalidatePath(`/events/${eventId}`);
+  revalidatePath(`/portal/events/${eventId}`);
+  return { ok: true };
+}
+
 export async function withdrawFromEvent(eventId: string) {
   const playerId = await callerPlayerId(eventId);
   const existing = await db.eventSignup.findUnique({

@@ -97,6 +97,13 @@ mutation writes an `AuditLog` row via `logAudit(...)`; viewer at `/portal/audit`
 - **Notifications** — players get Discord DMs (waitlist promotion, reward
   granted, event starting, placed in results, event cancelled, teammate
   joined / left) unless `Player.dmNotifications` is off. `src/lib/notify.ts`.
+- **Check-in** — signed-up players self-mark attendance (`checkInToEvent`) from
+  the event page from 30 min before start until the wipe ends; staff still
+  override via the portal toggle / "mark all".
+- **Reward disputes** — a player can flag a granted reward "didn't get it"
+  (`Reward.disputedAt`, `disputeReward`). Flagged rewards surface at the top of
+  `/portal/rewards`; staff clear them with "Re-sent it" / "Dismiss"
+  (`resolveRewardDispute`). Marking a reward received clears any dispute.
 - **Results** — `savePlacements` also posts a `resultsEmbed` podium to the
   event's `#announcement` (stored as `discordSeedMessages.results`, editable
   via "Repost results to Discord") and DMs everyone who placed. The public

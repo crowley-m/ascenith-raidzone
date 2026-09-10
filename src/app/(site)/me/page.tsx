@@ -208,6 +208,9 @@ export default async function MeOverviewPage() {
                 <span className="text-teal">{r.item}{r.amount ? ` ×${r.amount}` : ""}</span>
                 <span className="text-slate-500"> — {r.reason}</span>
                 {r.receivedAt && <span className="ml-2 text-xs text-teal">✓ received</span>}
+                {!r.receivedAt && r.disputedAt && (
+                  <span className="ml-2 text-xs text-ember">⚠ reported missing</span>
+                )}
               </li>
             ))}
           </ul>

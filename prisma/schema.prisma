@@ -486,6 +486,7 @@ model Reward {
   grantedBy    User     @relation("RewardGranter", fields: [grantedById], references: [id])
   grantedAt    DateTime @default(now())
   receivedAt   DateTime? // set by the player when they confirm it arrived in-game
+  disputedAt   DateTime? // set by the player if it never arrived — staff follow up
 
   @@index([playerId])
   @@index([isPublic, grantedAt])

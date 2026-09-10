@@ -48,7 +48,11 @@ export default async function MyRewardsPage() {
                 </td>
                 <td className="py-3 text-slate-500">{fmtDate(r.grantedAt)}</td>
                 <td className="py-3 text-right">
-                  <RewardReceipt rewardId={r.id} received={!!r.receivedAt} />
+                  <RewardReceipt
+                    rewardId={r.id}
+                    received={!!r.receivedAt}
+                    disputed={!!r.disputedAt}
+                  />
                 </td>
               </tr>
             ))}

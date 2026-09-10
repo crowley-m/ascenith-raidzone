@@ -91,7 +91,7 @@ export async function setRewardReceived(rewardId: string, received: boolean) {
   if (!playerId) return;
   await db.reward.updateMany({
     where: { id: rewardId, playerId },
-    data: { receivedAt: received ? new Date() : null },
+    data: { receivedAt: received ? new Date() : null, ...(received ? { disputedAt: null } : {}) },
   });
   await logAudit({
     actorId: playerId,
@@ -100,6 +100,26 @@ export async function setRewardReceived(rewardId: string, received: boolean) {
     targetId: rewardId,
   });
   revalidatePath("/me/rewards");
+  revalidatePath("/portal/rewards");
+  revalidatePath(`/portal/players/${playerId}`);
+}
+
+/** Player flags a reward as never received (or withdraws the flag). Staff follow up. */
+export async function disputeReward(rewardId: string, missing: boolean) {
+  const playerId = await myPlayerId();
+  if (!playerId) return;
+  await db.reward.updateMany({
+    where: { id: rewardId, playerId },
+    data: { disputedAt: missing ? new Date() : null, ...(missing ? { receivedAt: null } : {}) },
+  });
+  await logAudit({
+    actorId: playerId,
+    action: missing ? "reward.disputed" : "reward.dispute_cleared",
+    targetType: "Reward",
+    targetId: rewardId,
+  });
+  revalidatePath("/me/rewards");
+  revalidatePath("/portal/rewards");
   revalidatePath(`/portal/players/${playerId}`);
 }
 
