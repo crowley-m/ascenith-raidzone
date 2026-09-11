@@ -76,7 +76,7 @@ export function SettingsForm({
       </div>
 
       <div>
-        <label className="label">Event channel template</label>
+        <label className="label">Default channels for new events</label>
         <textarea
           name="eventChannels"
           rows={5}
@@ -84,8 +84,11 @@ export function SettingsForm({
           defaultValue={settings.eventChannels.join("\n")}
         />
         <p className="mt-1 text-xs text-slate-500">
-          One per line (or comma-separated). Created under each event&apos;s category, in order.
-          Spaces become dashes.
+          One per line (or comma-separated) — add or remove names to change what &ldquo;Build
+          Discord space&rdquo; creates for a <em>new</em> event. Spaces become dashes. To
+          add/remove a channel on an event that already has its space, use the
+          &ldquo;Channels&rdquo; panel on that event&apos;s page instead — this list only sets the
+          starting template.
         </p>
       </div>
 

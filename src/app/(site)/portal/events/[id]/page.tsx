@@ -20,6 +20,7 @@ import { ResultsForm, AttendeeRewardForm } from "@/components/portal/results-for
 import { DiscordPreview } from "@/components/portal/discord-preview";
 import { LandingPreview } from "@/components/portal/landing-preview";
 import { RosterTools } from "@/components/portal/roster-tools";
+import { EventChannelsManager } from "@/components/portal/event-channels-manager";
 import { BracketEditor } from "@/components/portal/bracket-editor";
 import { bracketForEvent, entrantsForEvent } from "@/lib/bracket";
 import { ConfirmButton } from "@/components/portal/confirm-button";
@@ -510,6 +511,15 @@ export default async function PortalEventDetail({
                 <DiscordPreview event={event} />
               </div>
             </details>
+          </div>
+        )}
+
+        {canManage && event.discordCategoryId && (
+          <div className="max-w-3xl">
+            <EventChannelsManager
+              eventId={event.id}
+              channels={(event.discordChannels as Record<string, string>) ?? {}}
+            />
           </div>
         )}
 

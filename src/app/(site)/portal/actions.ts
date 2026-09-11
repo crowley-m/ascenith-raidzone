@@ -29,6 +29,7 @@ import {
   postToChannel,
   editChannelMessage,
   deleteChannelMessage,
+  deleteChannel,
   eventEmoji,
   eventIndexContent,
   pinMessage,
@@ -487,6 +488,96 @@ export async function syncEventChannels(eventId: string): Promise<FormState> {
     ok: true,
     ...(added.length ? { count: added.length } : {}),
   };
+}
+
+/**
+ * Add one custom channel to an already-built event space (beyond the default
+ * template). If the name matches one of the recognised content channels
+ * (rules, gameplay, schedule, wipe-info, rewards, …) it's seeded immediately;
+ * otherwise it's created as a plain empty channel for discussion.
+ */
+export async function addEventChannel(eventId: string, rawName: string): Promise<FormState> {
+  const actor = await assertPermission("event:manage");
+  const name = rawName
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+  if (!name) return { error: "Give the channel a name." };
+
+  const ev = await db.event.findUnique({ where: { id: eventId } });
+  if (!ev?.discordCategoryId) return { error: "Build the Discord space first." };
+  const channels = (ev.discordChannels as Record<string, string>) ?? {};
+  if (channels[name]) return { error: `#${name} already exists.` };
+
+  const { channels: grown, added } = await addMissingEventChannels(
+    ev.discordCategoryId,
+    channels,
+    eventEmoji(ev.mode),
+    [name],
+  );
+  if (!added.length) {
+    return { error: "Discord isn't configured, or that channel couldn't be created." };
+  }
+
+  await db.event.update({
+    where: { id: eventId },
+    data: { discordChannels: grown as Prisma.InputJsonValue },
+  });
+  await applyEventChannelPerms(grown, ev.discordRoleId).catch((e) => console.error("perms", e));
+  await pushEventChannelContent(
+    eventId,
+    grown,
+    (ev.discordSeedMessages as Record<string, string>) ?? {},
+  ).catch((e) => console.error("seed", e));
+
+  await logAudit({
+    actorId: actor.id,
+    action: "event.channel_add",
+    targetType: "Event",
+    targetId: eventId,
+    meta: { name },
+  });
+  revalidatePath(`/portal/events/${eventId}`);
+  return { ok: true };
+}
+
+/** Remove one channel from an event's space — deletes it in Discord too. */
+export async function removeEventChannel(eventId: string, name: string): Promise<FormState> {
+  const actor = await assertPermission("event:manage");
+  const ev = await db.event.findUnique({ where: { id: eventId } });
+  if (!ev) return { error: "Event not found." };
+
+  const channels = { ...((ev.discordChannels as Record<string, string>) ?? {}) };
+  const channelId = channels[name];
+  if (!channelId) return { error: `#${name} isn't part of this event's space.` };
+
+  await deleteChannel(channelId);
+  delete channels[name];
+
+  const seed = { ...((ev.discordSeedMessages as Record<string, string>) ?? {}) };
+  delete seed[name];
+
+  await db.event.update({
+    where: { id: eventId },
+    data: {
+      discordChannels: channels as Prisma.InputJsonValue,
+      discordSeedMessages: seed as Prisma.InputJsonValue,
+      ...(ev.discordChannelId === channelId
+        ? { discordChannelId: null, discordMessageId: null }
+        : {}),
+    },
+  });
+  await logAudit({
+    actorId: actor.id,
+    action: "event.channel_remove",
+    targetType: "Event",
+    targetId: eventId,
+    meta: { name },
+  });
+  revalidatePath(`/portal/events/${eventId}`);
+  return { ok: true };
 }
 
 /**

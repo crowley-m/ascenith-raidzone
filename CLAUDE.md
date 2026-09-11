@@ -85,6 +85,14 @@ mutation writes an `AuditLog` row via `logAudit(...)`; viewer at `/portal/audit`
   re-ping) and creates any channels an older space is missing
   (`addMissingEventChannels`). Portal Settings surfaces the bot's missing
   guild permissions (`botGuildPermissions`).
+- **Per-event channel customization** — `Settings.eventChannels` (Portal →
+  Settings → "Default channels for new events") is only the *template* new
+  spaces are built from. To add/remove a channel on an event that already has
+  its space, use the **Channels** panel on that event's page
+  (`addEventChannel` / `removeEventChannel`) — add seeds content automatically
+  for recognised names (rules/gameplay/schedule/wipe-info/rewards/…), remove
+  deletes the Discord channel and drops it from `Event.discordChannels` /
+  `discordSeedMessages`.
 - **Event access roles** (`src/lib/event-space.ts`) — "Build space" also creates a
   per-event Discord role (`Event.discordRoleId`); `applyEventChannelPerms` gates
   every channel except `announcement / how-to-join / registration` to it. Signing
