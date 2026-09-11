@@ -39,6 +39,7 @@ model User {
   grantedReward Reward[]    @relation("RewardGranter")
   auditLogs     AuditLog[]
   createdMedia  MediaAsset[] @relation("MediaCreator")
+  broadcasts    Broadcast[]  @relation("BroadcastPoster")
 }
 
 model Account {
@@ -507,6 +508,24 @@ model AuditLog {
   createdAt  DateTime @default(now())
 
   @@index([createdAt])
+}
+
+// Server-wide announcement posted through the bot (outside an event's own
+// space) — tracked so staff can edit / delete it afterward.
+model Broadcast {
+  id              String   @id @default(cuid())
+  channelId       String
+  messageId       String
+  title           String?
+  body            String
+  asEmbed         Boolean  @default(false)
+  mentionEveryone Boolean  @default(false)
+  postedById      String
+  postedBy        User     @relation("BroadcastPoster", fields: [postedById], references: [id])
+  postedAt        DateTime @default(now())
+  editedAt        DateTime?
+
+  @@index([postedAt])
 }
 
 // Owner-editable settings (bot behaviour, invite link, channel template …).

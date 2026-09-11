@@ -1715,6 +1715,18 @@ export async function postBroadcast(_prev: FormState, formData: FormData): Promi
         };
     const msg = await postToChannel(channelId, payload);
     if (!msg) return { error: "Discord isn't configured (bot token / guild id)." };
+
+    await db.broadcast.create({
+      data: {
+        channelId,
+        messageId: msg.id,
+        title: title || null,
+        body,
+        asEmbed,
+        mentionEveryone,
+        postedById: actor.id,
+      },
+    });
   } catch (err) {
     return { error: `Discord: ${err instanceof Error ? err.message : "post failed"}` };
   }
@@ -1725,6 +1737,62 @@ export async function postBroadcast(_prev: FormState, formData: FormData): Promi
     targetType: "Discord",
     targetId: channelId,
     meta: { title: title || null, preview: body.slice(0, 160), embed: asEmbed, everyone: mentionEveryone },
+  });
+  revalidatePath("/portal/broadcast");
+  return { ok: true };
+}
+
+/** Edit a previously posted broadcast in place. Never re-pings @everyone. */
+export async function editBroadcast(_prev: FormState, formData: FormData): Promise<FormState> {
+  const actor = await assertPermission("event:manage");
+  const id = (formData.get("id") as string) || "";
+  const title = ((formData.get("title") as string) || "").trim();
+  const body = ((formData.get("body") as string) || "").trim();
+  const asEmbed = formData.get("asEmbed") === "on";
+  if (!id) return { error: "Missing broadcast." };
+  if (!body) return { error: "Write something to announce." };
+
+  const existing = await db.broadcast.findUnique({ where: { id } });
+  if (!existing) return { error: "That broadcast is gone." };
+
+  try {
+    const payload = asEmbed
+      ? { embed: { title: title || undefined, description: body.slice(0, 4000) } }
+      : { content: `${title ? `**${title}**\n` : ""}${body}`.slice(0, 1980) };
+    await editChannelMessage(existing.channelId, existing.messageId, payload);
+  } catch (err) {
+    return { error: `Discord: ${err instanceof Error ? err.message : "edit failed"}` };
+  }
+
+  await db.broadcast.update({
+    where: { id },
+    data: { title: title || null, body, asEmbed, editedAt: new Date() },
+  });
+  await logAudit({
+    actorId: actor.id,
+    action: "broadcast.edit",
+    targetType: "Discord",
+    targetId: existing.channelId,
+    meta: { id, title: title || null, preview: body.slice(0, 160) },
+  });
+  revalidatePath("/portal/broadcast");
+  return { ok: true };
+}
+
+/** Delete a previously posted broadcast, both in Discord and from the list. */
+export async function deleteBroadcast(id: string): Promise<FormState> {
+  const actor = await assertPermission("event:manage");
+  const existing = await db.broadcast.findUnique({ where: { id } });
+  if (!existing) return { error: "That broadcast is gone." };
+
+  await deleteChannelMessage(existing.channelId, existing.messageId);
+  await db.broadcast.delete({ where: { id } });
+  await logAudit({
+    actorId: actor.id,
+    action: "broadcast.delete",
+    targetType: "Discord",
+    targetId: existing.channelId,
+    meta: { id },
   });
   revalidatePath("/portal/broadcast");
   return { ok: true };

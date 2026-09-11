@@ -94,6 +94,10 @@ mutation writes an `AuditLog` row via `logAudit(...)`; viewer at `/portal/audit`
   every signed-up player (survives event deletion → "Events competed in" on the
   public profile), then deletes the event + team roles / voice channels.
   "Resync event roles" re-grants to everyone signed up.
+- **Broadcast** (`/portal/broadcast`) — server-wide announcements outside an
+  event's own space. Every post is tracked in the `Broadcast` model (channel +
+  message id), so "Recent broadcasts" can edit it in place
+  (`editBroadcast` — never re-pings) or delete it (`deleteBroadcast`).
 - **Notifications** — players get Discord DMs (waitlist promotion, reward
   granted, event starting, placed in results, event cancelled, teammate
   joined / left) unless `Player.dmNotifications` is off. `src/lib/notify.ts`.

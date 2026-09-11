@@ -3,8 +3,8 @@ import { requirePermission } from "@/lib/session";
 import { db } from "@/lib/db";
 import { getSettings } from "@/lib/settings";
 import { listGuildTextChannels } from "@/lib/discord";
-import { fmtDateTime } from "@/lib/format";
 import { BroadcastForm } from "@/components/portal/broadcast-form";
+import { BroadcastList } from "@/components/portal/broadcast-list";
 
 export const dynamic = "force-dynamic";
 
@@ -28,11 +28,10 @@ export default async function BroadcastPage() {
         discordCategoryId: true,
       },
     }),
-    db.auditLog.findMany({
-      where: { action: "broadcast.post" },
-      orderBy: { createdAt: "desc" },
-      take: 10,
-      include: { actor: { select: { name: true, discordUsername: true } } },
+    db.broadcast.findMany({
+      orderBy: { postedAt: "desc" },
+      take: 15,
+      include: { postedBy: { select: { name: true, discordUsername: true } } },
     }),
   ]);
 
@@ -61,29 +60,18 @@ export default async function BroadcastPage() {
       {recent.length > 0 && (
         <div className="mt-6">
           <h3 className="label mb-2">Recent broadcasts</h3>
-          <ul className="divide-y divide-edge/60 border border-edge">
-            {recent.map((r) => {
-              const meta = (r.meta ?? {}) as { title?: string | null; preview?: string };
-              return (
-                <li key={r.id} className="p-3 text-sm">
-                  <div className="flex items-center justify-between gap-3 text-xs text-slate-500">
-                    <span>
-                      #{channelName(r.targetId)} ·{" "}
-                      {r.actor?.name ?? r.actor?.discordUsername ?? "staff"}
-                    </span>
-                    <span>{fmtDateTime(r.createdAt)}</span>
-                  </div>
-                  {meta.title && <div className="mt-1 font-bold text-slate-200">{meta.title}</div>}
-                  {meta.preview && (
-                    <div className="mt-0.5 text-slate-400">
-                      {meta.preview}
-                      {meta.preview.length >= 160 ? "…" : ""}
-                    </div>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
+          <BroadcastList
+            broadcasts={recent.map((r) => ({
+              id: r.id,
+              channelName: channelName(r.channelId) ?? r.channelId,
+              title: r.title,
+              body: r.body,
+              asEmbed: r.asEmbed,
+              postedBy: r.postedBy.name ?? r.postedBy.discordUsername ?? "staff",
+              postedAt: r.postedAt.toISOString(),
+              editedAt: r.editedAt ? r.editedAt.toISOString() : null,
+            }))}
+          />
         </div>
       )}
 
