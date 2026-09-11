@@ -37,7 +37,24 @@ type EventInit = {
   scheduleMd: string | null;
   wipeInfoMd: string | null;
   rewardsMd: string | null;
+  hasDiscordSpace?: boolean;
+  discordChannelPlan: string[] | null;
 };
+
+// name, label, hint
+const CHANNEL_OPTIONS: [string, string, string][] = [
+  ["announcement", "announcement", "always included — too much depends on it"],
+  ["how-to-join", "how-to-join", "steps to register"],
+  ["registration", "registration", "public, sign-up button"],
+  ["rules", "rules", ""],
+  ["gameplay", "gameplay", ""],
+  ["schedule", "schedule", "day-by-day breakdown"],
+  ["wipe-info", "wipe-info", "cycle + raid window"],
+  ["rewards", "rewards", ""],
+  ["looking-for-team", "looking-for-team", "free agents recruit here"],
+  ["questions", "questions", ""],
+  ["chat", "chat", ""],
+];
 
 export type SeasonOption = { id: string; series: string; number: number; name: string | null };
 
@@ -50,10 +67,13 @@ const dtLocal = (d: Date) =>
 export function EventForm({
   event,
   seasons = [],
+  defaultChannels = [],
 }: {
   event?: EventInit;
   seasons?: SeasonOption[];
+  defaultChannels?: string[];
 }) {
+  const checkedChannels = new Set(event?.discordChannelPlan ?? defaultChannels);
   const [state, action, pending] = useActionState(saveEvent, {});
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -418,6 +438,39 @@ export function EventForm({
         Discord channels — posted into the event&apos;s space (build it, then &ldquo;Sync
         channels&rdquo; after edits)
       </p>
+
+      <div>
+        <label className="label">Which channels to build</label>
+        <input type="hidden" name="channelPlanSet" value="1" />
+        <div className="grid gap-2 sm:grid-cols-2">
+          {CHANNEL_OPTIONS.map(([name, label, hint]) => (
+            <label
+              key={name}
+              className="flex items-start gap-2 text-sm text-slate-300"
+            >
+              <input
+                type="checkbox"
+                name="channelPlan"
+                value={name}
+                defaultChecked={checkedChannels.has(name)}
+                disabled={name === "announcement"}
+                className="mt-0.5 accent-teal disabled:opacity-60"
+              />
+              <span>
+                <span className="font-mono">{label}</span>
+                {hint && (
+                  <span className="ml-1.5 text-xs text-slate-500">— {hint}</span>
+                )}
+              </span>
+            </label>
+          ))}
+        </div>
+        <p className="mt-1 text-xs text-slate-500">
+          {event?.hasDiscordSpace
+            ? "This event already has its space — changing this list here does nothing to it. Use the “Channels” panel on the event page to add/remove channels there instead."
+            : "Only checked channels are created when you click “Build Discord space”. Unchecked names like rules/gameplay/etc. just skip content generation — you can still add any channel later from the event page."}
+        </p>
+      </div>
 
       <label className="flex items-start gap-2 text-sm text-slate-300">
         <input

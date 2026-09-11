@@ -202,6 +202,13 @@ export async function saveEvent(_prev: FormState, formData: FormData): Promise<F
     }
   }
 
+  // which channels to create on first build — unchecked box = leave it out.
+  // Omitted entirely (box never rendered, e.g. an older client) => keep existing / use the default.
+  const channelPlanRaw = formData.getAll("channelPlan").map(String);
+  const channelPlan = formData.has("channelPlanSet")
+    ? Array.from(new Set(["announcement", ...channelPlanRaw]))
+    : null;
+
   const tz = isValidEventTz(d.timezone) ? (d.timezone as string) : DEFAULT_EVENT_TZ;
   const startsAt = zonedInputToUtc(d.startsAt, tz);
   const endsAt =
@@ -243,6 +250,7 @@ export async function saveEvent(_prev: FormState, formData: FormData): Promise<F
     scheduleMd: d.scheduleMd ?? null,
     wipeInfoMd: d.wipeInfoMd ?? null,
     rewardsMd: d.rewardsMd ?? null,
+    ...(channelPlan ? { discordChannelPlan: channelPlan as Prisma.InputJsonValue } : {}),
   };
 
   let eventId: string;
@@ -676,12 +684,15 @@ export async function buildEventSpace(eventId: string): Promise<FormState> {
 
   const spaceName = ev.mode ? `RAIDZONE ${ev.mode}` : ev.title;
   const { eventChannels } = await getSettings();
+  const plan = Array.isArray(ev.discordChannelPlan)
+    ? (ev.discordChannelPlan as string[])
+    : eventChannels;
   let space;
   try {
     space = await createEventSpace({
       name: spaceName,
       emoji: eventEmoji(ev.mode),
-      channels: eventChannels,
+      channels: plan,
     });
   } catch (err) {
     console.error("createEventSpace failed", err);
@@ -826,6 +837,7 @@ export async function cloneEvent(eventId: string): Promise<void> {
       seasonId: src.seasonId,
       summary: src.summary,
       posterUrl: src.posterUrl,
+      discordChannelPlan: (src.discordChannelPlan as Prisma.InputJsonValue) ?? Prisma.JsonNull,
       mode: src.mode,
       wipeCycle: src.wipeCycle,
       raidWindow: src.raidWindow,

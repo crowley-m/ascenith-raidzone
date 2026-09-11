@@ -85,6 +85,13 @@ mutation writes an `AuditLog` row via `logAudit(...)`; viewer at `/portal/audit`
   re-ping) and creates any channels an older space is missing
   (`addMissingEventChannels`). Portal Settings surfaces the bot's missing
   guild permissions (`botGuildPermissions`).
+- **Choosing channels for a new event** — the event form has a checkbox grid
+  ("Which channels to build") that sets `Event.discordChannelPlan` (a JSON
+  array; `announcement` always forced in). `buildEventSpace` uses it instead
+  of `Settings.eventChannels` when set — e.g. a small event can build with
+  just announcement/rules/gameplay/chat. Only affects the *first* build;
+  `null` (default, box state mirrors the Settings template on a fresh form)
+  falls back to the global template. `cloneEvent` copies it.
 - **Per-event channel customization** — `Settings.eventChannels` (Portal →
   Settings → "Default channels for new events") is only the *template* new
   spaces are built from. To add/remove a channel on an event that already has

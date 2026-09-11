@@ -347,6 +347,7 @@ model Event {
   discordMessageId    String?
   discordChannelId    String?
   discordCategoryId   String? // event's Discord category, once the bot builds it
+  discordChannelPlan  Json? // which channels to create on first build, e.g. ["announcement","rules"] — null = use the Settings default template
   discordChannels     Json? // { announcement: "id", rules: "id", ... }
   discordSeedMessages Json? // { announcement: "messageId", ... } — for re-sync
   discordRoleId       String? // per-event access role — granted on sign-up, deleted on archive

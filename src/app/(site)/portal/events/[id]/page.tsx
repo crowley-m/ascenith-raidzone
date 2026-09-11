@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { requirePermission } from "@/lib/session";
 import { db } from "@/lib/db";
 import { can } from "@/lib/rbac";
+import { getSettings } from "@/lib/settings";
 import { fmtInZone, DEFAULT_EVENT_TZ, utcToZonedInput } from "@/lib/tz";
 import { tiersToText } from "@/lib/validation";
 import { EventForm } from "@/components/portal/event-form";
@@ -62,13 +63,14 @@ export default async function PortalEventDetail({
   if (!event) notFound();
   const eventTz = event.timezone ?? DEFAULT_EVENT_TZ;
 
-  const [seasons, bracket, bracketEntrants] = await Promise.all([
+  const [seasons, bracket, bracketEntrants, settings] = await Promise.all([
     db.season.findMany({
       orderBy: [{ series: "asc" }, { number: "desc" }],
       select: { id: true, series: true, number: true, name: true },
     }),
     bracketForEvent(id),
     entrantsForEvent(id),
+    getSettings(),
   ]);
 
   const attMap = new Map(event.attendance.map((a) => [a.playerId, a.attended]));
@@ -531,8 +533,13 @@ export default async function PortalEventDetail({
               <div className="mt-3">
                 <EventForm
                   seasons={seasons}
+                  defaultChannels={settings.eventChannels}
                   event={{
                     id: event.id,
+                    hasDiscordSpace: !!event.discordCategoryId,
+                    discordChannelPlan: Array.isArray(event.discordChannelPlan)
+                      ? (event.discordChannelPlan as string[])
+                      : null,
                     title: event.title,
                     description: event.description,
                     timezone: eventTz,
