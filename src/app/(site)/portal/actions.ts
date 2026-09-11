@@ -184,6 +184,23 @@ export async function saveEvent(_prev: FormState, formData: FormData): Promise<F
     return { error: parsed.error.issues[0]?.message ?? "Invalid event." };
   }
   const d = parsed.data;
+
+  // an uploaded poster file wins over a pasted URL
+  let posterUrl = d.posterUrl ?? null;
+  const posterFile = formData.get("posterFile");
+  if (posterFile instanceof File && posterFile.size > 0) {
+    try {
+      const asset = await createMediaAsset({
+        kind: "event-poster",
+        file: posterFile,
+        createdById: actor.id,
+      });
+      posterUrl = `${APP_URL}/api/media/${asset.id}`;
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : "Could not process the poster image." };
+    }
+  }
+
   const tz = isValidEventTz(d.timezone) ? (d.timezone as string) : DEFAULT_EVENT_TZ;
   const startsAt = zonedInputToUtc(d.startsAt, tz);
   const endsAt =
@@ -206,7 +223,7 @@ export async function saveEvent(_prev: FormState, formData: FormData): Promise<F
     status: d.status,
     seasonId: d.seasonId ? d.seasonId : null,
     summary: d.summary ?? null,
-    posterUrl: d.posterUrl ? d.posterUrl : null,
+    posterUrl,
     mode: d.mode ?? null,
     wipeCycle: d.wipeCycle ?? null,
     raidWindow: d.raidWindow ?? null,

@@ -289,18 +289,32 @@ export function EventForm({
       </div>
 
       <div>
-        <label className="label">Poster / key art URL (optional)</label>
+        <label className="label">Poster / key art</label>
+        {event?.posterUrl && (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={event.posterUrl}
+            alt=""
+            className="mt-1 max-h-40 border border-edge object-contain"
+          />
+        )}
+        <input
+          name="posterFile"
+          type="file"
+          accept="image/png,image/jpeg,image/webp,image/gif"
+          className="input mt-2 text-xs file:mr-3 file:border-0 file:bg-edge file:px-3 file:py-1.5 file:text-slate-200"
+        />
+        <p className="mt-1 text-xs text-slate-500">
+          Upload an image, or paste a URL below — uploading replaces the URL. Shown at the top of
+          the event page and as the image on the Discord announcement embed.
+        </p>
         <input
           name="posterUrl"
           type="url"
-          className="input font-mono text-xs"
+          className="input mt-2 font-mono text-xs"
           defaultValue={event?.posterUrl ?? ""}
-          placeholder="https://…/meteor-clash.png"
+          placeholder="…or paste a full https:// image URL"
         />
-        <p className="mt-1 text-xs text-slate-500">
-          A full <code>https://</code> image URL. Shown at the top of the event page and as the
-          image on the Discord announcement embed.
-        </p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
