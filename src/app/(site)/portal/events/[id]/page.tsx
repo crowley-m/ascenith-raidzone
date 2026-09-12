@@ -454,7 +454,18 @@ export default async function PortalEventDetail({
 
           {event.placements.length > 0 && (
             <div className="card mt-4">
-              <h3 className="font-display font-bold text-white">Placed</h3>
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="font-display font-bold text-white">Placed</h3>
+                {canReward && (
+                  <Link
+                    href={`/portal/rewards/export?eventId=${event.id}`}
+                    prefetch={false}
+                    className="font-mono text-[0.7rem] uppercase tracking-wide text-slate-400 hover:text-teal"
+                  >
+                    ↓ Payouts CSV
+                  </Link>
+                )}
+              </div>
               <ol className="mt-2 space-y-1 text-sm">
                 {event.placements.map((p) => (
                   <li key={p.id} className="flex gap-3">
@@ -469,6 +480,13 @@ export default async function PortalEventDetail({
                   </li>
                 ))}
               </ol>
+              {canReward && (
+                <p className="mt-2 text-xs text-slate-500">
+                  The payouts CSV lists every reward already logged for this event — UID, platform,
+                  item, and whether it&apos;s been sent. Run &ldquo;Reward the placements&rdquo;
+                  below first if you haven&apos;t yet.
+                </p>
+              )}
             </div>
           )}
 

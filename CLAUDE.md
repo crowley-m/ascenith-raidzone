@@ -123,6 +123,11 @@ mutation writes an `AuditLog` row via `logAudit(...)`; viewer at `/portal/audit`
   (`Reward.disputedAt`, `disputeReward`). Flagged rewards surface at the top of
   `/portal/rewards`; staff clear them with "Re-sent it" / "Dismiss"
   (`resolveRewardDispute`). Marking a reward received clears any dispute.
+- **Payout records** — `/portal/events/[id]/roster` CSV (character, UID,
+  Discord, platform, region, team, sign-up state, attendance) and
+  `/portal/rewards/export?eventId=` CSV (UID, platform, item, received/disputed
+  status) give devs everything needed to pay out rewards after an event without
+  digging through the UI — "↓ CSV" / "↓ Payouts CSV" links on the event page.
 - **Results** — `savePlacements` also posts a `resultsEmbed` podium to the
   event's `#announcement` (stored as `discordSeedMessages.results`, editable
   via "Repost results to Discord") and DMs everyone who placed. The public
