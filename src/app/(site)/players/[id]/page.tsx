@@ -62,7 +62,14 @@ export default async function PublicPlayerPage({
         },
         participation: {
           orderBy: { playedAt: "desc" },
-          select: { id: true, eventId: true, eventName: true, eventMode: true, playedAt: true },
+          select: {
+            id: true,
+            eventId: true,
+            eventName: true,
+            eventMode: true,
+            nickname: true,
+            playedAt: true,
+          },
         },
         _count: { select: { attendance: true } },
       },
@@ -157,17 +164,19 @@ export default async function PublicPlayerPage({
             <ul className="mt-4 flex flex-wrap gap-2">
               {player.participation.map((c) => {
                 const label = c.eventMode ? `RAIDZONE ${c.eventMode}` : c.eventName;
+                const title = c.nickname ? `Played as ${c.nickname}` : undefined;
                 return c.eventId ? (
                   <li key={c.id}>
                     <Link
                       href={`/events/${c.eventId}`}
+                      title={title}
                       className="badge border-edge hover:border-teal/50"
                     >
                       {label}
                     </Link>
                   </li>
                 ) : (
-                  <li key={c.id} className="badge border-edge text-slate-300">
+                  <li key={c.id} title={title} className="badge border-edge text-slate-300">
                     {label}
                   </li>
                 );

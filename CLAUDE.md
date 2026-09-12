@@ -121,11 +121,11 @@ mutation writes an `AuditLog` row via `logAudit(...)`; viewer at `/portal/audit`
   without touching their profile. Set at sign-up (solo `signUpForEvent`, free
   agent `registerAsFreeAgent`) or any time after via `updateEventNickname`
   (shared by solo/free-agent/team-member — no state/capacity side effects).
-  Public rosters show the nickname in place of the character name; the portal
-  roster shows the real character name with "as `<nickname>`" alongside it, and
-  the roster CSV carries both as separate columns. Placements/results/the bot
-  still key off `Player.characterName` — nickname is a roster-display layer, not
-  identity.
+  Public rosters, `/teams/[id]`, and the portal player/team pages show it
+  ("as `<nickname>`" alongside the real name in staff views); the roster CSV
+  carries both as separate columns. `EventParticipation.nickname` snapshots it
+  so it survives archive/delete too. Placements/results/the bot still key off
+  `Player.characterName` — nickname is a roster-display layer, not identity.
 - **Check-in** — signed-up players self-mark attendance (`checkInToEvent`) from
   the event page from 30 min before start until the wipe ends; staff still
   override via the portal toggle / "mark all".
@@ -148,6 +148,16 @@ mutation writes an `AuditLog` row via `logAudit(...)`; viewer at `/portal/audit`
   set winners (`setBracketMatch` propagates the winner into the next match).
   Shown read-only on the public event page. Separate from the Results form
   (1/2/3 placements that feed `/winners`).
+
+## Portal event form
+
+`src/components/portal/event-form.tsx` is one long `<form>` (Basics → Public
+brief → Discord channels) with a sticky jump-nav (`#basics`/`#brief`/`#discord`)
+at the top. The 7 per-channel content fields (announcement/registration/
+how-to-join/gameplay/schedule/wipe-info/rewards) are each their own
+`<details>`, open by default only if already filled, with a
+"filled — N chars" / "empty" hint in the summary — keeps a new event from
+opening as a wall of empty textareas.
 
 ## Migrations
 

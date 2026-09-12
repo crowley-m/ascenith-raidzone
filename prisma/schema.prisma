@@ -382,6 +382,7 @@ model EventParticipation {
   player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
   eventName String // snapshot
   eventMode String? // snapshot
+  nickname  String? // display name used for that event, snapshot
   playedAt  DateTime // event start, snapshot
   createdAt DateTime @default(now())
 

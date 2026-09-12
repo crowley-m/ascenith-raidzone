@@ -109,9 +109,14 @@ export default async function PlayerDetailPage({
               {player.signups.length === 0 && <li className="py-2 text-slate-400">No sign-ups.</li>}
               {player.signups.map((s) => (
                 <li key={s.id} className="flex items-center justify-between py-2">
-                  <Link href={`/portal/events/${s.eventId}`} className="text-slate-200 hover:text-teal">
-                    {s.event.title}
-                  </Link>
+                  <span>
+                    <Link href={`/portal/events/${s.eventId}`} className="text-slate-200 hover:text-teal">
+                      {s.event.title}
+                    </Link>
+                    {s.nickname && (
+                      <span className="ml-1.5 text-xs text-teal">as {s.nickname}</span>
+                    )}
+                  </span>
                   <span className="text-slate-500">
                     {fmtDate(s.event.startsAt)}
                     {" · "}

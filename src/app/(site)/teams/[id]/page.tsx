@@ -44,6 +44,22 @@ export default async function PublicTeamPage({
   });
   if (!team) notFound();
 
+  const nicknames = team.event
+    ? new Map(
+        (
+          await db.eventSignup.findMany({
+            where: {
+              eventId: team.event.id,
+              playerId: { in: [team.leaderId, ...team.members.map((m) => m.playerId)] },
+            },
+            select: { playerId: true, nickname: true },
+          })
+        ).map((s) => [s.playerId, s.nickname]),
+      )
+    : new Map<string, string | null>();
+  const nameFor = (playerId: string, fallback: string | null) =>
+    nicknames.get(playerId) || fallback || "Unnamed";
+
   const forEvent = team.event
     ? team.event.mode
       ? `RAIDZONE ${team.event.mode}`
@@ -62,7 +78,7 @@ export default async function PublicTeamPage({
       </h1>
       <p className="mt-3 text-sm text-slate-400">
         {team.members.length} member{team.members.length === 1 ? "" : "s"} · led by{" "}
-        {team.leader.characterName ?? "—"}
+        {nameFor(team.leaderId, team.leader.characterName)}
         {forEvent && (
           <>
             {" · formed for "}
@@ -83,7 +99,7 @@ export default async function PublicTeamPage({
           <ul className="mt-4 divide-y divide-edge/60">
             {team.members.map((m) => (
               <li key={m.id} className="flex items-center justify-between py-2.5 text-sm">
-                <span className="text-slate-100">{m.player.characterName ?? "Unnamed"}</span>
+                <span className="text-slate-100">{nameFor(m.playerId, m.player.characterName)}</span>
                 <span className="text-xs text-slate-500">{m.player.region ?? ""}</span>
               </li>
             ))}

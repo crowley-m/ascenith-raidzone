@@ -41,6 +41,17 @@ export default async function PortalTeamDetail({
   });
   if (!team) notFound();
 
+  const nicknames = team.event
+    ? new Map(
+        (
+          await db.eventSignup.findMany({
+            where: { eventId: team.event.id, playerId: { in: team.members.map((m) => m.playerId) } },
+            select: { playerId: true, nickname: true },
+          })
+        ).map((s) => [s.playerId, s.nickname]),
+      )
+    : new Map<string, string | null>();
+
   const canEdit = can(user.role, "player:edit");
 
   return (
@@ -87,6 +98,9 @@ export default async function PortalTeamDetail({
                 >
                   {m.player.characterName ?? "Unnamed"}
                 </Link>
+                {nicknames.get(m.playerId) && (
+                  <span className="ml-1.5 text-xs text-teal">as {nicknames.get(m.playerId)}</span>
+                )}
                 {m.playerId === team.leaderId && (
                   <span className="badge ml-2 border-teal/40 text-teal">Leader</span>
                 )}

@@ -159,7 +159,7 @@ export async function teardownEventAccess(eventId: string): Promise<void> {
 
   const signups = await db.eventSignup.findMany({
     where: { eventId, state: "SIGNED_UP" },
-    select: { playerId: true },
+    select: { playerId: true, nickname: true },
   });
   for (const s of signups) {
     await db.eventParticipation
@@ -170,9 +170,10 @@ export async function teardownEventAccess(eventId: string): Promise<void> {
           playerId: s.playerId,
           eventName: ev.title,
           eventMode: ev.mode,
+          nickname: s.nickname,
           playedAt: ev.startsAt,
         },
-        update: {},
+        update: { nickname: s.nickname },
       })
       .catch(() => {});
   }

@@ -148,6 +148,12 @@ export function EventForm({
     <form ref={formRef} action={action} className="grid max-w-3xl gap-4">
       {event && <input type="hidden" name="id" value={event.id} />}
 
+      <nav className="sticky top-0 z-10 -mx-1 flex gap-4 border-b border-edge bg-panel/95 px-1 py-2 font-mono text-[0.66rem] uppercase tracking-widest text-slate-500 backdrop-blur">
+        <a href="#basics" className="hover:text-teal">Basics</a>
+        <a href="#brief" className="hover:text-teal">Public brief</a>
+        <a href="#discord" className="hover:text-teal">Discord</a>
+      </nav>
+
       {!event && (
         <div className="flex items-center justify-between gap-3 border border-edge bg-panel/40 p-3">
           <p className="text-xs text-slate-400">
@@ -158,6 +164,10 @@ export function EventForm({
           </button>
         </div>
       )}
+
+      <p id="basics" className="scroll-mt-14 font-mono text-[0.66rem] font-bold uppercase tracking-[0.18em] text-teal">
+        Basics
+      </p>
 
       <div>
         <label className="label">Title *</label>
@@ -299,7 +309,10 @@ export function EventForm({
       </div>
 
       <hr className="border-edge" />
-      <p className="font-mono text-[0.66rem] font-bold uppercase tracking-[0.18em] text-teal">
+      <p
+        id="brief"
+        className="scroll-mt-14 font-mono text-[0.66rem] font-bold uppercase tracking-[0.18em] text-teal"
+      >
         Public brief — shown on the landing page + /events/{event ? event.id : "…"}
       </p>
 
@@ -434,7 +447,10 @@ export function EventForm({
       </div>
 
       <hr className="border-edge" />
-      <p className="font-mono text-[0.66rem] font-bold uppercase tracking-[0.18em] text-teal">
+      <p
+        id="discord"
+        className="scroll-mt-14 font-mono text-[0.66rem] font-bold uppercase tracking-[0.18em] text-teal"
+      >
         Discord channels — posted into the event&apos;s space (build it, then &ldquo;Sync
         channels&rdquo; after edits)
       </p>
@@ -555,19 +571,29 @@ export function EventForm({
             "",
           ],
         ] as const
-      ).map(([name, label, rows, hint, ph]) => (
-        <div key={name}>
-          <label className="label">{label}</label>
-          <textarea
-            name={name}
-            rows={rows}
-            className="input font-mono text-xs"
-            defaultValue={(event?.[name] as string | null) ?? ""}
-            placeholder={ph || undefined}
-          />
-          <p className="mt-1 text-xs text-slate-500">{hint}</p>
-        </div>
-      ))}
+      ).map(([name, label, rows, hint, ph]) => {
+        const value = (event?.[name] as string | null) ?? "";
+        return (
+          <details key={name} open={!!value} className="border border-edge/60 bg-panel/20 px-3 py-2">
+            <summary className="cursor-pointer select-none font-mono text-[0.64rem] font-bold uppercase tracking-[0.18em] text-slate-400">
+              {label}
+              <span className={`ml-2 normal-case ${value ? "text-teal" : "text-slate-600"}`}>
+                {value ? `filled — ${value.length} chars` : "empty"}
+              </span>
+            </summary>
+            <div className="mt-2">
+              <textarea
+                name={name}
+                rows={rows}
+                className="input font-mono text-xs"
+                defaultValue={value}
+                placeholder={ph || undefined}
+              />
+              <p className="mt-1 text-xs text-slate-500">{hint}</p>
+            </div>
+          </details>
+        );
+      })}
 
       {state.error && <p className="font-mono text-sm text-ember">{state.error}</p>}
 
