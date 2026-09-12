@@ -548,6 +548,8 @@ export default async function PortalEventDetail({
             <EventChannelsManager
               eventId={event.id}
               channels={(event.discordChannels as Record<string, string>) ?? {}}
+              seeded={Object.keys((event.discordSeedMessages as Record<string, string>) ?? {})}
+              guildId={process.env.DISCORD_GUILD_ID}
             />
           </div>
         )}

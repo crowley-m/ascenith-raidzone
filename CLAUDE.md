@@ -153,11 +153,20 @@ mutation writes an `AuditLog` row via `logAudit(...)`; viewer at `/portal/audit`
 
 `src/components/portal/event-form.tsx` is one long `<form>` (Basics → Public
 brief → Discord channels) with a sticky jump-nav (`#basics`/`#brief`/`#discord`)
-at the top. The 7 per-channel content fields (announcement/registration/
-how-to-join/gameplay/schedule/wipe-info/rewards) are each their own
-`<details>`, open by default only if already filled, with a
-"filled — N chars" / "empty" hint in the summary — keeps a new event from
-opening as a wall of empty textareas.
+at the top. The "which channels to build" checkbox for each channel lives
+**inline on its own field**, not in a separate grid — the 7 content fields
+(announcement/registration/how-to-join/gameplay/schedule/wipe-info/rewards)
+carry it in their `<details id="content-<name>">` summary next to a
+"filled — N chars" / "empty" hint (open by default only if filled); `rules`
+carries it next to the Event rules field (its content is `rulesMd` in Public
+brief, not a Discord-section field); the 3 content-less channels
+(looking-for-team/questions/chat) get a small standalone checklist. Locked
+(dimmed, disabled) once the event already has a space — editing the plan
+there does nothing, so say so instead of leaving it clickable. The **Channels**
+panel (`event-channels-manager.tsx`, event page) lists what the space
+actually has, whether each was posted yet, an "Edit content" jump link to
+that `#content-<name>` anchor, an "Open in Discord ↗" link
+(`discordId + DISCORD_GUILD_ID`), and add/remove.
 
 ## Migrations
 

@@ -41,9 +41,9 @@ type EventInit = {
   discordChannelPlan: string[] | null;
 };
 
-// name, label, hint
+// name, label, hint — every buildable channel, used only to size "select all"
 const CHANNEL_OPTIONS: [string, string, string][] = [
-  ["announcement", "announcement", "always included — too much depends on it"],
+  ["announcement", "announcement", "always included"],
   ["how-to-join", "how-to-join", "steps to register"],
   ["registration", "registration", "public, sign-up button"],
   ["rules", "rules", ""],
@@ -54,6 +54,13 @@ const CHANNEL_OPTIONS: [string, string, string][] = [
   ["looking-for-team", "looking-for-team", "free agents recruit here"],
   ["questions", "questions", ""],
   ["chat", "chat", ""],
+];
+
+// the 3 channels with no content field of their own — shown as a small checklist
+const OTHER_CHANNELS: [string, string, string][] = [
+  ["looking-for-team", "looking-for-team", "free agents recruit here"],
+  ["questions", "questions", "general Q&A"],
+  ["chat", "chat", "open chat"],
 ];
 
 export type SeasonOption = { id: string; series: string; number: number; name: string | null };
@@ -429,8 +436,20 @@ export function EventForm({
         />
       </div>
 
-      <div>
-        <label className="label">Event rules (Markdown)</label>
+      <div id="content-rules" className="scroll-mt-14">
+        <label className="flex items-center gap-2 label">
+          <input
+            type="checkbox"
+            name="channelPlan"
+            value="rules"
+            defaultChecked={checkedChannels.has("rules")}
+            disabled={spaceLocked}
+            onChange={onChannelToggle}
+            className="accent-teal disabled:opacity-60"
+          />
+          Event rules (Markdown)
+          <span className="normal-case text-slate-600">— builds the #rules channel too</span>
+        </label>
         <textarea
           name="rulesMd"
           rows={8}
@@ -479,34 +498,37 @@ export function EventForm({
         channels&rdquo; after edits)
       </p>
 
-      <div>
-        <div className="flex items-baseline justify-between gap-3">
-          <label className="label !mb-0">Which channels to build</label>
-          {!spaceLocked && (
-            <span className="font-mono text-xs text-slate-500">
-              {channelCount} of {CHANNEL_OPTIONS.length} selected
-            </span>
-          )}
-        </div>
+      <div className="flex items-center justify-between gap-3 border border-edge/60 bg-panel/20 px-3 py-2">
         <input type="hidden" name="channelPlanSet" value="1" />
         {spaceLocked ? (
-          <p className="mt-2 border border-edge/60 bg-panel/20 px-2.5 py-2 text-xs text-slate-500">
-            This event already has its Discord space — this list is locked because changing it
-            here won&apos;t touch the channels that already exist. Use the &ldquo;Channels&rdquo;
-            panel on the event page to add or remove channels instead.
+          <p className="text-xs text-slate-500">
+            This event already has its Discord space — the checkboxes below are locked because
+            changing them here won&apos;t touch the channels that already exist. Use the
+            &ldquo;Channels&rdquo; panel on the event page to add or remove channels instead.
           </p>
         ) : (
-          <div className="mt-2 flex gap-3">
-            <button type="button" onClick={selectAllChannels} className="font-mono text-[0.66rem] uppercase tracking-widest text-teal hover:text-cream">
-              Select all
-            </button>
-            <button type="button" onClick={selectNoChannels} className="font-mono text-[0.66rem] uppercase tracking-widest text-slate-500 hover:text-teal">
-              Select none
-            </button>
-          </div>
+          <>
+            <p className="text-xs text-slate-500">
+              Each field below has a checkbox — check it to build that channel. Unchecked ones are
+              just skipped; you can add any of them later from the event page.
+            </p>
+            <div className="flex shrink-0 items-center gap-3">
+              <span className="font-mono text-xs text-slate-500">{channelCount} selected</span>
+              <button type="button" onClick={selectAllChannels} className="font-mono text-[0.66rem] uppercase tracking-widest text-teal hover:text-cream">
+                All
+              </button>
+              <button type="button" onClick={selectNoChannels} className="font-mono text-[0.66rem] uppercase tracking-widest text-slate-500 hover:text-teal">
+                None
+              </button>
+            </div>
+          </>
         )}
-        <div className={`mt-2 grid gap-x-4 gap-y-2 sm:grid-cols-2 ${spaceLocked ? "opacity-50" : ""}`}>
-          {CHANNEL_OPTIONS.map(([name, label, hint]) => (
+      </div>
+
+      <div className={spaceLocked ? "opacity-50" : ""}>
+        <label className="label">Other channels (no content needed)</label>
+        <div className="flex flex-wrap gap-3">
+          {OTHER_CHANNELS.map(([name, label, hint]) => (
             <label
               key={name}
               className="flex items-center gap-2 border border-edge/60 bg-panel/20 px-2.5 py-2 text-sm text-slate-300"
@@ -516,24 +538,15 @@ export function EventForm({
                 name="channelPlan"
                 value={name}
                 defaultChecked={checkedChannels.has(name)}
-                disabled={name === "announcement" || spaceLocked}
+                disabled={spaceLocked}
                 onChange={onChannelToggle}
-                className="shrink-0 accent-teal disabled:opacity-60"
+                className="accent-teal disabled:opacity-60"
               />
-              <span className="flex min-w-0 flex-col">
-                <span className="font-mono">{label}</span>
-                {hint && <span className="truncate text-xs text-slate-500">{hint}</span>}
-              </span>
+              <span className="font-mono">{label}</span>
+              <span className="text-xs text-slate-500">— {hint}</span>
             </label>
           ))}
         </div>
-        {!spaceLocked && (
-          <p className="mt-1 text-xs text-slate-500">
-            Only checked channels are created when you click &ldquo;Build Discord space&rdquo;.
-            Unchecked names like rules/gameplay/etc. just skip content generation — you can still
-            add any channel later from the event page.
-          </p>
-        )}
       </div>
 
       <label className="flex items-start gap-2 text-sm text-slate-300">
@@ -571,6 +584,7 @@ export function EventForm({
         [
           [
             "announcementMd",
+            "announcement",
             "Announcement",
             4,
             "Extra text above the announcement embed (optional).",
@@ -578,6 +592,7 @@ export function EventForm({
           ],
           [
             "registrationMd",
+            "registration",
             "Registration",
             4,
             "Public channel with the sign-up button — anyone can see it. Blank = a sensible default.",
@@ -585,6 +600,7 @@ export function EventForm({
           ],
           [
             "howToJoinMd",
+            "how-to-join",
             "How to join",
             5,
             "Overrides the default register → UID → sign-up steps.",
@@ -592,6 +608,7 @@ export function EventForm({
           ],
           [
             "gameplayMd",
+            "gameplay",
             "Gameplay",
             8,
             "Objectives, map, how the mode plays. One point per line; `# Heading` groups them.",
@@ -599,6 +616,7 @@ export function EventForm({
           ],
           [
             "scheduleMd",
+            "schedule",
             "Schedule (day-by-day)",
             8,
             "One line per point. Use `# Day 1–4 · Farm phase` headings to group the days.",
@@ -606,6 +624,7 @@ export function EventForm({
           ],
           [
             "wipeInfoMd",
+            "wipe-info",
             "Wipe info",
             6,
             "Extra wipe detail beyond cycle / raid window.",
@@ -613,19 +632,36 @@ export function EventForm({
           ],
           [
             "rewardsMd",
+            "rewards",
             "Rewards (override)",
             4,
             "Leave blank to auto-generate from the reward tiers.",
             "",
           ],
         ] as const
-      ).map(([name, label, rows, hint, ph]) => {
+      ).map(([name, channelKey, label, rows, hint, ph]) => {
         const value = (event?.[name] as string | null) ?? "";
+        const forced = channelKey === "announcement";
         return (
-          <details key={name} open={!!value} className="border border-edge/60 bg-panel/20 px-3 py-2">
-            <summary className="cursor-pointer select-none font-mono text-[0.64rem] font-bold uppercase tracking-[0.18em] text-slate-400">
+          <details
+            key={name}
+            id={`content-${channelKey}`}
+            open={!!value}
+            className="scroll-mt-14 border border-edge/60 bg-panel/20 px-3 py-2"
+          >
+            <summary className="flex cursor-pointer select-none items-center gap-2 font-mono text-[0.64rem] font-bold uppercase tracking-[0.18em] text-slate-400">
+              <input
+                type="checkbox"
+                name="channelPlan"
+                value={channelKey}
+                defaultChecked={checkedChannels.has(channelKey)}
+                disabled={forced || spaceLocked}
+                onChange={onChannelToggle}
+                onClick={(e) => e.stopPropagation()}
+                className="accent-teal disabled:opacity-60"
+              />
               {label}
-              <span className={`ml-2 normal-case ${value ? "text-teal" : "text-slate-600"}`}>
+              <span className={`normal-case ${value ? "text-teal" : "text-slate-600"}`}>
                 {value ? `filled — ${value.length} chars` : "empty"}
               </span>
             </summary>
