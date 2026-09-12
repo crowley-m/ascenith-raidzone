@@ -74,6 +74,7 @@ export function EventForm({
   defaultChannels?: string[];
 }) {
   const checkedChannels = new Set(event?.discordChannelPlan ?? defaultChannels);
+  const spaceLocked = !!event?.hasDiscordSpace;
   const [state, action, pending] = useActionState(saveEvent, {});
   const formRef = useRef<HTMLFormElement>(null);
   const [channelCount, setChannelCount] = useState(checkedChannels.size);
@@ -481,20 +482,30 @@ export function EventForm({
       <div>
         <div className="flex items-baseline justify-between gap-3">
           <label className="label !mb-0">Which channels to build</label>
-          <span className="font-mono text-xs text-slate-500">
-            {channelCount} of {CHANNEL_OPTIONS.length} selected
-          </span>
+          {!spaceLocked && (
+            <span className="font-mono text-xs text-slate-500">
+              {channelCount} of {CHANNEL_OPTIONS.length} selected
+            </span>
+          )}
         </div>
         <input type="hidden" name="channelPlanSet" value="1" />
-        <div className="mt-2 flex gap-3">
-          <button type="button" onClick={selectAllChannels} className="font-mono text-[0.66rem] uppercase tracking-widest text-teal hover:text-cream">
-            Select all
-          </button>
-          <button type="button" onClick={selectNoChannels} className="font-mono text-[0.66rem] uppercase tracking-widest text-slate-500 hover:text-teal">
-            Select none
-          </button>
-        </div>
-        <div className="mt-2 grid gap-x-4 gap-y-2 sm:grid-cols-2">
+        {spaceLocked ? (
+          <p className="mt-2 border border-edge/60 bg-panel/20 px-2.5 py-2 text-xs text-slate-500">
+            This event already has its Discord space — this list is locked because changing it
+            here won&apos;t touch the channels that already exist. Use the &ldquo;Channels&rdquo;
+            panel on the event page to add or remove channels instead.
+          </p>
+        ) : (
+          <div className="mt-2 flex gap-3">
+            <button type="button" onClick={selectAllChannels} className="font-mono text-[0.66rem] uppercase tracking-widest text-teal hover:text-cream">
+              Select all
+            </button>
+            <button type="button" onClick={selectNoChannels} className="font-mono text-[0.66rem] uppercase tracking-widest text-slate-500 hover:text-teal">
+              Select none
+            </button>
+          </div>
+        )}
+        <div className={`mt-2 grid gap-x-4 gap-y-2 sm:grid-cols-2 ${spaceLocked ? "opacity-50" : ""}`}>
           {CHANNEL_OPTIONS.map(([name, label, hint]) => (
             <label
               key={name}
@@ -505,7 +516,7 @@ export function EventForm({
                 name="channelPlan"
                 value={name}
                 defaultChecked={checkedChannels.has(name)}
-                disabled={name === "announcement"}
+                disabled={name === "announcement" || spaceLocked}
                 onChange={onChannelToggle}
                 className="shrink-0 accent-teal disabled:opacity-60"
               />
@@ -516,11 +527,13 @@ export function EventForm({
             </label>
           ))}
         </div>
-        <p className="mt-1 text-xs text-slate-500">
-          {event?.hasDiscordSpace
-            ? "This event already has its space — changing this list here does nothing to it. Use the “Channels” panel on the event page to add/remove channels there instead."
-            : "Only checked channels are created when you click “Build Discord space”. Unchecked names like rules/gameplay/etc. just skip content generation — you can still add any channel later from the event page."}
-        </p>
+        {!spaceLocked && (
+          <p className="mt-1 text-xs text-slate-500">
+            Only checked channels are created when you click &ldquo;Build Discord space&rdquo;.
+            Unchecked names like rules/gameplay/etc. just skip content generation — you can still
+            add any channel later from the event page.
+          </p>
+        )}
       </div>
 
       <label className="flex items-start gap-2 text-sm text-slate-300">
