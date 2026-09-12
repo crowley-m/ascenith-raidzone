@@ -116,6 +116,16 @@ mutation writes an `AuditLog` row via `logAudit(...)`; viewer at `/portal/audit`
 - **Notifications** — players get Discord DMs (waitlist promotion, reward
   granted, event starting, placed in results, event cancelled, teammate
   joined / left) unless `Player.dmNotifications` is off. `src/lib/notify.ts`.
+- **Per-event nickname** — `EventSignup.nickname` lets a player use a different
+  display name for one event (multiple characters, an event-specific alias)
+  without touching their profile. Set at sign-up (solo `signUpForEvent`, free
+  agent `registerAsFreeAgent`) or any time after via `updateEventNickname`
+  (shared by solo/free-agent/team-member — no state/capacity side effects).
+  Public rosters show the nickname in place of the character name; the portal
+  roster shows the real character name with "as `<nickname>`" alongside it, and
+  the roster CSV carries both as separate columns. Placements/results/the bot
+  still key off `Player.characterName` — nickname is a roster-display layer, not
+  identity.
 - **Check-in** — signed-up players self-mark attendance (`checkInToEvent`) from
   the event page from 30 min before start until the wipe ends; staff still
   override via the portal toggle / "mark all".

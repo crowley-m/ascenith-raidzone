@@ -413,6 +413,7 @@ model EventSignup {
   teamId    String? // set on TEAM-format events
   team      Team?       @relation(fields: [teamId], references: [id], onDelete: SetNull)
   state     SignupState @default(SIGNED_UP)
+  nickname  String? // optional display name for this event only — overrides Player.characterName on rosters/results
   createdAt DateTime    @default(now())
 
   @@unique([eventId, playerId])

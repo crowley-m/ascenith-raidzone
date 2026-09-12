@@ -431,7 +431,7 @@ export default async function EventDetailPage({
                         <ul className="mt-2 flex flex-wrap gap-1.5">
                           {g.members.map((s) => (
                             <li key={s.id} className="badge text-xs">
-                              {s.player.characterName ?? "Unnamed"}
+                              {s.nickname || s.player.characterName || "Unnamed"}
                             </li>
                           ))}
                         </ul>
@@ -448,7 +448,7 @@ export default async function EventDetailPage({
                     <ul className="mt-2 flex flex-wrap gap-2">
                       {freeAgents.map((s) => (
                         <li key={s.id} className="badge">
-                          {s.player.characterName ?? "Unnamed"}
+                          {s.nickname || s.player.characterName || "Unnamed"}
                           {s.player.region ? ` · ${s.player.region}` : ""}
                         </li>
                       ))}
@@ -473,7 +473,7 @@ export default async function EventDetailPage({
                   )}
                   {confirmed.map((s) => (
                     <li key={s.id} className="badge">
-                      {s.player.characterName ?? "Unnamed"}
+                      {s.nickname || s.player.characterName || "Unnamed"}
                       {s.player.region ? ` · ${s.player.region}` : ""}
                     </li>
                   ))}
@@ -488,7 +488,9 @@ export default async function EventDetailPage({
                 <ul className="mt-2 flex flex-wrap gap-2">
                   {waitlist.map((s) => (
                     <li key={s.id} className="badge opacity-70">
-                      {isTeamEvent && s.team ? s.team.name : s.player.characterName ?? "Unnamed"}
+                      {isTeamEvent && s.team
+                        ? s.team.name
+                        : s.nickname || s.player.characterName || "Unnamed"}
                     </li>
                   ))}
                 </ul>
@@ -524,13 +526,18 @@ export default async function EventDetailPage({
             <div className="mt-4">
               {open ? (
                 isTeamEvent ? (
-                  <TeamSignup eventId={event.id} state={teamSignupState} />
+                  <TeamSignup
+                    eventId={event.id}
+                    state={teamSignupState}
+                    nickname={mySignup?.nickname}
+                  />
                 ) : (
                   <SignupButton
                     eventId={event.id}
                     signedUp={!!mySignup}
                     state={mySignup?.state}
                     loggedIn={!!session?.user}
+                    nickname={mySignup?.nickname}
                   />
                 )
               ) : (

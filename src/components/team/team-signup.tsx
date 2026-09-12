@@ -8,6 +8,7 @@ import {
   withdrawTeamFromEvent,
   registerAsFreeAgent,
   withdrawFromEvent,
+  updateEventNickname,
 } from "@/app/(site)/events/actions";
 
 type State =
@@ -17,10 +18,68 @@ type State =
   | { kind: "member"; teamName: string; registered: boolean }
   | { kind: "leader"; teamName: string; memberCount: number; registeredCount: number };
 
-export function TeamSignup({ eventId, state }: { eventId: string; state: State }) {
+/** Small inline "set my display name for this event" control, reused across states. */
+function NicknameEditor({ eventId, nickname }: { eventId: string; nickname?: string | null }) {
+  const router = useRouter();
+  const [pending, start] = useTransition();
+  const [editing, setEditing] = useState(false);
+  const [nick, setNick] = useState(nickname ?? "");
+  const [msg, setMsg] = useState<string | null>(null);
+
+  if (!editing) {
+    return (
+      <button
+        className="font-mono text-[0.66rem] uppercase tracking-widest text-slate-500 hover:text-teal"
+        onClick={() => setEditing(true)}
+      >
+        {nickname ? `Playing as ${nickname} — change` : "Use a different name for this event"}
+      </button>
+    );
+  }
+  return (
+    <div className="flex items-center gap-2">
+      <input
+        value={nick}
+        onChange={(e) => setNick(e.target.value)}
+        maxLength={40}
+        placeholder="Display name for this event"
+        className="input py-1 text-xs"
+      />
+      <button
+        className="font-mono text-[0.66rem] uppercase text-teal disabled:opacity-50"
+        disabled={pending}
+        onClick={() =>
+          start(async () => {
+            const res = await updateEventNickname(eventId, nick);
+            if (res?.error) setMsg(res.error);
+            else {
+              setMsg(null);
+              setEditing(false);
+              router.refresh();
+            }
+          })
+        }
+      >
+        Save
+      </button>
+      {msg && <span className="text-xs text-ember">{msg}</span>}
+    </div>
+  );
+}
+
+export function TeamSignup({
+  eventId,
+  state,
+  nickname,
+}: {
+  eventId: string;
+  state: State;
+  nickname?: string | null;
+}) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<string | null>(null);
+  const [freeAgentNick, setFreeAgentNick] = useState("");
 
   function run(fn: () => Promise<{ ok?: boolean; error?: string; state?: string }>) {
     start(async () => {
@@ -60,8 +119,10 @@ export function TeamSignup({ eventId, state }: { eventId: string; state: State }
           <div className="space-y-1">
             <span className="badge border-teal/40 text-teal">
               Registered — looking for a team
+              {nickname && <span className="ml-1 font-normal text-slate-400">as {nickname}</span>}
             </span>
-            <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <NicknameEditor eventId={eventId} nickname={nickname} />
               <button
                 className="btn-ghost text-xs"
                 disabled={pending}
@@ -76,10 +137,17 @@ export function TeamSignup({ eventId, state }: { eventId: string; state: State }
             <p className="font-mono text-[0.7rem] uppercase tracking-wide text-slate-500">
               No team yet? Register as a free agent and a leader can pick you up.
             </p>
+            <input
+              value={freeAgentNick}
+              onChange={(e) => setFreeAgentNick(e.target.value)}
+              maxLength={40}
+              placeholder="Display name for this event (optional)"
+              className="input py-1.5 text-xs"
+            />
             <button
               className="btn-ghost text-xs"
               disabled={pending}
-              onClick={() => run(() => registerAsFreeAgent(eventId))}
+              onClick={() => run(() => registerAsFreeAgent(eventId, freeAgentNick))}
             >
               {pending ? "…" : "Register — looking for a team"}
             </button>
@@ -96,10 +164,14 @@ export function TeamSignup({ eventId, state }: { eventId: string; state: State }
           className={`badge ${state.registered ? "border-teal/40 text-teal" : "border-edge text-slate-400"}`}
         >
           {state.registered ? `${state.teamName} is registered` : `${state.teamName} — not registered`}
+          {state.registered && nickname && (
+            <span className="ml-1 font-normal text-slate-400">as {nickname}</span>
+          )}
         </span>
         <p className="font-mono text-[0.7rem] uppercase tracking-wide text-slate-500">
           Your team leader registers the team.
         </p>
+        {state.registered && <NicknameEditor eventId={eventId} nickname={nickname} />}
       </div>
     );
   }
@@ -112,6 +184,7 @@ export function TeamSignup({ eventId, state }: { eventId: string; state: State }
         <>
           <span className="badge border-teal/40 text-teal">
             {state.teamName} registered · {state.registeredCount}/{state.memberCount}
+            {nickname && <span className="ml-1 font-normal text-slate-400">as {nickname}</span>}
           </span>
           <div className="flex flex-wrap gap-2">
             {behind > 0 && (
@@ -131,6 +204,7 @@ export function TeamSignup({ eventId, state }: { eventId: string; state: State }
               Withdraw team
             </button>
           </div>
+          <NicknameEditor eventId={eventId} nickname={nickname} />
         </>
       ) : (
         <button

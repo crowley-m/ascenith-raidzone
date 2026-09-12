@@ -35,6 +35,7 @@ export default async function MyEventsPage() {
                 <p className="text-xs text-slate-500">
                   {fmtInZone(s.event.startsAt, s.event.timezone ?? DEFAULT_EVENT_TZ)}
                   {s.state === "WAITLIST" && <span className="ml-2 text-ember">waitlist</span>}
+                  {s.nickname && <span className="ml-2 text-teal">as {s.nickname}</span>}
                 </p>
               </div>
               {s.teamId ? (

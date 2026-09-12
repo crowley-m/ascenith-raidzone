@@ -87,7 +87,7 @@ export default async function PortalEventDetail({
 
   const rosterPlayers = event.signups.map((s) => ({
     id: s.player.id,
-    label: `${s.player.characterName ?? "Unnamed"}${s.player.gameUid ? ` · UID ${s.player.gameUid}` : ""}${
+    label: `${s.nickname || s.player.characterName || "Unnamed"}${s.player.gameUid ? ` · UID ${s.player.gameUid}` : ""}${
       s.team ? ` · ${s.team.name}` : ""
     }`,
   }));
@@ -106,7 +106,7 @@ export default async function PortalEventDetail({
         lines.push(`[${name}]`);
         for (const s of members) {
           lines.push(
-            `  ${s.player.characterName ?? "Unnamed"}${s.player.gameUid ? ` (${s.player.gameUid})` : ""}`,
+            `  ${s.nickname || s.player.characterName || "Unnamed"}${s.player.gameUid ? ` (${s.player.gameUid})` : ""}`,
           );
         }
         lines.push("");
@@ -114,7 +114,7 @@ export default async function PortalEventDetail({
     } else {
       for (const s of confirmed) {
         lines.push(
-          `${s.player.characterName ?? "Unnamed"}${s.player.gameUid ? ` (${s.player.gameUid})` : ""}`,
+          `${s.nickname || s.player.characterName || "Unnamed"}${s.player.gameUid ? ` (${s.player.gameUid})` : ""}`,
         );
       }
     }
@@ -153,7 +153,7 @@ export default async function PortalEventDetail({
       }))
     : confirmed.map((s) => ({
         value: `player:${s.player.id}`,
-        label: s.player.characterName ?? "Unnamed",
+        label: s.nickname || s.player.characterName || "Unnamed",
       }));
   const currentPlacements: Record<number, string> = {};
   for (const p of event.placements) {
@@ -297,6 +297,9 @@ export default async function PortalEventDetail({
                             >
                               {s.player.characterName ?? "Unnamed"}
                             </Link>
+                            {s.nickname && (
+                              <span className="ml-1.5 text-xs text-teal">as {s.nickname}</span>
+                            )}
                             {s.player.gameUid && (
                               <span className="block text-xs text-slate-500">
                                 UID {s.player.gameUid}
@@ -338,6 +341,9 @@ export default async function PortalEventDetail({
                             >
                               {s.player.characterName ?? "Unnamed"}
                             </Link>
+                            {s.nickname && (
+                              <span className="ml-1.5 text-xs text-teal">as {s.nickname}</span>
+                            )}
                             {s.player.gameUid && (
                               <span className="block text-xs text-slate-500">
                                 UID {s.player.gameUid}
@@ -372,6 +378,9 @@ export default async function PortalEventDetail({
                         >
                           {s.player.characterName ?? "Unnamed"}
                         </Link>
+                        {s.nickname && (
+                          <span className="ml-1.5 text-xs text-teal">as {s.nickname}</span>
+                        )}
                         {s.player.region && (
                           <span className="text-slate-600"> · {s.player.region}</span>
                         )}

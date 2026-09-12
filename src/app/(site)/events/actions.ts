@@ -25,8 +25,13 @@ async function callerPlayerId(eventId: string): Promise<string> {
   return playerId;
 }
 
+const cleanNickname = (raw?: string | null) => {
+  const t = (raw ?? "").trim().slice(0, 40);
+  return t || null;
+};
+
 /** Player signs up (or re-activates a withdrawn signup) for a SOLO event. */
-export async function signUpForEvent(eventId: string) {
+export async function signUpForEvent(eventId: string, nickname?: string) {
   const session = await auth();
   const playerId = await callerPlayerId(eventId);
 
@@ -43,11 +48,12 @@ export async function signUpForEvent(eventId: string) {
 
   const full = event.maxSlots ? event._count.signups >= event.maxSlots : false;
   const state = full ? "WAITLIST" : "SIGNED_UP";
+  const nick = cleanNickname(nickname);
 
   await db.eventSignup.upsert({
     where: { eventId_playerId: { eventId, playerId } },
-    create: { eventId, playerId, state },
-    update: { state },
+    create: { eventId, playerId, state, nickname: nick },
+    update: { state, nickname: nick },
   });
   await logAudit({
     actorId: session?.user?.id,
@@ -68,7 +74,7 @@ export async function signUpForEvent(eventId: string) {
  * player on the roster with no team so leaders can recruit them; joining or
  * forming a team later absorbs this signup.
  */
-export async function registerAsFreeAgent(eventId: string) {
+export async function registerAsFreeAgent(eventId: string, nickname?: string) {
   const session = await auth();
   const playerId = await callerPlayerId(eventId);
 
@@ -83,10 +89,11 @@ export async function registerAsFreeAgent(eventId: string) {
     return { error: "You're already in a team for this event." };
   }
 
+  const nick = cleanNickname(nickname);
   await db.eventSignup.upsert({
     where: { eventId_playerId: { eventId, playerId } },
-    create: { eventId, playerId, state: "SIGNED_UP" },
-    update: { state: "SIGNED_UP", teamId: null },
+    create: { eventId, playerId, state: "SIGNED_UP", nickname: nick },
+    update: { state: "SIGNED_UP", teamId: null, nickname: nick },
   });
   await logAudit({
     actorId: session?.user?.id,
@@ -135,6 +142,25 @@ export async function checkInToEvent(eventId: string) {
   });
   revalidatePath(`/events/${eventId}`);
   revalidatePath(`/portal/events/${eventId}`);
+  return { ok: true };
+}
+
+/**
+ * Set/change the display name used for this one event — works for a solo
+ * sign-up, a free agent, or a team member; anywhere there's an active
+ * EventSignup row. Doesn't touch state/capacity, safe to call any time.
+ */
+export async function updateEventNickname(eventId: string, nickname: string) {
+  const playerId = await callerPlayerId(eventId);
+  const nick = cleanNickname(nickname);
+  const updated = await db.eventSignup.updateMany({
+    where: { eventId, playerId, state: { in: ["SIGNED_UP", "WAITLIST"] } },
+    data: { nickname: nick },
+  });
+  if (updated.count === 0) return { error: "You're not on the roster for this event." };
+  revalidatePath(`/events/${eventId}`);
+  revalidatePath(`/portal/events/${eventId}`);
+  revalidatePath("/me/events");
   return { ok: true };
 }
 

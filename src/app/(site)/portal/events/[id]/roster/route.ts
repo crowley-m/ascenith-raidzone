@@ -31,6 +31,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const csv = toCsv(
     signups.map((s) => ({
       character: s.player.characterName ?? "",
+      eventNickname: s.nickname ?? "",
       gameUid: s.player.gameUid ?? "",
       discord: s.player.user.discordUsername ?? "",
       platform: s.player.platform ?? "",
