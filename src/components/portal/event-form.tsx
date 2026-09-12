@@ -1,8 +1,44 @@
 "use client";
 
-import { useActionState, useRef, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { saveEvent } from "@/app/(site)/portal/actions";
 import { EVENT_TIMEZONES, DEFAULT_EVENT_TZ } from "@/lib/tz";
+import { proseItems } from "@/lib/prose";
+
+/** Small "how this will read in Discord" snippet — an approximation, not the
+ * exact embed (see the full Discord preview panel on the event page for that). */
+function MiniPreview({ text }: { text: string }) {
+  const groups = proseItems(text);
+  if (!groups.length) return null;
+  return (
+    <div className="mt-2 border-l-2 border-teal bg-void/60 px-3 py-2 text-xs text-slate-300">
+      <p className="mb-1 font-mono text-[0.6rem] uppercase tracking-widest text-slate-600">
+        Preview
+      </p>
+      <div className="space-y-1.5">
+        {groups.map((items, gi) => (
+          <div key={gi}>
+            {items.map((it, i) =>
+              it.kind === "heading" ? (
+                <p key={i} className="font-bold text-slate-100">
+                  {it.text}
+                </p>
+              ) : it.kind === "step" ? (
+                <p key={i}>
+                  <span className="text-teal">{it.num}.</span> {it.text}
+                </p>
+              ) : (
+                <p key={i}>
+                  <span className="text-teal">•</span> {it.text}
+                </p>
+              ),
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 type EventInit = {
   id: string;
@@ -105,6 +141,68 @@ export function EventForm({
     setChannelPlan(new Set(["announcement"]));
   }
 
+  // Tracked purely for the inline previews + the pre-save sanity check — not
+  // a fully-controlled form, just listening in on one delegated onChange.
+  const [values, setValues] = useState<Record<string, string>>(() => ({
+    startsAt: event?.startsAt ?? "",
+    format: event?.format ?? "SOLO",
+    teamSize: event?.teamSize != null ? String(event.teamSize) : "",
+    status: event?.status ?? "DRAFT",
+    summary: event?.summary ?? "",
+    announcementMd: event?.announcementMd ?? "",
+    registrationMd: event?.registrationMd ?? "",
+    howToJoinMd: event?.howToJoinMd ?? "",
+    gameplayMd: event?.gameplayMd ?? "",
+    scheduleMd: event?.scheduleMd ?? "",
+    wipeInfoMd: event?.wipeInfoMd ?? "",
+    rewardsMd: event?.rewardsMd ?? "",
+    rulesMd: event?.rulesMd ?? "",
+  }));
+  const [dirty, setDirty] = useState(false);
+
+  function handleFormChange(e: React.SyntheticEvent<HTMLFormElement>) {
+    const target = e.target as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
+    if (target.name in values) {
+      setValues((v) => ({ ...v, [target.name]: target.value }));
+    }
+    setDirty(true);
+  }
+
+  // Warn before navigating away with unsaved edits. Only catches real page
+  // unloads (close tab / refresh / typed URL) — not in-app link clicks.
+  useEffect(() => {
+    if (!dirty) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [dirty]);
+
+  useEffect(() => {
+    if (state.ok) setDirty(false);
+  }, [state.ok]);
+
+  const warnings: string[] = [];
+  if (values.startsAt) {
+    const startMs = new Date(values.startsAt).getTime();
+    if (!Number.isNaN(startMs) && startMs < Date.now()) {
+      warnings.push("Starts date/time is in the past.");
+    }
+  }
+  if (values.format === "TEAM" && !values.teamSize) {
+    warnings.push("Team format with no team size cap set — leave blank on purpose, or set one.");
+  }
+  if (values.status === "PUBLISHED") {
+    if (!values.summary && !values.announcementMd) {
+      warnings.push("Publishing with no Summary or Announcement text — the card will look bare.");
+    }
+    if (channelPlan.size === 1 && !spaceLocked) {
+      warnings.push("Only the announcement channel is checked — nothing else will build.");
+    }
+  }
+
   function fillExample() {
     const f = formRef.current;
     if (!f) return;
@@ -115,6 +213,7 @@ export function EventForm({
         | HTMLSelectElement
         | null;
       if (el) el.value = val;
+      if (name in values) setValues((v) => ({ ...v, [name]: val }));
     };
     const start = new Date();
     start.setDate(start.getDate() + 7);
@@ -170,10 +269,16 @@ export function EventForm({
     );
     set("wipeInfoMd", "Full server wipe at start. Blueprints reset. Bring nothing, leave nothing.");
     set("rewardsMd", "");
+    setDirty(true);
   }
 
   return (
-    <form ref={formRef} action={action} className="grid max-w-3xl gap-4">
+    <form
+      ref={formRef}
+      action={action}
+      onChange={handleFormChange}
+      className="grid max-w-3xl gap-4"
+    >
       {event && <input type="hidden" name="id" value={event.id} />}
 
       <nav className="sticky top-0 z-10 -mx-1 flex gap-4 border-b border-edge bg-panel/95 px-1 py-2 font-mono text-[0.66rem] uppercase tracking-widest text-slate-500 backdrop-blur">
@@ -458,6 +563,7 @@ export function EventForm({
           Shown in its own section on the event page and posted to the event&apos;s Discord{" "}
           <code>rules</code> channel when you build the space.
         </p>
+        <MiniPreview text={values.rulesMd} />
       </div>
 
       <div>
@@ -637,7 +743,8 @@ export function EventForm({
           ],
         ] as const
       ).map(([name, channelKey, label, rows, hint, ph]) => {
-        const value = (event?.[name] as string | null) ?? "";
+        const initial = (event?.[name] as string | null) ?? "";
+        const live = values[name] ?? initial;
         const forced = channelKey === "announcement";
         return (
           <div
@@ -656,8 +763,8 @@ export function EventForm({
                 className="accent-teal disabled:opacity-60"
               />
               {label}
-              <span className={`normal-case ${value ? "text-teal" : "text-slate-600"}`}>
-                {value ? `filled — ${value.length} chars` : "empty"}
+              <span className={`normal-case ${live ? "text-teal" : "text-slate-600"}`}>
+                {live ? `filled — ${live.length} chars` : "empty"}
               </span>
             </label>
             <div className="mt-2">
@@ -665,14 +772,29 @@ export function EventForm({
                 name={name}
                 rows={rows}
                 className="input font-mono text-xs"
-                defaultValue={value}
+                defaultValue={initial}
                 placeholder={ph || undefined}
               />
               <p className="mt-1 text-xs text-slate-500">{hint}</p>
+              <MiniPreview text={live} />
             </div>
           </div>
         );
       })}
+
+      {warnings.length > 0 && (
+        <div className="border border-ember/50 bg-ember/5 px-3 py-2 text-xs text-ember">
+          <p className="font-mono font-bold uppercase tracking-widest">Before you save</p>
+          <ul className="mt-1 list-disc space-y-0.5 pl-4">
+            {warnings.map((w) => (
+              <li key={w}>{w}</li>
+            ))}
+          </ul>
+          <p className="mt-1 text-slate-500">
+            Just a heads-up — nothing here blocks saving, check and ignore if it&apos;s intentional.
+          </p>
+        </div>
+      )}
 
       {state.error && <p className="font-mono text-sm text-ember">{state.error}</p>}
 

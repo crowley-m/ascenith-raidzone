@@ -151,6 +151,15 @@ mutation writes an `AuditLog` row via `logAudit(...)`; viewer at `/portal/audit`
 
 ## Portal event form
 
+Also: a delegated `onChange` on the `<form>` tracks a handful of fields
+(`values` state) purely to power an inline "Preview" snippet under each
+content field (`<MiniPreview>`, built on the same `proseItems()` from
+`src/lib/prose.ts` that `<EventProse>` uses) and a pre-save sanity-check
+banner (past start date, Team format with no team size, publishing with no
+summary/announcement, only announcement checked); it also flips a `dirty`
+flag that arms a `beforeunload` warning (page unloads only — doesn't catch
+in-app link clicks) until the next successful save.
+
 `src/components/portal/event-form.tsx` is one long `<form>` (Basics → Public
 brief → Discord channels) with a sticky jump-nav (`#basics`/`#brief`/`#discord`)
 at the top. The "which channels to build" checkbox for each channel lives
