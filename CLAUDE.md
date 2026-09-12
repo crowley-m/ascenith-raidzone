@@ -154,18 +154,21 @@ mutation writes an `AuditLog` row via `logAudit(...)`; viewer at `/portal/audit`
 `src/components/portal/event-form.tsx` is one long `<form>` (Basics → Public
 brief → Discord channels) with a sticky jump-nav (`#basics`/`#brief`/`#discord`)
 at the top. The "which channels to build" checkbox for each channel lives
-**inline on its own field**, not in a separate grid — the 7 content fields
-(announcement/registration/how-to-join/gameplay/schedule/wipe-info/rewards)
-carry it in their `<details id="content-<name>">` summary next to a
-"filled — N chars" / "empty" hint (open by default only if filled); `rules`
-carries it next to the Event rules field (its content is `rulesMd` in Public
-brief, not a Discord-section field); the 3 content-less channels
-(looking-for-team/questions/chat) get a small standalone checklist. Locked
-(dimmed, disabled) once the event already has a space — editing the plan
-there does nothing, so say so instead of leaving it clickable. The **Channels**
-panel (`event-channels-manager.tsx`, event page) lists what the space
-actually has, whether each was posted yet, an "Edit content" jump link to
-that `#content-<name>` anchor, an "Open in Discord ↗" link
+**inline on its own field** (a controlled `channelPlan: Set<string>` state,
+`toggleChannel`/`selectAllChannels`/`selectNoChannels`), not in a separate
+grid — the 7 content fields (announcement/registration/how-to-join/gameplay/
+schedule/wipe-info/rewards) carry it right above their textarea
+(`id="content-<name>"` for jump-links) with a "filled — N chars" / "empty"
+hint; `rules` carries it next to the Event rules field (its content is
+`rulesMd` in Public brief, not a Discord-section field, and rules/gameplay/
+schedule/wipe-info are also rendered on the public event page regardless of
+Discord channel status, so their fields are never hidden — only the checkbox
+is per-field, not the content); the 3 content-less channels
+(looking-for-team/questions/chat) get a small standalone checklist. All of
+it locks (dimmed, disabled) once the event already has a space. The
+**Channels** panel (`event-channels-manager.tsx`, event page) lists what the
+space actually has, whether each was posted yet, an "Edit content" jump link
+to that `#content-<name>` anchor, an "Open in Discord ↗" link
 (`discordId + DISCORD_GUILD_ID`), and add/remove.
 
 ## Migrations

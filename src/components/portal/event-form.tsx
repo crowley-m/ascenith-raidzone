@@ -80,32 +80,29 @@ export function EventForm({
   seasons?: SeasonOption[];
   defaultChannels?: string[];
 }) {
-  const checkedChannels = new Set(event?.discordChannelPlan ?? defaultChannels);
   const spaceLocked = !!event?.hasDiscordSpace;
   const [state, action, pending] = useActionState(saveEvent, {});
   const formRef = useRef<HTMLFormElement>(null);
-  const [channelCount, setChannelCount] = useState(checkedChannels.size);
+  const [channelPlan, setChannelPlan] = useState<Set<string>>(
+    () => new Set(event?.discordChannelPlan ?? defaultChannels),
+  );
 
-  function onChannelToggle() {
-    const f = formRef.current;
-    if (!f) return;
-    setChannelCount(f.querySelectorAll<HTMLInputElement>('input[name="channelPlan"]:checked').length);
+  function toggleChannel(name: string) {
+    if (spaceLocked || name === "announcement") return;
+    setChannelPlan((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
   }
 
   function selectAllChannels() {
-    const f = formRef.current;
-    if (!f) return;
-    f.querySelectorAll<HTMLInputElement>('input[name="channelPlan"]').forEach((el) => (el.checked = true));
-    setChannelCount(CHANNEL_OPTIONS.length);
+    setChannelPlan(new Set(CHANNEL_OPTIONS.map(([n]) => n)));
   }
 
   function selectNoChannels() {
-    const f = formRef.current;
-    if (!f) return;
-    f.querySelectorAll<HTMLInputElement>('input[name="channelPlan"]').forEach(
-      (el) => (el.checked = el.value === "announcement"),
-    );
-    setChannelCount(1);
+    setChannelPlan(new Set(["announcement"]));
   }
 
   function fillExample() {
@@ -442,9 +439,9 @@ export function EventForm({
             type="checkbox"
             name="channelPlan"
             value="rules"
-            defaultChecked={checkedChannels.has("rules")}
+            checked={channelPlan.has("rules")}
             disabled={spaceLocked}
-            onChange={onChannelToggle}
+            onChange={() => toggleChannel("rules")}
             className="accent-teal disabled:opacity-60"
           />
           Event rules (Markdown)
@@ -513,7 +510,7 @@ export function EventForm({
               just skipped; you can add any of them later from the event page.
             </p>
             <div className="flex shrink-0 items-center gap-3">
-              <span className="font-mono text-xs text-slate-500">{channelCount} selected</span>
+              <span className="font-mono text-xs text-slate-500">{channelPlan.size} selected</span>
               <button type="button" onClick={selectAllChannels} className="font-mono text-[0.66rem] uppercase tracking-widest text-teal hover:text-cream">
                 All
               </button>
@@ -537,9 +534,9 @@ export function EventForm({
                 type="checkbox"
                 name="channelPlan"
                 value={name}
-                defaultChecked={checkedChannels.has(name)}
+                checked={channelPlan.has(name)}
                 disabled={spaceLocked}
-                onChange={onChannelToggle}
+                onChange={() => toggleChannel(name)}
                 className="accent-teal disabled:opacity-60"
               />
               <span className="font-mono">{label}</span>
@@ -643,28 +640,26 @@ export function EventForm({
         const value = (event?.[name] as string | null) ?? "";
         const forced = channelKey === "announcement";
         return (
-          <details
+          <div
             key={name}
             id={`content-${channelKey}`}
-            open={!!value}
             className="scroll-mt-14 border border-edge/60 bg-panel/20 px-3 py-2"
           >
-            <summary className="flex cursor-pointer select-none items-center gap-2 font-mono text-[0.64rem] font-bold uppercase tracking-[0.18em] text-slate-400">
+            <label className="flex items-center gap-2 font-mono text-[0.64rem] font-bold uppercase tracking-[0.18em] text-slate-400">
               <input
                 type="checkbox"
                 name="channelPlan"
                 value={channelKey}
-                defaultChecked={checkedChannels.has(channelKey)}
+                checked={channelPlan.has(channelKey)}
                 disabled={forced || spaceLocked}
-                onChange={onChannelToggle}
-                onClick={(e) => e.stopPropagation()}
+                onChange={() => toggleChannel(channelKey)}
                 className="accent-teal disabled:opacity-60"
               />
               {label}
               <span className={`normal-case ${value ? "text-teal" : "text-slate-600"}`}>
                 {value ? `filled — ${value.length} chars` : "empty"}
               </span>
-            </summary>
+            </label>
             <div className="mt-2">
               <textarea
                 name={name}
@@ -675,7 +670,7 @@ export function EventForm({
               />
               <p className="mt-1 text-xs text-slate-500">{hint}</p>
             </div>
-          </details>
+          </div>
         );
       })}
 
