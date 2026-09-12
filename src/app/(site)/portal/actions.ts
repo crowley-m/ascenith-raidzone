@@ -281,48 +281,53 @@ export async function saveEvent(_prev: FormState, formData: FormData): Promise<F
     where: { id: eventId },
     include: { _count: { select: { signups: { where: { state: "SIGNED_UP" } } } } },
   });
-  if (ev && ev.status === "PUBLISHED") {
+  if (ev?.discordCategoryId) {
+    // A space already exists — keep it in sync on every save, Draft or
+    // Published. The channels can already be visible (announcement etc. are
+    // public once built), so stale content shouldn't wait on a status flip
+    // or a separate "Sync channels" click.
+    try {
+      const chans = (ev.discordChannels as Record<string, string>) ?? {};
+      await applyEventChannelPerms(chans, ev.discordRoleId);
+      await pushEventChannelContent(
+        ev.id,
+        chans,
+        (ev.discordSeedMessages as Record<string, string>) ?? {},
+      );
+    } catch (err) {
+      console.error("resync failed", err);
+    }
+  } else if (ev && ev.status === "PUBLISHED") {
     const settings = await getSettings();
     try {
-      if (ev.discordCategoryId) {
-        // full space exists — resync every channel (announcement included)
-        const chans = (ev.discordChannels as Record<string, string>) ?? {};
-        await applyEventChannelPerms(chans, ev.discordRoleId);
-        await pushEventChannelContent(
-          ev.id,
-          chans,
-          (ev.discordSeedMessages as Record<string, string>) ?? {},
-        );
+      const embed = eventEmbed({
+        ...ev,
+        summary: bulletize(ev.announcementMd) || ev.summary,
+        signupCount: ev._count.signups,
+        url: `${APP_URL}/events/${ev.id}`,
+      });
+      const components = [signupButtonRow(`${APP_URL}/events/${ev.id}`, "Sign up on the website")];
+      if (ev.discordMessageId && ev.discordChannelId) {
+        // don't re-ping @everyone on an edit — the first post already did
+        await editAnnouncement(ev.discordChannelId, ev.discordMessageId, embed, undefined, components);
       } else {
-        const embed = eventEmbed({
-          ...ev,
-          summary: bulletize(ev.announcementMd) || ev.summary,
-          signupCount: ev._count.signups,
-          url: `${APP_URL}/events/${ev.id}`,
+        const posted = await postAnnouncement({
+          embed,
+          components,
+          channelId: settings.announceChannelId || undefined,
+          mentionEveryone: ev.announcePing,
         });
-        const components = [signupButtonRow(`${APP_URL}/events/${ev.id}`, "Sign up on the website")];
-        if (ev.discordMessageId && ev.discordChannelId) {
-          // don't re-ping @everyone on an edit — the first post already did
-          await editAnnouncement(ev.discordChannelId, ev.discordMessageId, embed, undefined, components);
-        } else {
-          const posted = await postAnnouncement({
-            embed,
-            components,
-            channelId: settings.announceChannelId || undefined,
-            mentionEveryone: ev.announcePing,
+        if (posted) {
+          await db.event.update({
+            where: { id: ev.id },
+            data: { discordMessageId: posted.id, discordChannelId: posted.channelId },
           });
-          if (posted) {
-            await db.event.update({
-              where: { id: ev.id },
-              data: { discordMessageId: posted.id, discordChannelId: posted.channelId },
-            });
-          }
         }
       }
     } catch (err) {
       console.error("announcement failed", err);
     }
-    if (settings.autoBuildSpace && !ev.discordCategoryId) {
+    if (settings.autoBuildSpace) {
       try {
         await buildEventSpace(ev.id);
       } catch (err) {
