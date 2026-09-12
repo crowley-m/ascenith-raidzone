@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useRef } from "react";
+import { useActionState, useRef, useState } from "react";
 import { saveEvent } from "@/app/(site)/portal/actions";
 import { EVENT_TIMEZONES, DEFAULT_EVENT_TZ } from "@/lib/tz";
 
@@ -76,6 +76,29 @@ export function EventForm({
   const checkedChannels = new Set(event?.discordChannelPlan ?? defaultChannels);
   const [state, action, pending] = useActionState(saveEvent, {});
   const formRef = useRef<HTMLFormElement>(null);
+  const [channelCount, setChannelCount] = useState(checkedChannels.size);
+
+  function onChannelToggle() {
+    const f = formRef.current;
+    if (!f) return;
+    setChannelCount(f.querySelectorAll<HTMLInputElement>('input[name="channelPlan"]:checked').length);
+  }
+
+  function selectAllChannels() {
+    const f = formRef.current;
+    if (!f) return;
+    f.querySelectorAll<HTMLInputElement>('input[name="channelPlan"]').forEach((el) => (el.checked = true));
+    setChannelCount(CHANNEL_OPTIONS.length);
+  }
+
+  function selectNoChannels() {
+    const f = formRef.current;
+    if (!f) return;
+    f.querySelectorAll<HTMLInputElement>('input[name="channelPlan"]').forEach(
+      (el) => (el.checked = el.value === "announcement"),
+    );
+    setChannelCount(1);
+  }
 
   function fillExample() {
     const f = formRef.current;
@@ -456,13 +479,26 @@ export function EventForm({
       </p>
 
       <div>
-        <label className="label">Which channels to build</label>
+        <div className="flex items-baseline justify-between gap-3">
+          <label className="label !mb-0">Which channels to build</label>
+          <span className="font-mono text-xs text-slate-500">
+            {channelCount} of {CHANNEL_OPTIONS.length} selected
+          </span>
+        </div>
         <input type="hidden" name="channelPlanSet" value="1" />
-        <div className="grid gap-2 sm:grid-cols-2">
+        <div className="mt-2 flex gap-3">
+          <button type="button" onClick={selectAllChannels} className="font-mono text-[0.66rem] uppercase tracking-widest text-teal hover:text-cream">
+            Select all
+          </button>
+          <button type="button" onClick={selectNoChannels} className="font-mono text-[0.66rem] uppercase tracking-widest text-slate-500 hover:text-teal">
+            Select none
+          </button>
+        </div>
+        <div className="mt-2 grid gap-x-4 gap-y-2 sm:grid-cols-2">
           {CHANNEL_OPTIONS.map(([name, label, hint]) => (
             <label
               key={name}
-              className="flex items-start gap-2 text-sm text-slate-300"
+              className="flex items-center gap-2 border border-edge/60 bg-panel/20 px-2.5 py-2 text-sm text-slate-300"
             >
               <input
                 type="checkbox"
@@ -470,13 +506,12 @@ export function EventForm({
                 value={name}
                 defaultChecked={checkedChannels.has(name)}
                 disabled={name === "announcement"}
-                className="mt-0.5 accent-teal disabled:opacity-60"
+                onChange={onChannelToggle}
+                className="shrink-0 accent-teal disabled:opacity-60"
               />
-              <span>
+              <span className="flex min-w-0 flex-col">
                 <span className="font-mono">{label}</span>
-                {hint && (
-                  <span className="ml-1.5 text-xs text-slate-500">— {hint}</span>
-                )}
+                {hint && <span className="truncate text-xs text-slate-500">{hint}</span>}
               </span>
             </label>
           ))}
