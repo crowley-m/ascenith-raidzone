@@ -11,7 +11,9 @@ export const dynamic = "force-dynamic";
  */
 export async function GET(req: Request) {
   await requirePermission("reward:view");
-  const eventId = new URL(req.url).searchParams.get("eventId") || undefined;
+  const url = new URL(req.url);
+  const eventId = url.searchParams.get("eventId") || undefined;
+  const sheet = url.searchParams.get("sheet") === "1";
 
   const [rewards, event] = await Promise.all([
     db.reward.findMany({
@@ -27,6 +29,22 @@ export async function GET(req: Request) {
     }),
     eventId ? db.event.findUnique({ where: { id: eventId }, select: { title: true } }) : null,
   ]);
+
+  // Trimmed hand-off sheet: just event / UID / region / payout amount.
+  if (sheet) {
+    const csv = toCsv(
+      rewards.map((r) => ({
+        EVENT: r.event?.title ?? "",
+        ID: r.player.gameUid ?? "",
+        REGION: r.player.region ?? "",
+        CRYSTGIN: r.amount ?? "",
+      })),
+    );
+    const name = event
+      ? `raidzone-crystgin-${slugify(event.title) || eventId}.csv`
+      : `raidzone-crystgin-${new Date().toISOString().slice(0, 10)}.csv`;
+    return csvResponse(csv, name);
+  }
 
   const csv = toCsv(
     rewards.map((r) => ({

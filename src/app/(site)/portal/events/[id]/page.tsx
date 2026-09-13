@@ -466,13 +466,22 @@ export default async function PortalEventDetail({
               <div className="flex items-center justify-between gap-3">
                 <h3 className="font-display font-bold text-white">Placed</h3>
                 {canReward && (
-                  <Link
-                    href={`/portal/rewards/export?eventId=${event.id}`}
-                    prefetch={false}
-                    className="font-mono text-[0.7rem] uppercase tracking-wide text-slate-400 hover:text-teal"
-                  >
-                    ↓ Payouts CSV
-                  </Link>
+                  <div className="flex shrink-0 gap-3">
+                    <Link
+                      href={`/portal/rewards/export?eventId=${event.id}`}
+                      prefetch={false}
+                      className="font-mono text-[0.7rem] uppercase tracking-wide text-slate-400 hover:text-teal"
+                    >
+                      ↓ Payouts CSV
+                    </Link>
+                    <Link
+                      href={`/portal/rewards/export?eventId=${event.id}&sheet=1`}
+                      prefetch={false}
+                      className="font-mono text-[0.7rem] uppercase tracking-wide text-slate-400 hover:text-teal"
+                    >
+                      ↓ Crystgin sheet
+                    </Link>
+                  </div>
                 )}
               </div>
               <ol className="mt-2 space-y-1 text-sm">
@@ -492,8 +501,9 @@ export default async function PortalEventDetail({
               {canReward && (
                 <p className="mt-2 text-xs text-slate-500">
                   The payouts CSV lists every reward already logged for this event — UID, platform,
-                  item, and whether it&apos;s been sent. Run &ldquo;Reward the placements&rdquo;
-                  below first if you haven&apos;t yet.
+                  item, and whether it&apos;s been sent. The Crystgin sheet is the trimmed
+                  hand-off version (Event / ID / Region / Crystgin only). Run &ldquo;Reward the
+                  placements&rdquo; below first if you haven&apos;t yet.
                 </p>
               )}
             </div>

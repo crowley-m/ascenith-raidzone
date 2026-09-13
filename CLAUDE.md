@@ -138,6 +138,10 @@ mutation writes an `AuditLog` row via `logAudit(...)`; viewer at `/portal/audit`
   `/portal/rewards/export?eventId=` CSV (UID, platform, item, received/disputed
   status) give devs everything needed to pay out rewards after an event without
   digging through the UI — "↓ CSV" / "↓ Payouts CSV" links on the event page.
+  `?sheet=1` on the rewards export trims that to just `EVENT`/`ID`/`REGION`/
+  `CRYSTGIN` (gameUid + amount, hardcoded to this community's one payout
+  currency) — the "↓ Crystgin sheet" link next to Payouts CSV, single-event
+  only, for handing a dev a plain list with nothing else to parse.
 - **Results** — `savePlacements` also posts a `resultsEmbed` podium to the
   event's `#announcement` (stored as `discordSeedMessages.results`, editable
   via "Repost results to Discord") and DMs everyone who placed. The public
