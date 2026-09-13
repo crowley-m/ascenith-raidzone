@@ -138,6 +138,17 @@ mutation writes an `AuditLog` row via `logAudit(...)`; viewer at `/portal/audit`
   (`Reward.disputedAt`, `disputeReward`). Flagged rewards surface at the top of
   `/portal/rewards`; staff clear them with "Re-sent it" / "Dismiss"
   (`resolveRewardDispute`). Marking a reward received clears any dispute.
+- **Linking a reward to an event** — `Reward.eventId` is what the Crystgin
+  sheet actually filters on, not the free-typed reason text. Logging from an
+  event's own page (`fixedEventId` on `RewardForm`) auto-links it; logging
+  from the general `/portal/rewards` page requires picking it from "Which
+  event was this for?" — `guessEventForReason()` (`src/lib/reward-match.ts`)
+  fuzzy-matches the typed reason against event titles to warn ("Reason
+  mentions X — did you mean to link it?") before saving, and the same helper
+  flags already-unlinked rows in the reward log (amber `≈ Title?` hint) so
+  they're easy to spot after the fact. `assignRewardsToEvent` (bulk-select
+  checkboxes on unlinked rows in `<RewardLogTable>`, `/portal/rewards`) fixes
+  a batch of them at once without needing per-reward edit.
 - **Payout records** — `/portal/events/[id]/roster` CSV (character, UID,
   Discord, platform, region, team, sign-up state, attendance) covers who
   joined; `/portal/rewards/export?eventId=` — the "↓ Crystgin sheet" link on

@@ -3,10 +3,10 @@ import { requirePermission } from "@/lib/session";
 import { db } from "@/lib/db";
 import { can } from "@/lib/rbac";
 import { fmtDate } from "@/lib/format";
+import { guessEventForReason } from "@/lib/reward-match";
 import { RewardForm } from "@/components/portal/reward-form";
-import { ConfirmButton } from "@/components/portal/confirm-button";
+import { RewardLogTable } from "@/components/portal/reward-log-table";
 import { DisputeActions } from "@/components/portal/dispute-actions";
-import { deleteReward } from "@/app/(site)/portal/actions";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +14,7 @@ export default async function PortalRewardsPage() {
   const user = await requirePermission("reward:view");
   const canGrant = can(user.role, "reward:grant");
 
-  const [rewards, disputed, players, events] = await Promise.all([
+  const [rewards, disputed, players, eventsRaw] = await Promise.all([
     db.reward.findMany({
       orderBy: { grantedAt: "desc" },
       take: 100,
@@ -40,9 +40,34 @@ export default async function PortalRewardsPage() {
         })
       : Promise.resolve([]),
     canGrant
-      ? db.event.findMany({ orderBy: { startsAt: "desc" }, take: 50, select: { id: true, title: true } })
+      ? db.event.findMany({ orderBy: { startsAt: "desc" }, take: 50, select: { id: true, title: true, startsAt: true } })
       : Promise.resolve([]),
   ]);
+
+  // Most likely-relevant first: already-happened events (most recent first), then upcoming (soonest first).
+  const now = Date.now();
+  const events = [...eventsRaw].sort((a, b) => {
+    const aPast = a.startsAt.getTime() <= now;
+    const bPast = b.startsAt.getTime() <= now;
+    if (aPast !== bPast) return aPast ? -1 : 1;
+    return aPast ? b.startsAt.getTime() - a.startsAt.getTime() : a.startsAt.getTime() - b.startsAt.getTime();
+  });
+
+  const rewardRows = rewards.map((r) => ({
+    id: r.id,
+    playerId: r.player.id,
+    playerName: r.player.characterName ?? "Unnamed",
+    item: r.item,
+    amount: r.amount,
+    reason: r.reason,
+    isPublic: r.isPublic,
+    received: !!r.receivedAt,
+    disputed: !!r.disputedAt,
+    eventTitle: r.event?.title ?? null,
+    guessedEventTitle: r.event ? null : (guessEventForReason(r.reason, events)?.title ?? null),
+    grantedByName: r.grantedBy.name ?? r.grantedBy.email ?? "",
+    grantedAtLabel: fmtDate(r.grantedAt),
+  }));
 
   return (
     <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
@@ -95,56 +120,12 @@ export default async function PortalRewardsPage() {
             ↓ Export CSV
           </Link>
         </div>
-        <div className="mt-4 overflow-x-auto">
-          <table className="w-full min-w-[640px] text-sm">
-            <thead className="text-left text-xs uppercase text-slate-500">
-              <tr>
-                <th className="py-2">Player</th>
-                <th className="py-2">Item</th>
-                <th className="py-2">Reason</th>
-                <th className="py-2">Event</th>
-                <th className="py-2">By</th>
-                <th className="py-2">Date</th>
-                <th className="py-2"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-edge/60">
-              {rewards.map((r) => (
-                <tr key={r.id}>
-                  <td className="py-2">
-                    <Link href={`/portal/players/${r.player.id}`} className="text-slate-200 hover:text-teal">
-                      {r.player.characterName ?? "Unnamed"}
-                    </Link>
-                  </td>
-                  <td className="py-2 text-teal">
-                    {r.item}{r.amount ? ` ×${r.amount}` : ""}
-                    {r.receivedAt && <span className="ml-2 text-[0.65rem] uppercase text-teal/70">✓ received</span>}
-                    {!r.receivedAt && r.disputedAt && (
-                      <span className="ml-2 text-[0.65rem] uppercase text-ember">⚠ missing</span>
-                    )}
-                  </td>
-                  <td className="py-2 text-slate-300">{r.reason}{r.isPublic && <span className="badge ml-2">public</span>}</td>
-                  <td className="py-2 text-slate-500">{r.event?.title ?? "—"}</td>
-                  <td className="py-2 text-slate-500">{r.grantedBy.name ?? r.grantedBy.email}</td>
-                  <td className="py-2 text-slate-500">{fmtDate(r.grantedAt)}</td>
-                  <td className="py-2">
-                    {canGrant && (
-                      <ConfirmButton
-                        action={deleteReward.bind(null, r.id, r.player.id)}
-                        confirm="Delete this reward?"
-                        className="text-xs text-slate-500 hover:text-red-300"
-                      >
-                        delete
-                      </ConfirmButton>
-                    )}
-                  </td>
-                </tr>
-              ))}
-              {rewards.length === 0 && (
-                <tr><td colSpan={7} className="py-6 text-slate-400">No rewards logged yet.</td></tr>
-              )}
-            </tbody>
-          </table>
+        <div className="mt-4">
+          <RewardLogTable
+            rewards={rewardRows}
+            events={events.map((e) => ({ id: e.id, label: e.title }))}
+            canGrant={canGrant}
+          />
         </div>
       </div>
 

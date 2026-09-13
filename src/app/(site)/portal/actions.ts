@@ -1145,6 +1145,30 @@ export async function deleteReward(rewardId: string, playerId: string) {
   revalidatePath("/winners");
 }
 
+/** Bulk-fix for rewards logged without picking "Linked event" — link several at once. */
+export async function assignRewardsToEvent(rewardIds: string[], eventId: string): Promise<FormState> {
+  const actor = await assertPermission("reward:grant");
+  if (rewardIds.length === 0) return { error: "Pick at least one reward." };
+  if (!eventId) return { error: "Pick an event." };
+
+  const event = await db.event.findUnique({ where: { id: eventId }, select: { title: true } });
+  if (!event) return { error: "That event is gone." };
+
+  const res = await db.reward.updateMany({
+    where: { id: { in: rewardIds } },
+    data: { eventId },
+  });
+  await logAudit({
+    actorId: actor.id,
+    action: "reward.assignEvent",
+    targetType: "Event",
+    targetId: eventId,
+    meta: { count: res.count, rewardIds },
+  });
+  revalidatePath("/portal/rewards");
+  return { ok: true, count: res.count };
+}
+
 // --------------------------------------------------------------------------
 // Teams (staff moderation)
 // --------------------------------------------------------------------------

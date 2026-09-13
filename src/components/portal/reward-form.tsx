@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useRef, useState } from "react";
 import { grantReward } from "@/app/(site)/portal/actions";
 import { PlayerPicker } from "@/components/portal/player-picker";
+import { guessEventForReason } from "@/lib/reward-match";
 
 export function RewardForm({
   players,
@@ -18,13 +19,22 @@ export function RewardForm({
   const [state, action, pending] = useActionState(grantReward, {});
   const ref = useRef<HTMLFormElement>(null);
   const [resetKey, setResetKey] = useState(0);
+  const [reason, setReason] = useState("");
+  const [eventId, setEventId] = useState("");
 
   useEffect(() => {
     if (state.ok) {
       ref.current?.reset();
       setResetKey((k) => k + 1);
+      setReason("");
+      setEventId("");
     }
   }, [state.ok]);
+
+  const guess =
+    !fixedEventId && !eventId && events
+      ? guessEventForReason(reason, events.map((e) => ({ id: e.id, title: e.label })))
+      : null;
 
   return (
     <form ref={ref} action={action} className="grid gap-3">
@@ -50,7 +60,14 @@ export function RewardForm({
 
       <div>
         <label className="label">Reason</label>
-        <input name="reason" required className="input" placeholder="e.g. 1st place — Purge Night" />
+        <input
+          name="reason"
+          required
+          className="input"
+          placeholder="e.g. 1st place — Purge Night"
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+        />
       </div>
 
       {fixedEventId ? (
@@ -58,13 +75,34 @@ export function RewardForm({
       ) : (
         events && (
           <div>
-            <label className="label">Linked event (optional)</label>
-            <select name="eventId" className="input" defaultValue="">
-              <option value="">—</option>
+            <label className="label">Which event was this for?</label>
+            <select
+              name="eventId"
+              className="input"
+              value={eventId}
+              onChange={(e) => setEventId(e.target.value)}
+            >
+              <option value="">Not tied to a specific event</option>
               {events.map((e) => (
                 <option key={e.id} value={e.id}>{e.label}</option>
               ))}
             </select>
+            <p className="mt-1 text-xs text-slate-500">
+              Leave it on &ldquo;Not tied to a specific event&rdquo; only if that&apos;s true —
+              otherwise this reward won&apos;t show up on that event&apos;s payout sheet.
+            </p>
+            {guess && (
+              <p className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-ember">
+                Reason mentions &ldquo;{guess.title}&rdquo; — did you mean to link it?
+                <button
+                  type="button"
+                  className="font-mono text-[0.66rem] uppercase tracking-widest text-teal hover:text-cream"
+                  onClick={() => setEventId(guess.id)}
+                >
+                  Link it
+                </button>
+              </p>
+            )}
           </div>
         )
       )}
