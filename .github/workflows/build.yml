@@ -1,8 +1,11 @@
 name: Build & publish image
 
-# Builds the app image on GitHub's runners and pushes it to GHCR, so the VPS
-# only has to `docker compose pull && up -d` instead of building (which starves
-# its 2 vCPUs and drops SSH). See ops/ci-deploy.md for the one-time server cutover.
+# Builds the app image on GitHub's runners, pushes it to GHCR, then SSHes into
+# the VPS to pull + restart — so a push to main deploys itself, and the box
+# never builds (which used to starve its 2 vCPUs and drop SSH).
+# Requires repo secrets VPS_HOST / VPS_USER / VPS_SSH_KEY, and the VPS-side
+# cutover in ops/ci-deploy.md (compose pointed at the GHCR image, deploy.sh
+# swapped to pull-only, GHCR pull access from the box).
 
 on:
   push:
@@ -49,3 +52,18 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    # Skipped (not failed) until VPS_HOST/VPS_USER/VPS_SSH_KEY secrets exist —
+    # see ops/ci-deploy.md.
+    if: vars.DEPLOY_ENABLED == 'true'
+    steps:
+      - name: Pull + restart on the VPS
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: cd /opt/ascenith && ./deploy.sh
