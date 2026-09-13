@@ -1100,6 +1100,57 @@ export async function grantReward(_prev: FormState, formData: FormData): Promise
   return { ok: true };
 }
 
+/**
+ * Fix a typo on an already-logged reward (item/amount/reason/event/public) in
+ * place — unlike delete + re-log, this keeps the original audit trail and
+ * does NOT re-notify the player (no "reward granted" DM).
+ */
+export async function editReward(_prev: FormState, formData: FormData): Promise<FormState> {
+  const actor = await assertPermission("reward:grant");
+  const id = (formData.get("id") as string) || "";
+  if (!id) return { error: "Missing reward." };
+
+  const parsed = rewardSchema
+    .pick({ item: true, amount: true, reason: true, eventId: true, isPublic: true })
+    .safeParse({
+      item: formData.get("item"),
+      amount: (formData.get("amount") as string) || null,
+      reason: formData.get("reason"),
+      eventId: (formData.get("eventId") as string) || null,
+      isPublic: formData.get("isPublic") === "on",
+    });
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid reward." };
+
+  const existing = await db.reward.findUnique({
+    where: { id },
+    select: { playerId: true, item: true, amount: true, reason: true, eventId: true, isPublic: true },
+  });
+  if (!existing) return { error: "That reward is gone." };
+
+  await db.reward.update({
+    where: { id },
+    data: {
+      item: parsed.data.item,
+      amount: parsed.data.amount ?? null,
+      reason: parsed.data.reason,
+      eventId: parsed.data.eventId ?? null,
+      isPublic: parsed.data.isPublic ?? false,
+    },
+  });
+  await logAudit({
+    actorId: actor.id,
+    action: "reward.edit",
+    targetType: "Reward",
+    targetId: id,
+    meta: { before: existing, after: parsed.data },
+  });
+
+  revalidatePath("/portal/rewards");
+  revalidatePath(`/portal/players/${existing.playerId}`);
+  revalidatePath("/winners");
+  return { ok: true };
+}
+
 /** Staff resolves a player's "didn't get it" flag — sent = mark received, else dismiss. */
 export async function resolveRewardDispute(
   rewardId: string,

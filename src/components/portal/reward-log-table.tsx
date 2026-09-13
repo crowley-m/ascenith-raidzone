@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useActionState, useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { assignRewardsToEvent, deleteReward } from "@/app/(site)/portal/actions";
+import { assignRewardsToEvent, deleteReward, editReward } from "@/app/(site)/portal/actions";
 import { ConfirmButton } from "@/components/portal/confirm-button";
 
 export type RewardRow = {
@@ -16,6 +16,7 @@ export type RewardRow = {
   isPublic: boolean;
   received: boolean;
   disputed: boolean;
+  eventId: string | null;
   eventTitle: string | null;
   guessedEventTitle: string | null; // only set when eventTitle is null
   grantedByName: string;
@@ -36,6 +37,7 @@ export function RewardLogTable({
   const [bulkEventId, setBulkEventId] = useState("");
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const unlinkedIds = rewards.filter((r) => !r.eventTitle).map((r) => r.id);
   const allUnlinkedSelected = unlinkedIds.length > 0 && unlinkedIds.every((id) => selected.has(id));
@@ -68,6 +70,8 @@ export function RewardLogTable({
       router.refresh();
     });
   }
+
+  const colCount = 7 + (canGrant && unlinkedIds.length > 0 ? 1 : 0);
 
   return (
     <div>
@@ -127,64 +131,85 @@ export function RewardLogTable({
             </tr>
           </thead>
           <tbody className="divide-y divide-edge/60">
-            {rewards.map((r) => (
-              <tr key={r.id}>
-                {canGrant && unlinkedIds.length > 0 && (
+            {rewards.map((r) =>
+              editingId === r.id ? (
+                <tr key={r.id}>
+                  <td colSpan={colCount} className="py-3">
+                    <EditRewardRow
+                      reward={r}
+                      events={events}
+                      onDone={() => setEditingId(null)}
+                    />
+                  </td>
+                </tr>
+              ) : (
+                <tr key={r.id}>
+                  {canGrant && unlinkedIds.length > 0 && (
+                    <td className="py-2">
+                      {!r.eventTitle && (
+                        <input
+                          type="checkbox"
+                          checked={selected.has(r.id)}
+                          onChange={() => toggle(r.id)}
+                        />
+                      )}
+                    </td>
+                  )}
                   <td className="py-2">
-                    {!r.eventTitle && (
-                      <input
-                        type="checkbox"
-                        checked={selected.has(r.id)}
-                        onChange={() => toggle(r.id)}
-                      />
+                    <Link href={`/portal/players/${r.playerId}`} className="text-slate-200 hover:text-teal">
+                      {r.playerName}
+                    </Link>
+                  </td>
+                  <td className="py-2 text-teal">
+                    {r.item}{r.amount ? ` ×${r.amount}` : ""}
+                    {r.received && <span className="ml-2 text-[0.65rem] uppercase text-teal/70">✓ received</span>}
+                    {!r.received && r.disputed && (
+                      <span className="ml-2 text-[0.65rem] uppercase text-ember">⚠ missing</span>
                     )}
                   </td>
-                )}
-                <td className="py-2">
-                  <Link href={`/portal/players/${r.playerId}`} className="text-slate-200 hover:text-teal">
-                    {r.playerName}
-                  </Link>
-                </td>
-                <td className="py-2 text-teal">
-                  {r.item}{r.amount ? ` ×${r.amount}` : ""}
-                  {r.received && <span className="ml-2 text-[0.65rem] uppercase text-teal/70">✓ received</span>}
-                  {!r.received && r.disputed && (
-                    <span className="ml-2 text-[0.65rem] uppercase text-ember">⚠ missing</span>
-                  )}
-                </td>
-                <td className="py-2 text-slate-300">
-                  {r.reason}
-                  {r.isPublic && <span className="badge ml-2">public</span>}
-                </td>
-                <td className="py-2 text-slate-500">
-                  {r.eventTitle ?? (
-                    r.guessedEventTitle ? (
-                      <span
-                        className="text-ember"
-                        title={`Reason mentions "${r.guessedEventTitle}" but no event is linked — select it above and use "Assign to event".`}
-                      >
-                        — <span className="text-[0.65rem]">≈ {r.guessedEventTitle}?</span>
-                      </span>
-                    ) : (
-                      "—"
-                    )
-                  )}
-                </td>
-                <td className="py-2 text-slate-500">{r.grantedByName}</td>
-                <td className="py-2 text-slate-500">{r.grantedAtLabel}</td>
-                <td className="py-2">
-                  {canGrant && (
-                    <ConfirmButton
-                      action={deleteReward.bind(null, r.id, r.playerId)}
-                      confirm="Delete this reward?"
-                      className="text-xs text-slate-500 hover:text-red-300"
-                    >
-                      delete
-                    </ConfirmButton>
-                  )}
-                </td>
-              </tr>
-            ))}
+                  <td className="py-2 text-slate-300">
+                    {r.reason}
+                    {r.isPublic && <span className="badge ml-2">public</span>}
+                  </td>
+                  <td className="py-2 text-slate-500">
+                    {r.eventTitle ?? (
+                      r.guessedEventTitle ? (
+                        <span
+                          className="text-ember"
+                          title={`Reason mentions "${r.guessedEventTitle}" but no event is linked — select it above and use "Assign to event".`}
+                        >
+                          — <span className="text-[0.65rem]">≈ {r.guessedEventTitle}?</span>
+                        </span>
+                      ) : (
+                        "—"
+                      )
+                    )}
+                  </td>
+                  <td className="py-2 text-slate-500">{r.grantedByName}</td>
+                  <td className="py-2 text-slate-500">{r.grantedAtLabel}</td>
+                  <td className="py-2">
+                    {canGrant && (
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          className="text-xs text-slate-500 hover:text-teal"
+                          onClick={() => setEditingId(r.id)}
+                        >
+                          edit
+                        </button>
+                        <ConfirmButton
+                          action={deleteReward.bind(null, r.id, r.playerId)}
+                          confirm="Delete this reward?"
+                          className="text-xs text-slate-500 hover:text-red-300"
+                        >
+                          delete
+                        </ConfirmButton>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ),
+            )}
             {rewards.length === 0 && (
               <tr>
                 <td colSpan={8} className="py-6 text-slate-400">No rewards logged yet.</td>
@@ -194,5 +219,58 @@ export function RewardLogTable({
         </table>
       </div>
     </div>
+  );
+}
+
+function EditRewardRow({
+  reward,
+  events,
+  onDone,
+}: {
+  reward: RewardRow;
+  events: { id: string; label: string }[];
+  onDone: () => void;
+}) {
+  const [state, action, pending] = useActionState(editReward, {});
+  const router = useRouter();
+
+  useEffect(() => {
+    if (state.ok) {
+      onDone();
+      router.refresh();
+    }
+  }, [state.ok, onDone, router]);
+
+  return (
+    <form action={action} className="grid gap-2 border border-edge bg-panel-2 p-3">
+      <input type="hidden" name="id" value={reward.id} />
+      <p className="text-xs text-slate-500">
+        Editing {reward.playerName}&apos;s reward — no notification is re-sent to the player.
+      </p>
+      <div className="grid gap-2 sm:grid-cols-2">
+        <input name="item" defaultValue={reward.item} required className="input" placeholder="Item" />
+        <input name="amount" defaultValue={reward.amount ?? ""} className="input" placeholder="Amount" />
+      </div>
+      <input name="reason" defaultValue={reward.reason} required className="input" placeholder="Reason" />
+      <select name="eventId" defaultValue={reward.eventId ?? ""} className="input">
+        <option value="">Not tied to a specific event</option>
+        {events.map((e) => (
+          <option key={e.id} value={e.id}>{e.label}</option>
+        ))}
+      </select>
+      <label className="flex items-center gap-2 text-xs text-slate-400">
+        <input type="checkbox" name="isPublic" defaultChecked={reward.isPublic} className="accent-teal" />
+        Show on the public proof gallery
+      </label>
+      {state.error && <p className="text-xs text-ember">{state.error}</p>}
+      <div className="flex gap-2">
+        <button className="btn-primary text-xs" disabled={pending}>
+          {pending ? "Saving…" : "Save"}
+        </button>
+        <button type="button" className="btn-ghost text-xs" onClick={onDone} disabled={pending}>
+          Cancel
+        </button>
+      </div>
+    </form>
   );
 }

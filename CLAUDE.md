@@ -148,7 +148,11 @@ mutation writes an `AuditLog` row via `logAudit(...)`; viewer at `/portal/audit`
   flags already-unlinked rows in the reward log (amber `≈ Title?` hint) so
   they're easy to spot after the fact. `assignRewardsToEvent` (bulk-select
   checkboxes on unlinked rows in `<RewardLogTable>`, `/portal/rewards`) fixes
-  a batch of them at once without needing per-reward edit.
+  a batch of them at once without needing per-reward edit. Fixing a typo on
+  an already-logged reward (item/amount/reason/event/public) doesn't need
+  delete-and-relog — `editReward` (inline "edit" row on `<RewardLogTable>`)
+  updates it in place, keeps the original audit trail, and deliberately does
+  NOT re-send the "reward granted" DM (unlike `grantReward`).
 - **Payout records** — `/portal/events/[id]/roster` CSV (character, UID,
   Discord, platform, region, team, sign-up state, attendance) covers who
   joined; `/portal/rewards/export?eventId=` — the "↓ Crystgin sheet" link in

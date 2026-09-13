@@ -71,6 +71,7 @@ export default async function PortalRewardsPage({
     isPublic: r.isPublic,
     received: !!r.receivedAt,
     disputed: !!r.disputedAt,
+    eventId: r.eventId,
     eventTitle: r.event?.title ?? null,
     guessedEventTitle: r.event ? null : (guessEventForReason(r.reason, events)?.title ?? null),
     grantedByName: r.grantedBy.name ?? r.grantedBy.email ?? "",
