@@ -8,8 +8,8 @@ import {
   withdrawTeamFromEvent,
   registerAsFreeAgent,
   withdrawFromEvent,
-  updateEventNickname,
 } from "@/app/(site)/events/actions";
+import { NicknameEditor } from "@/components/nickname-editor";
 
 type State =
   | { kind: "no-account" }
@@ -17,55 +17,6 @@ type State =
   | { kind: "no-team"; freeAgent: boolean }
   | { kind: "member"; teamName: string; registered: boolean }
   | { kind: "leader"; teamName: string; memberCount: number; registeredCount: number };
-
-/** Small inline "set my display name for this event" control, reused across states. */
-function NicknameEditor({ eventId, nickname }: { eventId: string; nickname?: string | null }) {
-  const router = useRouter();
-  const [pending, start] = useTransition();
-  const [editing, setEditing] = useState(false);
-  const [nick, setNick] = useState(nickname ?? "");
-  const [msg, setMsg] = useState<string | null>(null);
-
-  if (!editing) {
-    return (
-      <button
-        className="font-mono text-[0.66rem] uppercase tracking-widest text-slate-500 hover:text-teal"
-        onClick={() => setEditing(true)}
-      >
-        {nickname ? `Playing as ${nickname} — change` : "Use a different name for this event"}
-      </button>
-    );
-  }
-  return (
-    <div className="flex items-center gap-2">
-      <input
-        value={nick}
-        onChange={(e) => setNick(e.target.value)}
-        maxLength={40}
-        placeholder="Display name for this event"
-        className="input py-1 text-xs"
-      />
-      <button
-        className="font-mono text-[0.66rem] uppercase text-teal disabled:opacity-50"
-        disabled={pending}
-        onClick={() =>
-          start(async () => {
-            const res = await updateEventNickname(eventId, nick);
-            if (res?.error) setMsg(res.error);
-            else {
-              setMsg(null);
-              setEditing(false);
-              router.refresh();
-            }
-          })
-        }
-      >
-        Save
-      </button>
-      {msg && <span className="text-xs text-ember">{msg}</span>}
-    </div>
-  );
-}
 
 export function TeamSignup({
   eventId,
