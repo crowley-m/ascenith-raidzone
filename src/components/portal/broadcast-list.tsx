@@ -9,6 +9,7 @@ type Broadcast = {
   channelName: string;
   title: string | null;
   body: string;
+  imageUrl: string | null;
   asEmbed: boolean;
   postedBy: string;
   postedAt: string;
@@ -46,6 +47,14 @@ export function BroadcastList({ broadcasts }: { broadcasts: Broadcast[] }) {
             </div>
             {b.title && <div className="mt-1 font-bold text-slate-200">{b.title}</div>}
             <div className="mt-0.5 whitespace-pre-wrap text-slate-400">{b.body}</div>
+            {b.imageUrl && (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={b.imageUrl}
+                alt=""
+                className="mt-2 max-h-32 border border-edge object-contain"
+              />
+            )}
             <div className="mt-2 flex gap-3">
               <button
                 className="font-mono text-[0.66rem] uppercase tracking-widest text-teal hover:text-cream"
@@ -65,6 +74,7 @@ export function BroadcastList({ broadcasts }: { broadcasts: Broadcast[] }) {
 function EditForm({ broadcast, onDone }: { broadcast: Broadcast; onDone: () => void }) {
   const [state, action, pending] = useActionState(editBroadcast, {});
   const router = useRouter();
+  const [removeImage, setRemoveImage] = useState(false);
   useEffect(() => {
     if (state.ok) {
       onDone();
@@ -93,6 +103,42 @@ function EditForm({ broadcast, onDone }: { broadcast: Broadcast; onDone: () => v
         maxLength={4000}
         required
       />
+      <div>
+        {broadcast.imageUrl && !removeImage && (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={broadcast.imageUrl}
+            alt=""
+            className="mb-2 max-h-32 border border-edge object-contain"
+          />
+        )}
+        <input
+          name="imageFile"
+          type="file"
+          accept="image/png,image/jpeg,image/webp,image/gif"
+          disabled={removeImage}
+          className="input text-xs file:mr-3 file:border-0 file:bg-edge file:px-3 file:py-1.5 file:text-slate-200 disabled:opacity-50"
+        />
+        <input
+          name="imageUrl"
+          type="url"
+          disabled={removeImage}
+          className="input mt-2 font-mono text-xs disabled:opacity-50"
+          placeholder="…or paste a full https:// image URL"
+        />
+        {broadcast.imageUrl && (
+          <label className="mt-1 flex items-center gap-2 text-xs text-slate-400">
+            <input
+              type="checkbox"
+              name="removeImage"
+              checked={removeImage}
+              onChange={(e) => setRemoveImage(e.target.checked)}
+              className="accent-teal"
+            />
+            Remove the image
+          </label>
+        )}
+      </div>
       <label className="flex items-center gap-2 text-xs text-slate-400">
         <input type="checkbox" name="asEmbed" defaultChecked={broadcast.asEmbed} className="accent-teal" />
         Post as an embed

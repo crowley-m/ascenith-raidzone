@@ -521,6 +521,7 @@ model Broadcast {
   messageId       String
   title           String?
   body            String
+  imageUrl        String?
   asEmbed         Boolean  @default(false)
   mentionEveryone Boolean  @default(false)
   postedById      String

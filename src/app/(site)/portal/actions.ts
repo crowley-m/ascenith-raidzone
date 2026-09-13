@@ -1809,16 +1809,34 @@ export async function postBroadcast(_prev: FormState, formData: FormData): Promi
   if (!channelId) return { error: "Pick a channel to post to." };
   if (!body) return { error: "Write something to announce." };
 
+  let imageUrl = ((formData.get("imageUrl") as string) || "").trim() || null;
+  const imageFile = formData.get("imageFile");
+  if (imageFile instanceof File && imageFile.size > 0) {
+    try {
+      const asset = await createMediaAsset({
+        kind: "broadcast",
+        file: imageFile,
+        createdById: actor.id,
+      });
+      imageUrl = `${APP_URL}/api/media/${asset.id}`;
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : "Could not process the image." };
+    }
+  }
+
   try {
     // postToChannel adds the @everyone prefix when mentionEveryone is set —
-    // don't add it here too.
+    // don't add it here too. An image rides along as an image-only embed even
+    // in plain-text mode, so it attaches without turning the message into a box.
+    const image = imageUrl ? { url: imageUrl } : undefined;
     const payload = asEmbed
       ? {
-          embed: { title: title || undefined, description: body.slice(0, 4000) },
+          embed: { title: title || undefined, description: body.slice(0, 4000), image },
           mentionEveryone,
         }
       : {
           content: `${title ? `**${title}**\n` : ""}${body}`.slice(0, 1980),
+          embed: image ? { image } : undefined,
           mentionEveryone,
         };
     const msg = await postToChannel(channelId, payload);
@@ -1830,6 +1848,7 @@ export async function postBroadcast(_prev: FormState, formData: FormData): Promi
         messageId: msg.id,
         title: title || null,
         body,
+        imageUrl,
         asEmbed,
         mentionEveryone,
         postedById: actor.id,
@@ -1863,10 +1882,35 @@ export async function editBroadcast(_prev: FormState, formData: FormData): Promi
   const existing = await db.broadcast.findUnique({ where: { id } });
   if (!existing) return { error: "That broadcast is gone." };
 
+  let imageUrl = existing.imageUrl;
+  if (formData.get("removeImage") === "on") {
+    imageUrl = null;
+  } else {
+    const pastedUrl = ((formData.get("imageUrl") as string) || "").trim();
+    if (pastedUrl) imageUrl = pastedUrl;
+    const imageFile = formData.get("imageFile");
+    if (imageFile instanceof File && imageFile.size > 0) {
+      try {
+        const asset = await createMediaAsset({
+          kind: "broadcast",
+          file: imageFile,
+          createdById: actor.id,
+        });
+        imageUrl = `${APP_URL}/api/media/${asset.id}`;
+      } catch (e) {
+        return { error: e instanceof Error ? e.message : "Could not process the image." };
+      }
+    }
+  }
+
   try {
+    const image = imageUrl ? { url: imageUrl } : undefined;
     const payload = asEmbed
-      ? { embed: { title: title || undefined, description: body.slice(0, 4000) } }
-      : { content: `${title ? `**${title}**\n` : ""}${body}`.slice(0, 1980) };
+      ? { embed: { title: title || undefined, description: body.slice(0, 4000), image } }
+      : {
+          content: `${title ? `**${title}**\n` : ""}${body}`.slice(0, 1980),
+          embed: image ? { image } : undefined,
+        };
     await editChannelMessage(existing.channelId, existing.messageId, payload);
   } catch (err) {
     return { error: `Discord: ${err instanceof Error ? err.message : "edit failed"}` };
@@ -1874,7 +1918,7 @@ export async function editBroadcast(_prev: FormState, formData: FormData): Promi
 
   await db.broadcast.update({
     where: { id },
-    data: { title: title || null, body, asEmbed, editedAt: new Date() },
+    data: { title: title || null, body, imageUrl, asEmbed, editedAt: new Date() },
   });
   await logAudit({
     actorId: actor.id,

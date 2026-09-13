@@ -112,7 +112,12 @@ mutation writes an `AuditLog` row via `logAudit(...)`; viewer at `/portal/audit`
 - **Broadcast** (`/portal/broadcast`) — server-wide announcements outside an
   event's own space. Every post is tracked in the `Broadcast` model (channel +
   message id), so "Recent broadcasts" can edit it in place
-  (`editBroadcast` — never re-pings) or delete it (`deleteBroadcast`).
+  (`editBroadcast` — never re-pings) or delete it (`deleteBroadcast`). Optional
+  image (`Broadcast.imageUrl`) — upload or paste a URL, same
+  upload-wins-over-URL pattern as an event poster (`createMediaAsset`, kind
+  `"broadcast"`). Rides along as an image-only embed even when not posting
+  "as an embed", so it attaches to a plain-text message too; edit can replace
+  or remove it.
 - **Notifications** — players get Discord DMs (waitlist promotion, reward
   granted, event starting, placed in results, event cancelled, teammate
   joined / left) unless `Player.dmNotifications` is off. `src/lib/notify.ts`.

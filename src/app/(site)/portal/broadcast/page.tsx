@@ -66,6 +66,7 @@ export default async function BroadcastPage() {
               channelName: channelName(r.channelId) ?? r.channelId,
               title: r.title,
               body: r.body,
+              imageUrl: r.imageUrl,
               asEmbed: r.asEmbed,
               postedBy: r.postedBy.name ?? r.postedBy.discordUsername ?? "staff",
               postedAt: r.postedAt.toISOString(),

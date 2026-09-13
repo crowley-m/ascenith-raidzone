@@ -63,6 +63,26 @@ export function BroadcastForm({
         <p className="mt-1 text-xs text-slate-500">Discord markdown works. Up to 4000 characters.</p>
       </div>
 
+      <div>
+        <label className="label">Image (optional)</label>
+        <input
+          name="imageFile"
+          type="file"
+          accept="image/png,image/jpeg,image/webp,image/gif"
+          className="input text-xs file:mr-3 file:border-0 file:bg-edge file:px-3 file:py-1.5 file:text-slate-200"
+        />
+        <p className="mt-1 text-xs text-slate-500">
+          Upload an image, or paste a URL below — uploading replaces the URL. Attaches even without
+          &ldquo;Post as an embed&rdquo;.
+        </p>
+        <input
+          name="imageUrl"
+          type="url"
+          className="input mt-2 font-mono text-xs"
+          placeholder="…or paste a full https:// image URL"
+        />
+      </div>
+
       <label className="flex items-center gap-2 text-sm text-slate-300">
         <input type="checkbox" name="asEmbed" className="accent-teal" />
         Post as an embed (boxed, with the RAIDZONE accent)
