@@ -47,6 +47,19 @@ export default async function MyTeamPage() {
     regRows.map((r) => [r.teamId, r.state as "SIGNED_UP" | "WAITLIST"]),
   );
 
+  // per-event display name for every member across all of this player's teams
+  const nickRows = teams.length
+    ? await db.eventSignup.findMany({
+        where: {
+          eventId: { in: teams.map((t) => t.event.id) },
+          playerId: { in: teams.flatMap((t) => t.members.map((m) => m.playerId)) },
+        },
+        select: { eventId: true, playerId: true, nickname: true },
+      })
+    : [];
+  const nickFor = (eventId: string, playerId: string) =>
+    nickRows.find((r) => r.eventId === eventId && r.playerId === playerId)?.nickname ?? null;
+
   return (
     <div className="max-w-2xl space-y-8">
       <div>
@@ -75,6 +88,7 @@ export default async function MyTeamPage() {
             members: team.members.map((m) => ({
               playerId: m.playerId,
               name: m.player.characterName ?? "Unnamed",
+              nickname: nickFor(team.event.id, m.playerId),
               gameUid: m.player.gameUid,
               region: m.player.region,
             })),

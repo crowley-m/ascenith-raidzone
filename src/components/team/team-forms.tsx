@@ -77,6 +77,7 @@ export function JoinTeamForm() {
 type Member = {
   playerId: string;
   name: string;
+  nickname: string | null;
   gameUid: string | null;
   region: string | null;
 };
@@ -214,6 +215,7 @@ export function TeamPanel({
             >
               <span>
                 <span className="text-slate-100">{m.name}</span>
+                {m.nickname && <span className="ml-1.5 text-xs text-teal">as {m.nickname}</span>}
                 {m.playerId === team.leaderId && (
                   <span className="badge ml-2 border-teal/40 text-teal">Leader</span>
                 )}
