@@ -30,6 +30,7 @@ import {
   editChannelMessage,
   deleteChannelMessage,
   deleteChannel,
+  deleteGuildRole,
   eventEmoji,
   eventIndexContent,
   pinMessage,
@@ -1238,8 +1239,21 @@ export async function staffKickTeamMember(teamId: string, playerId: string) {
 
 export async function staffDisbandTeam(teamId: string) {
   const actor = await assertPermission("player:edit");
+  const team = await db.team.findUnique({
+    where: { id: teamId },
+    select: {
+      discordRoleId: true,
+      discordVoiceChannelId: true,
+      members: { select: { playerId: true } },
+    },
+  });
   await db.team.delete({ where: { id: teamId } });
   await logAudit({ actorId: actor.id, action: "team.staff_disband", targetType: "Team", targetId: teamId });
+  if (team) {
+    for (const m of team.members) void syncMemberRolesByPlayer(m.playerId);
+    if (team.discordVoiceChannelId) void deleteChannel(team.discordVoiceChannelId);
+    if (team.discordRoleId) void deleteGuildRole(team.discordRoleId);
+  }
   revalidatePath("/portal/teams");
   revalidatePath("/teams");
   redirect("/portal/teams");

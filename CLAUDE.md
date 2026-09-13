@@ -107,8 +107,12 @@ mutation writes an `AuditLog` row via `logAudit(...)`; viewer at `/portal/audit`
   a private voice channel + role per team (`Team.discordRoleId` /
   `discordVoiceChannelId`). **Archive** writes an `EventParticipation` row for
   every signed-up player (survives event deletion → "Events competed in" on the
-  public profile), then deletes the event + team roles / voice channels.
-  "Resync event roles" re-grants to everyone signed up.
+  public profile), then deletes the event + team roles / voice channels
+  (`teardownEventAccess`). "Resync event roles" re-grants to everyone signed
+  up. Disbanding a team also deletes its voice channel + role — both the
+  player's own `disbandTeam` and staff's `staffDisbandTeam` (`/portal/teams`)
+  do this; grab `discordVoiceChannelId`/`discordRoleId` (and member ids, to
+  resync their roles) *before* `db.team.delete`, since the row's gone after.
 - **Broadcast** (`/portal/broadcast`) — server-wide announcements outside an
   event's own space. Every post is tracked in the `Broadcast` model (channel +
   message id), so "Recent broadcasts" can edit it in place
