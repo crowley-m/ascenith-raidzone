@@ -565,9 +565,9 @@ export default async function EventDetailPage({
             {!session?.user && (
               <p className="mt-3 font-mono text-[0.7rem] uppercase tracking-wide text-slate-500">
                 No account?{" "}
-                <a href="/register" className="link">
+                <Link href="/register" className="link">
                   Register
-                </a>{" "}
+                </Link>{" "}
                 first.
               </p>
             )}

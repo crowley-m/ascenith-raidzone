@@ -66,14 +66,26 @@ export default async function MeOverviewPage() {
     (e) => e.format === "TEAM" && !signedEventIds.has(e.id) && !teamEventIds.has(e.id),
   );
 
-  // waitlist position per signup
+  // waitlist position per signup — one grouped query instead of one per signup
   const waitlistPos = new Map<string, number>();
-  for (const s of player.signups) {
-    if (s.state !== "WAITLIST") continue;
-    const ahead = await db.eventSignup.count({
-      where: { eventId: s.eventId, state: "WAITLIST", createdAt: { lt: s.createdAt } },
+  const waitlisted = player.signups.filter((s) => s.state === "WAITLIST");
+  if (waitlisted.length > 0) {
+    const eventIds = [...new Set(waitlisted.map((s) => s.eventId))];
+    const allWaitlisted = await db.eventSignup.findMany({
+      where: { eventId: { in: eventIds }, state: "WAITLIST" },
+      select: { id: true, eventId: true, createdAt: true },
+      orderBy: { createdAt: "asc" },
     });
-    waitlistPos.set(s.id, ahead + 1);
+    const byEvent = new Map<string, typeof allWaitlisted>();
+    for (const s of allWaitlisted) {
+      const arr = byEvent.get(s.eventId);
+      if (arr) arr.push(s);
+      else byEvent.set(s.eventId, [s]);
+    }
+    for (const s of waitlisted) {
+      const pos = (byEvent.get(s.eventId) ?? []).findIndex((x) => x.id === s.id);
+      if (pos !== -1) waitlistPos.set(s.id, pos + 1);
+    }
   }
 
   const running = player.signups.filter(

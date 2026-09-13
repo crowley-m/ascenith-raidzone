@@ -24,8 +24,8 @@ const STEPS = [
     title: "1. Register on this site",
     body: (
       <>
-        Create your profile with <Link href="/register" className="link">Register</Link> — Discord or
-        email works. Add your Once Human character name, platform, region, and{" "}
+        Create your profile with <Link href="/register" className="link">Register</Link> — sign in
+        with Discord. Add your Once Human character name, platform, region, and{" "}
         <b>in-game UID</b> so staff can find you and send rewards.
       </>
     ),

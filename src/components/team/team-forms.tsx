@@ -103,12 +103,18 @@ export function TeamPanel({
   const [pending, start] = useTransition();
   const [copied, setCopied] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   function run(fn: () => Promise<unknown>, confirmMsg?: string) {
     if (confirmMsg && !window.confirm(confirmMsg)) return;
+    setError(null);
     start(async () => {
-      await fn();
-      router.refresh();
+      try {
+        await fn();
+        router.refresh();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Something went wrong — try again.");
+      }
     });
   }
 
@@ -156,6 +162,8 @@ export function TeamPanel({
           onDone={() => setEditing(false)}
         />
       )}
+
+      {error && <p className="text-sm text-ember">{error}</p>}
 
       {/* invite code */}
       <div className="border border-edge/60 bg-void/40 p-3">

@@ -30,9 +30,9 @@ const STEPS = [
     title: "Register your raider",
     body: (
       <>
-        Create a profile with <Link href="/register" className="link">Register</Link> — Discord or
-        email. Add your Once Human character name and in-game UID so staff can find you and send
-        rewards.
+        Create a profile with <Link href="/register" className="link">Register</Link> — sign in
+        with Discord. Add your Once Human character name and in-game UID so staff can find you and
+        send rewards.
       </>
     ),
   },

@@ -27,21 +27,23 @@ export default async function PublicTeamPage({
 }) {
   const { id } = await params;
 
-  const team = await db.team.findUnique({
-    where: { id },
-    include: {
-      event: { select: { id: true, title: true, mode: true } },
-      leader: { select: { characterName: true } },
-      members: {
-        orderBy: { joinedAt: "asc" },
-        include: { player: { select: { characterName: true, region: true } } },
+  const team = await db.team
+    .findUnique({
+      where: { id },
+      include: {
+        event: { select: { id: true, title: true, mode: true } },
+        leader: { select: { characterName: true } },
+        members: {
+          orderBy: { joinedAt: "asc" },
+          include: { player: { select: { characterName: true, region: true } } },
+        },
+        placements: {
+          orderBy: { createdAt: "desc" },
+          include: { event: { select: { id: true, title: true, mode: true, startsAt: true } } },
+        },
       },
-      placements: {
-        orderBy: { createdAt: "desc" },
-        include: { event: { select: { id: true, title: true, mode: true, startsAt: true } } },
-      },
-    },
-  });
+    })
+    .catch(() => null);
   if (!team) notFound();
 
   const nicknames = team.event
