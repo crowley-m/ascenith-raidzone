@@ -10,8 +10,9 @@ import { FactionPicker } from "@/components/portal/faction-picker";
 import { NoteForm } from "@/components/portal/note-form";
 import { FlagForm } from "@/components/portal/flag-form";
 import { RewardForm } from "@/components/portal/reward-form";
+import { PlayerRewardList } from "@/components/portal/player-reward-list";
 import { ConfirmButton } from "@/components/portal/confirm-button";
-import { deleteNote, deleteReward, deleteFlag } from "@/app/(site)/portal/actions";
+import { deleteNote, deleteFlag } from "@/app/(site)/portal/actions";
 
 export const dynamic = "force-dynamic";
 
@@ -38,9 +39,15 @@ export default async function PlayerDetailPage({
   if (!player) notFound();
 
   const canManageFaction = can(user.role, "faction:manage");
-  const factions = canManageFaction
-    ? await db.faction.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } })
-    : [];
+  const canGrant = can(user.role, "reward:grant");
+  const [factions, events] = await Promise.all([
+    canManageFaction
+      ? db.faction.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } })
+      : Promise.resolve([]),
+    canGrant
+      ? db.event.findMany({ orderBy: { startsAt: "desc" }, take: 50, select: { id: true, title: true } })
+      : Promise.resolve([]),
+  ]);
 
   const hidden = await hiddenActorIds(user.role);
   const attendedIds = new Set(player.attendance.filter((a) => a.attended).map((a) => a.eventId));
@@ -134,28 +141,21 @@ export default async function PlayerDetailPage({
           {/* Rewards */}
           <div className="card">
             <h3 className="font-display font-bold text-white">Rewards</h3>
-            <ul className="mt-3 divide-y divide-edge/60 text-sm">
-              {player.rewards.length === 0 && <li className="py-2 text-slate-400">None yet.</li>}
-              {player.rewards.map((r) => (
-                <li key={r.id} className="flex items-center justify-between gap-3 py-2">
-                  <span>
-                    <span className="text-teal">{r.item}{r.amount ? ` ×${r.amount}` : ""}</span>
-                    <span className="text-slate-400"> — {r.reason}</span>
-                    {r.event && <span className="text-slate-600"> ({r.event.title})</span>}
-                    {r.isPublic && <span className="badge ml-2">public</span>}
-                  </span>
-                  {can(user.role, "reward:grant") && (
-                    <ConfirmButton
-                      action={deleteReward.bind(null, r.id, player.id)}
-                      confirm="Delete this reward?"
-                    >
-                      Delete
-                    </ConfirmButton>
-                  )}
-                </li>
-              ))}
-            </ul>
-            {can(user.role, "reward:grant") && (
+            <PlayerRewardList
+              playerId={player.id}
+              rewards={player.rewards.map((r) => ({
+                id: r.id,
+                item: r.item,
+                amount: r.amount,
+                reason: r.reason,
+                isPublic: r.isPublic,
+                eventId: r.eventId,
+                eventTitle: r.event?.title ?? null,
+              }))}
+              events={events.map((e) => ({ id: e.id, label: e.title }))}
+              canGrant={canGrant}
+            />
+            {canGrant && (
               <details className="mt-4">
                 <summary className="cursor-pointer text-sm text-teal">+ Log a reward</summary>
                 <div className="mt-3">

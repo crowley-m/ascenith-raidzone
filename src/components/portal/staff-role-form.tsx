@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { setStaffRole } from "@/app/(site)/portal/actions";
+import { PlayerPicker } from "@/components/portal/player-picker";
 
 type Candidate = {
   id: string;
@@ -13,30 +14,28 @@ type Candidate = {
 export function StaffRoleForm({ candidates }: { candidates: Candidate[] }) {
   const [state, action, pending] = useActionState(setStaffRole, {});
   const ref = useRef<HTMLFormElement>(null);
+  const [resetKey, setResetKey] = useState(0);
   useEffect(() => {
-    if (state.ok) ref.current?.reset();
+    if (state.ok) {
+      ref.current?.reset();
+      setResetKey((k) => k + 1);
+    }
   }, [state.ok]);
 
   const label = (c: Candidate) =>
-    c.name ??
-    c.discordUsername ??
-    c.email ??
-    c.id.slice(0, 8);
+    (c.name ?? c.discordUsername ?? c.email ?? c.id.slice(0, 8)) +
+    (c.discordUsername ? ` · @${c.discordUsername}` : "") +
+    (c.email ? ` · ${c.email}` : "");
 
   return (
     <form ref={ref} action={action} className="grid gap-3">
       <div>
         <label className="label">Person</label>
-        <select name="userId" className="input" defaultValue="">
-          <option value="">— pick someone who has signed in —</option>
-          {candidates.map((c) => (
-            <option key={c.id} value={c.id}>
-              {label(c)}
-              {c.discordUsername ? ` · @${c.discordUsername}` : ""}
-              {c.email ? ` · ${c.email}` : ""}
-            </option>
-          ))}
-        </select>
+        <PlayerPicker
+          key={resetKey}
+          name="userId"
+          players={candidates.map((c) => ({ id: c.id, label: label(c) }))}
+        />
       </div>
 
       <div>

@@ -11,10 +11,12 @@ const STATUSES: PlayerStatus[] = ["PENDING", "ACTIVE", "INACTIVE", "BANNED"];
 export default async function PlayersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; q?: string }>;
+  searchParams: Promise<{ status?: string; q?: string; page?: string }>;
 }) {
   await requirePermission("player:view");
-  const { status, q } = await searchParams;
+  const { status, q, page } = await searchParams;
+  const pageN = Math.max(1, Number(page) || 1);
+  const take = 100;
 
   const where: Prisma.PlayerWhereInput = {};
   if (status && STATUSES.includes(status as PlayerStatus)) where.status = status as PlayerStatus;
@@ -26,27 +28,40 @@ export default async function PlayersPage({
     ];
   }
 
-  const [players, counts] = await Promise.all([
+  const [players, matched, counts] = await Promise.all([
     db.player.findMany({
       where,
       orderBy: [{ status: "asc" }, { createdAt: "desc" }],
-      take: 200,
+      skip: (pageN - 1) * take,
+      take,
       include: {
         user: { select: { email: true, discordUsername: true } },
         faction: { select: { name: true } },
         _count: { select: { rewards: true } },
       },
     }),
+    db.player.count({ where }),
     db.player.groupBy({ by: ["status"], _count: true }),
   ]);
   const countFor = (s: string) => counts.find((c) => c.status === s)?._count ?? 0;
   const total = counts.reduce((n, c) => n + (typeof c._count === "number" ? c._count : 0), 0);
+  const pages = Math.ceil(matched / take);
+  const pageHref = (n: number) =>
+    `/portal/players?${new URLSearchParams({
+      ...(q ? { q } : {}),
+      ...(status ? { status } : {}),
+      page: String(n),
+    })}`;
 
   return (
     <div>
       <div className="flex flex-wrap items-center gap-3">
         <h2 className="font-display text-xl font-bold text-white">Players</h2>
-        <span className="text-sm text-slate-500">{players.length} shown</span>
+        <span className="text-sm text-slate-500">
+          {matched > take
+            ? `${(pageN - 1) * take + 1}–${(pageN - 1) * take + players.length} of ${matched}`
+            : `${players.length} shown`}
+        </span>
         <Link
           href="/portal/players/export"
           prefetch={false}
@@ -139,6 +154,18 @@ export default async function PlayersPage({
         </table>
         {players.length === 0 && <p className="py-6 text-sm text-slate-400">No players match.</p>}
       </div>
+
+      {pages > 1 && (
+        <div className="mt-4 flex items-center gap-3 text-sm">
+          {pageN > 1 && (
+            <Link href={pageHref(pageN - 1)} className="link">← Newer</Link>
+          )}
+          <span className="text-slate-500">Page {pageN} / {pages}</span>
+          {pageN < pages && (
+            <Link href={pageHref(pageN + 1)} className="link">Older →</Link>
+          )}
+        </div>
+      )}
     </div>
   );
 }

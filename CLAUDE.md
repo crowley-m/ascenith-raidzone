@@ -150,9 +150,12 @@ mutation writes an `AuditLog` row via `logAudit(...)`; viewer at `/portal/audit`
   checkboxes on unlinked rows in `<RewardLogTable>`, `/portal/rewards`) fixes
   a batch of them at once without needing per-reward edit. Fixing a typo on
   an already-logged reward (item/amount/reason/event/public) doesn't need
-  delete-and-relog — `editReward` (inline "edit" row on `<RewardLogTable>`)
-  updates it in place, keeps the original audit trail, and deliberately does
-  NOT re-send the "reward granted" DM (unlike `grantReward`).
+  delete-and-relog — `editReward` updates it in place, keeps the original
+  audit trail, and deliberately does NOT re-send the "reward granted" DM
+  (unlike `grantReward`). The edit form itself is
+  `src/components/portal/reward-edit-form.tsx` — shared between
+  `<RewardLogTable>` (`/portal/rewards`) and `<PlayerRewardList>` (a player's
+  own portal page), so both stay in sync.
 - **Payout records** — `/portal/events/[id]/roster` CSV (character, UID,
   Discord, platform, region, team, sign-up state, attendance) covers who
   joined; `/portal/rewards/export?eventId=` — the "↓ Crystgin sheet" link in

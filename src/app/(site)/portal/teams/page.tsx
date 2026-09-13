@@ -2,20 +2,40 @@ import Link from "next/link";
 import { requirePermission } from "@/lib/session";
 import { db } from "@/lib/db";
 import { fmtDate } from "@/lib/format";
+import type { Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
-export default async function PortalTeamsPage() {
+export default async function PortalTeamsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; eventId?: string }>;
+}) {
   await requirePermission("player:view");
+  const { q, eventId } = await searchParams;
 
-  const teams = await db.team.findMany({
-    orderBy: { createdAt: "asc" },
-    include: {
-      leader: { select: { characterName: true } },
-      event: { select: { title: true, mode: true } },
-      _count: { select: { members: true, placements: true } },
-    },
-  });
+  const where: Prisma.TeamWhereInput = {};
+  if (eventId) where.eventId = eventId;
+  if (q) {
+    where.OR = [
+      { name: { contains: q, mode: "insensitive" } },
+      { tag: { contains: q, mode: "insensitive" } },
+      { leader: { characterName: { contains: q, mode: "insensitive" } } },
+    ];
+  }
+
+  const [teams, events] = await Promise.all([
+    db.team.findMany({
+      where,
+      orderBy: { createdAt: "asc" },
+      include: {
+        leader: { select: { characterName: true } },
+        event: { select: { title: true, mode: true } },
+        _count: { select: { members: true, placements: true } },
+      },
+    }),
+    db.event.findMany({ orderBy: { startsAt: "desc" }, take: 50, select: { id: true, title: true } }),
+  ]);
 
   return (
     <div>
@@ -25,6 +45,25 @@ export default async function PortalTeamsPage() {
       <p className="mt-1 text-sm text-slate-400">
         Player-made squads for team events. Members and event history per team.
       </p>
+
+      <form className="mt-4 flex flex-wrap gap-2" action="/portal/teams">
+        <input
+          name="q"
+          defaultValue={q ?? ""}
+          placeholder="Search team, tag, or leader…"
+          className="input max-w-xs"
+        />
+        <select name="eventId" defaultValue={eventId ?? ""} className="input max-w-[16rem]">
+          <option value="">All events</option>
+          {events.map((e) => (
+            <option key={e.id} value={e.id}>{e.title}</option>
+          ))}
+        </select>
+        <button className="btn-ghost" type="submit">Filter</button>
+        {(q || eventId) && (
+          <Link href="/portal/teams" className="btn-ghost">Clear</Link>
+        )}
+      </form>
 
       <div className="mt-6 overflow-x-auto">
         <table className="w-full min-w-[560px] text-sm">
@@ -65,7 +104,7 @@ export default async function PortalTeamsPage() {
             {teams.length === 0 && (
               <tr>
                 <td colSpan={6} className="py-4 text-slate-400">
-                  No teams yet.
+                  {q || eventId ? "No teams match." : "No teams yet."}
                 </td>
               </tr>
             )}
