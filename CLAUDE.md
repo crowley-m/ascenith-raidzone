@@ -262,15 +262,15 @@ server, not in the repo). One image, two services (`web` + `bot`). The web
 service runs `prisma migrate deploy` + seed on boot; the bot re-registers slash
 commands on boot.
 
-Redeploy: `git archive --format=tar.gz -o repo.tar.gz HEAD`, scp to
-`/opt/ascenith/`, then `rm -rf repo && mkdir repo && tar -xzf repo.tar.gz -C repo
-&& ./deploy.sh`. The box has **2 vCPUs** — `deploy.sh` `nice`/`ionice`s the build
-so it doesn't starve sshd (connection drops mid-build were the cause). Run the
-build detached (`nohup ./deploy.sh >log 2>&1 &`) and poll the log so a dropped
-SSH session can't kill it. `.github/workflows/build.yml` builds + pushes the
-image to GHCR; `ops/ci-deploy.md` has the (not-yet-done) server cutover to
-`docker compose pull`. Public URL is an nginx vhost on the box — **do not touch
-other services on that shared VPS.**
+**Redeploy is automatic**: push to `main` → `.github/workflows/build.yml`
+builds the image, pushes to GHCR, then SSHes into the VPS and runs
+`./deploy.sh`, which just `docker compose --profile app pull` +
+`up -d` — no local build anymore. Gated on the `DEPLOY_ENABLED` repo variable
+and `VPS_HOST`/`VPS_USER`/`VPS_SSH_KEY` repo secrets; `ops/ci-deploy.md` has
+the full setup + rollback (`docker-compose.yml.bak` / `deploy.sh.bak` on the
+box are the pre-cutover, build-locally versions). Manual redeploy still works
+the same way: SSH in, `cd /opt/ascenith && ./deploy.sh`. Public URL is an
+nginx vhost on the box — **do not touch other services on that shared VPS.**
 
 Site metadata (`metadataBase`, sitemap, robots) reads `NEXTAUTH_URL` at runtime —
 that's why the landing, sitemap and robots are `force-dynamic`.
