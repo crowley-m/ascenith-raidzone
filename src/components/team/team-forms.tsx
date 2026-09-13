@@ -13,6 +13,7 @@ import {
   regenerateInviteCode,
   disbandTeam,
 } from "@/app/(site)/me/team/actions";
+import { NicknameEditor } from "@/components/nickname-editor";
 
 type TeamEvent = { id: string; title: string; mode: string | null };
 
@@ -64,6 +65,18 @@ export function JoinTeamForm() {
         className="input font-mono uppercase tracking-[0.3em]"
         placeholder="INVITE CODE"
       />
+      <div>
+        <input
+          name="nickname"
+          maxLength={40}
+          className="input py-1.5 text-sm"
+          placeholder="Display name for this event (optional)"
+        />
+        <p className="mt-1 text-xs text-slate-500">
+          Only affects this event, not your real profile name — only matters if the team&apos;s
+          already registered (otherwise set it later from the roster).
+        </p>
+      </div>
       {state.error && <p className="text-sm text-ember">{state.error}</p>}
       <div>
         <button className="btn-ghost" disabled={pending}>
@@ -83,6 +96,7 @@ type Member = {
 };
 
 export function TeamPanel({
+  me,
   isLeader,
   team,
 }: {
@@ -222,6 +236,11 @@ export function TeamPanel({
                 <span className="block text-xs text-slate-500">
                   {m.gameUid ? `UID ${m.gameUid}` : "no UID"} {m.region ? `· ${m.region}` : ""}
                 </span>
+                {m.playerId === me && (
+                  <span className="mt-1 block">
+                    <NicknameEditor eventId={team.eventId} nickname={m.nickname} />
+                  </span>
+                )}
               </span>
               {isLeader && m.playerId !== team.leaderId && (
                 <span className="flex gap-1">

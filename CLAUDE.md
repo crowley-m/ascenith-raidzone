@@ -124,13 +124,22 @@ mutation writes an `AuditLog` row via `logAudit(...)`; viewer at `/portal/audit`
 - **Per-event nickname** — `EventSignup.nickname` lets a player use a different
   display name for one event (multiple characters, an event-specific alias)
   without touching their profile. Set at sign-up (solo `signUpForEvent`, free
-  agent `registerAsFreeAgent`) or any time after via `updateEventNickname`
-  (shared by solo/free-agent/team-member — no state/capacity side effects).
-  Public rosters, `/teams/[id]`, and the portal player/team pages show it
-  ("as `<nickname>`" alongside the real name in staff views); the roster CSV
-  carries both as separate columns. `EventParticipation.nickname` snapshots it
-  so it survives archive/delete too. Placements/results/the bot still key off
-  `Player.characterName` — nickname is a roster-display layer, not identity.
+  agent `registerAsFreeAgent`), when joining a team (`joinTeam`'s optional
+  `nickname` field — best-effort, only takes if the team's already registered
+  since that's the only time an `EventSignup` row exists yet), or any time
+  after via `updateEventNickname` (shared by solo/free-agent/team-member — no
+  state/capacity side effects; the shared `<NicknameEditor>` client component,
+  `src/components/nickname-editor.tsx`, wraps it and is used on the event
+  page, `/me/team`'s own roster row, and anywhere else the control is
+  needed — a teal "+ Change name" affordance, not muted caption text, so it
+  reads as clickable). Public rosters, `/teams/[id]`, `/me/team`, and the
+  portal player/team pages show it ("as `<nickname>`" alongside the real name
+  in staff views); the roster CSV carries both as separate columns.
+  `EventParticipation.nickname` snapshots it so it survives archive/delete
+  too. Placements/results/the bot still key off `Player.characterName` —
+  nickname is a roster-display layer, not identity. `/me/profile`'s Character
+  name field says so explicitly now, pointing players at the per-event
+  nickname instead of renaming their real profile for a one-off team alias.
 - **Check-in** — signed-up players self-mark attendance (`checkInToEvent`) from
   the event page from 30 min before start until the wipe ends; staff still
   override via the portal toggle / "mark all".

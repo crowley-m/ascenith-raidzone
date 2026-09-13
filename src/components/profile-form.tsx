@@ -162,6 +162,11 @@ export function ProfileForm({
           <label className="label" htmlFor="characterName">Character name *</label>
           <input id="characterName" className="input" required maxLength={60}
             value={form.characterName} onChange={set("characterName")} />
+          <p className="mt-1 text-xs text-slate-500">
+            Your real, permanent identity — used for results, rewards and the bot. Want a
+            different name for just one event or team? Use &ldquo;Change name for this
+            event&rdquo; on that event&apos;s page instead of changing this.
+          </p>
           {err("characterName") && <p className="mt-1 text-xs text-ember">{err("characterName")}</p>}
         </div>
         <div>

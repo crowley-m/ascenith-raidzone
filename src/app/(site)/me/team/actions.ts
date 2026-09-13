@@ -9,6 +9,7 @@ import { logAudit } from "@/lib/audit";
 import { teamCreateSchema, teamJoinSchema } from "@/lib/validation";
 import { uniqueInviteCode, teamForEvent } from "@/lib/team";
 import { registerTeam } from "@/lib/events";
+import { updateEventNickname } from "@/app/(site)/events/actions";
 import { notify, notifyPlayer } from "@/lib/notify";
 import { syncMemberRolesByPlayer } from "@/lib/discord-roles";
 import { ensureTeamVoice, revokeTeamVoice, revokeEventAccess } from "@/lib/event-space";
@@ -149,6 +150,10 @@ export async function joinTeam(_prev: TeamState, formData: FormData): Promise<Te
       select: { playerId: true },
     });
     await registerTeam(team.eventId, { id: team.id, members });
+
+    // best-effort — only meaningful once this join put them on the event roster
+    const nickname = ((formData.get("nickname") as string) || "").trim();
+    if (nickname) await updateEventNickname(team.eventId, nickname).catch(() => {});
   }
 
   revalidatePath("/me/team");
