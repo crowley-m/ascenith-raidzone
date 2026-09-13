@@ -39,9 +39,11 @@ export default async function PortalRewardsPage() {
           select: { id: true, characterName: true, gameUid: true, user: { select: { email: true } } },
         })
       : Promise.resolve([]),
-    canGrant
-      ? db.event.findMany({ orderBy: { startsAt: "desc" }, take: 50, select: { id: true, title: true, startsAt: true } })
-      : Promise.resolve([]),
+    db.event.findMany({
+      orderBy: { startsAt: "desc" },
+      take: 50,
+      select: { id: true, title: true, startsAt: true },
+    }),
   ]);
 
   // Most likely-relevant first: already-happened events (most recent first), then upcoming (soonest first).
@@ -110,15 +112,26 @@ export default async function PortalRewardsPage() {
           </div>
         )}
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <h2 className="font-display text-xl font-bold text-white">Reward log</h2>
-          <Link
-            href="/portal/rewards/export"
-            prefetch={false}
-            className="ml-auto font-mono text-[0.7rem] uppercase tracking-wide text-slate-400 hover:text-teal"
+          <form
+            action="/portal/rewards/export"
+            method="GET"
+            className="ml-auto flex items-center gap-2"
           >
-            ↓ Export CSV
-          </Link>
+            <select name="eventId" defaultValue="" className="input w-auto py-1 text-xs">
+              <option value="">All events</option>
+              {events.map((e) => (
+                <option key={e.id} value={e.id}>{e.title}</option>
+              ))}
+            </select>
+            <button
+              type="submit"
+              className="font-mono text-[0.7rem] uppercase tracking-wide text-slate-400 hover:text-teal"
+            >
+              ↓ Export CSV
+            </button>
+          </form>
         </div>
         <div className="mt-4">
           <RewardLogTable

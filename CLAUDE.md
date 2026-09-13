@@ -151,9 +151,11 @@ mutation writes an `AuditLog` row via `logAudit(...)`; viewer at `/portal/audit`
   a batch of them at once without needing per-reward edit.
 - **Payout records** — `/portal/events/[id]/roster` CSV (character, UID,
   Discord, platform, region, team, sign-up state, attendance) covers who
-  joined; `/portal/rewards/export?eventId=` — the "↓ Crystgin sheet" link on
-  the event page's Placed section (also "↓ Export CSV" on `/portal/rewards`
-  for the full history, no `eventId`) — is deliberately just `EVENT`/`ID`/
+  joined; `/portal/rewards/export?eventId=` — the "↓ Crystgin sheet" link in
+  the event page's Registrations section (always tied to that one event) and
+  "↓ Export CSV" on `/portal/rewards` (a plain GET `<form>`, no JS, with an
+  event `<select>` next to it — pick one to scope the download, or "All
+  events" for the full history) — is deliberately just `EVENT`/`ID`/
   `REGION`/`CRYSTGIN` (gameUid + amount, hardcoded to this community's one
   payout currency) so a dev has nothing else to parse when handing out
   rewards.
