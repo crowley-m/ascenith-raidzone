@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { grantReward } from "@/app/(site)/portal/actions";
+import { PlayerPicker } from "@/components/portal/player-picker";
 
 export function RewardForm({
   players,
@@ -16,9 +17,13 @@ export function RewardForm({
 }) {
   const [state, action, pending] = useActionState(grantReward, {});
   const ref = useRef<HTMLFormElement>(null);
+  const [resetKey, setResetKey] = useState(0);
 
   useEffect(() => {
-    if (state.ok) ref.current?.reset();
+    if (state.ok) {
+      ref.current?.reset();
+      setResetKey((k) => k + 1);
+    }
   }, [state.ok]);
 
   return (
@@ -28,12 +33,7 @@ export function RewardForm({
       ) : (
         <div>
           <label className="label">Player</label>
-          <select name="playerId" required className="input" defaultValue="">
-            <option value="" disabled>Choose a player…</option>
-            {players?.map((p) => (
-              <option key={p.id} value={p.id}>{p.label}</option>
-            ))}
-          </select>
+          <PlayerPicker key={resetKey} name="playerId" players={players ?? []} required />
         </div>
       )}
 

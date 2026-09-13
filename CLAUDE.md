@@ -183,6 +183,16 @@ space actually has, whether each was posted yet, an "Edit content" jump link
 to that `#content-<name>` anchor, an "Open in Discord ↗" link
 (`discordId + DISCORD_GUILD_ID`), and add/remove.
 
+## Player picker
+
+`src/components/portal/player-picker.tsx` — a searchable + scrollable
+combobox (text input + filtered `<ul>` dropdown, submits a hidden `name`
+input) used anywhere staff pick one player from a long list, e.g.
+`RewardForm`'s Player field. Swap in over a plain `<select>` whenever the
+option list is the full player roster rather than a short per-event list
+(`ResultsForm`'s placement dropdowns stay native `<select>` — entrants are
+scoped to that event's roster, short enough that scrolling alone is fine).
+
 ## Migrations
 
 Hand-write the SQL. `prisma migrate deploy` runs on web container boot (then
