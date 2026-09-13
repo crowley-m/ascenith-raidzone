@@ -10,12 +10,18 @@ import { DisputeActions } from "@/components/portal/dispute-actions";
 
 export const dynamic = "force-dynamic";
 
-export default async function PortalRewardsPage() {
+export default async function PortalRewardsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ eventId?: string }>;
+}) {
+  const { eventId } = await searchParams;
   const user = await requirePermission("reward:view");
   const canGrant = can(user.role, "reward:grant");
 
   const [rewards, disputed, players, eventsRaw] = await Promise.all([
     db.reward.findMany({
+      where: eventId ? { eventId } : undefined,
       orderBy: { grantedAt: "desc" },
       take: 100,
       include: {
@@ -114,25 +120,29 @@ export default async function PortalRewardsPage() {
 
         <div className="flex flex-wrap items-center gap-3">
           <h2 className="font-display text-xl font-bold text-white">Reward log</h2>
-          <form
-            action="/portal/rewards/export"
-            method="GET"
-            className="ml-auto flex items-center gap-2"
-          >
-            <select name="eventId" defaultValue="" className="input w-auto py-1 text-xs">
+          <form action="/portal/rewards" className="ml-auto flex items-center gap-2">
+            <select name="eventId" defaultValue={eventId ?? ""} className="input w-auto py-1 text-xs">
               <option value="">All events</option>
               {events.map((e) => (
                 <option key={e.id} value={e.id}>{e.title}</option>
               ))}
             </select>
-            <button
-              type="submit"
-              className="font-mono text-[0.7rem] uppercase tracking-wide text-slate-400 hover:text-teal"
-            >
-              ↓ Export CSV
-            </button>
+            <button type="submit" className="btn-ghost text-xs">Filter</button>
           </form>
+          <Link
+            href={`/portal/rewards/export${eventId ? `?eventId=${eventId}` : ""}`}
+            prefetch={false}
+            className="font-mono text-[0.7rem] uppercase tracking-wide text-slate-400 hover:text-teal"
+          >
+            ↓ Export CSV
+          </Link>
         </div>
+        {eventId && (
+          <p className="mt-1 text-xs text-slate-500">
+            Showing only {events.find((e) => e.id === eventId)?.title ?? "this event"} —{" "}
+            <Link href="/portal/rewards" className="text-teal hover:text-cream">clear filter</Link>
+          </p>
+        )}
         <div className="mt-4">
           <RewardLogTable
             rewards={rewardRows}
