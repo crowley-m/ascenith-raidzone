@@ -4,6 +4,7 @@ import { useActionState, useEffect, useRef, useState } from "react";
 import { saveEvent } from "@/app/(site)/portal/actions";
 import { EVENT_TIMEZONES, DEFAULT_EVENT_TZ } from "@/lib/tz";
 import { proseItems } from "@/lib/prose";
+import { relative } from "@/lib/format";
 
 /** Small "how this will read in Discord" snippet — an approximation, not the
  * exact embed (see the full Discord preview panel on the event page for that). */
@@ -157,6 +158,8 @@ export function EventForm({
     wipeInfoMd: event?.wipeInfoMd ?? "",
     rewardsMd: event?.rewardsMd ?? "",
     rulesMd: event?.rulesMd ?? "",
+    rewardTiersText: event?.rewardTiersText ?? "",
+    title: event?.title ?? "",
   }));
   const [dirty, setDirty] = useState(false);
 
@@ -202,6 +205,16 @@ export function EventForm({
       warnings.push("Only the announcement channel is checked — nothing else will build.");
     }
   }
+
+  // lines that won't survive parseRewardTiers (needs "place | reward", both sides non-empty)
+  const badTierLines = values.rewardTiersText
+    .split("\n")
+    .map((l, i) => ({ line: i + 1, text: l.trim() }))
+    .filter(({ text }) => {
+      if (!text) return false;
+      const [place, ...rest] = text.split("|");
+      return !place.trim() || !rest.join("|").trim();
+    });
 
   function fillExample() {
     const f = formRef.current;
@@ -280,6 +293,31 @@ export function EventForm({
       className="grid max-w-3xl gap-4"
     >
       {event && <input type="hidden" name="id" value={event.id} />}
+
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border border-edge bg-panel/40 px-3 py-2">
+        <span className="font-display font-bold text-white">
+          {values.title || (event ? "Untitled event" : "New event")}
+        </span>
+        <span className="flex flex-wrap items-center gap-3 font-mono text-[0.66rem] uppercase tracking-widest">
+          <span
+            className={
+              values.status === "PUBLISHED"
+                ? "text-teal"
+                : values.status === "CANCELLED"
+                  ? "text-ember"
+                  : "text-slate-400"
+            }
+          >
+            {values.status.toLowerCase()}
+          </span>
+          {values.startsAt && !Number.isNaN(new Date(values.startsAt).getTime()) && (
+            <span className="text-slate-400">starts {relative(new Date(values.startsAt))}</span>
+          )}
+          <span className="text-slate-400">
+            {channelPlan.size} channel{channelPlan.size === 1 ? "" : "s"}
+          </span>
+        </span>
+      </div>
 
       <nav className="sticky top-0 z-10 -mx-1 flex gap-4 border-b border-edge bg-panel/95 px-1 py-2 font-mono text-[0.66rem] uppercase tracking-widest text-slate-500 backdrop-blur">
         <a href="#basics" className="hover:text-teal">Basics</a>
@@ -514,6 +552,13 @@ export function EventForm({
           defaultValue={event?.rewardTiersText ?? ""}
           placeholder={"1st | 30K Crystgin\n2nd | 25K Crystgin\n3rd | 15K Crystgin"}
         />
+        {badTierLines.length > 0 && (
+          <p className="mt-1 text-xs text-ember">
+            {badTierLines.map(({ line }) => `Line ${line}`).join(", ")} — missing a{" "}
+            <code>|</code>, so {badTierLines.length === 1 ? "it" : "they"} won&apos;t be saved as
+            a tier. Use &ldquo;place | reward&rdquo;, e.g. <code>1st | 30K Crystgin</code>.
+          </p>
+        )}
       </div>
 
       <div>
