@@ -249,6 +249,18 @@ mutation writes an `AuditLog` row via `logAudit(...)`; viewer at `/portal/audit`
   player's roster/attendance history actually runs (leftmost-prefix rule).
   Added `@@index([playerId])` to both (migration
   `20260915010000_signup_attendance_player_index`).
+- **"Veteran" badge role** — `Settings.veteranRoleId` (Portal → Settings,
+  alongside "Registered"/"Team leader") is granted by `syncMemberRoles` the
+  moment a player has at least one `EventParticipation` row — a permanent
+  Discord badge, unlike the per-event access role
+  (`Event.discordRoleId`/`Team.discordRoleId`) which is *deleted* on
+  archive/delete. `teardownEventAccess` triggers a sync right after writing
+  each participant's row so the badge lands immediately, not on the next
+  unrelated profile action. `syncMemberRoles` only ever grants it, never
+  strips it back off. The actual persistent "played this event" record is
+  still the `EventParticipation` row itself, shown as "Events competed in"
+  on the public profile — this role is a Discord-side badge on top of that,
+  not a replacement for it.
 - **Auth account linking** — `allowDangerousEmailAccountLinking: true` on the
   Discord provider means a sign-in can attach to an existing `User` row on
   OAuth-email match alone. If that row was already linked to a *different*

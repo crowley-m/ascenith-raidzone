@@ -7,6 +7,7 @@ import {
   createRoleVoiceChannel,
   deleteChannel,
 } from "@/lib/discord";
+import { syncMemberRolesByPlayer } from "@/lib/discord-roles";
 
 async function discordIdFor(playerId: string): Promise<string | null> {
   const p = await db.player.findUnique({
@@ -183,6 +184,8 @@ export async function teardownEventAccess(eventId: string): Promise<void> {
         update: { nickname: s.nickname },
       })
       .catch(() => {});
+    // first participation record may just have earned them the veteran badge
+    void syncMemberRolesByPlayer(s.playerId);
   }
 
   for (const t of ev.teamsFor) {

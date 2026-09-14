@@ -6,12 +6,14 @@ import { addGuildRole, removeGuildRole } from "@/lib/discord";
  * Reconcile a member's managed Discord roles with their site state:
  *  - "Registered" role  ⇢  has a player profile
  *  - "Team leader" role ⇢  leads a team
+ *  - "Veteran" role      ⇢  has competed in at least one event — granted once,
+ *                           never stripped back off, unlike the other roles here
  *  - faction roles      ⇢  the one faction they belong to (all others removed)
  * No-ops when the role ids aren't set in Settings or the user has no Discord id.
  */
 export async function syncMemberRoles(userId: string): Promise<void> {
   try {
-    const { registeredRoleId, teamLeaderRoleId } = await getSettings();
+    const { registeredRoleId, teamLeaderRoleId, veteranRoleId } = await getSettings();
 
     const [user, factionRoles] = await Promise.all([
       db.user.findUnique({
@@ -33,7 +35,7 @@ export async function syncMemberRoles(userId: string): Promise<void> {
       }),
     ]);
 
-    if (!registeredRoleId && !teamLeaderRoleId && factionRoles.length === 0) return;
+    if (!registeredRoleId && !teamLeaderRoleId && !veteranRoleId && factionRoles.length === 0) return;
     if (!user?.discordId) return;
 
     const hasPlayer = !!user.player;
@@ -46,6 +48,13 @@ export async function syncMemberRoles(userId: string): Promise<void> {
     if (teamLeaderRoleId) {
       if (leadsTeam) await addGuildRole(user.discordId, teamLeaderRoleId);
       else await removeGuildRole(user.discordId, teamLeaderRoleId);
+    }
+    if (veteranRoleId && user.player) {
+      const played = await db.eventParticipation.findFirst({
+        where: { playerId: user.player.id },
+        select: { id: true },
+      });
+      if (played) await addGuildRole(user.discordId, veteranRoleId);
     }
     for (const f of factionRoles) {
       if (!f.discordRoleId) continue;
@@ -75,9 +84,9 @@ export async function syncMemberRolesByPlayer(playerId: string): Promise<void> {
  * Returns how many members it touched.
  */
 export async function syncAllMemberRoles(): Promise<{ synced: number }> {
-  const { registeredRoleId, teamLeaderRoleId } = await getSettings();
+  const { registeredRoleId, teamLeaderRoleId, veteranRoleId } = await getSettings();
   const anyFaction = await db.faction.count({ where: { discordRoleId: { not: null } } });
-  if (!registeredRoleId && !teamLeaderRoleId && anyFaction === 0) return { synced: 0 };
+  if (!registeredRoleId && !teamLeaderRoleId && !veteranRoleId && anyFaction === 0) return { synced: 0 };
 
   let synced = 0;
   let cursor: string | undefined;

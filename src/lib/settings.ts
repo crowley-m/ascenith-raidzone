@@ -17,6 +17,13 @@ export type Settings = {
   registeredRoleId: string;
   /** Discord role id granted to team leaders (blank = off). */
   teamLeaderRoleId: string;
+  /**
+   * Discord role id granted the moment a player has competed in at least one
+   * event (an EventParticipation row exists) — a permanent badge, unlike the
+   * per-event access role which gets deleted when that event is archived/
+   * deleted. Never revoked by syncMemberRoles once earned. Blank = off.
+   */
+  veteranRoleId: string;
   /** Social links shown in the landing footer — blank hides that one. */
   socialTiktokUrl: string;
   socialTwitchUrl: string;
@@ -50,6 +57,7 @@ const DEFAULTS: Settings = {
   howToJoinVideoUrl: "",
   registeredRoleId: "",
   teamLeaderRoleId: "",
+  veteranRoleId: "",
   socialTiktokUrl: "https://www.tiktok.com/@potatoziee1",
   socialTwitchUrl: "https://www.twitch.tv/potatozie1",
   socialXUrl: "https://x.com/potatoziee",
@@ -111,6 +119,8 @@ export async function getSettings(): Promise<Settings> {
       typeof map.registeredRoleId === "string" ? map.registeredRoleId : DEFAULTS.registeredRoleId,
     teamLeaderRoleId:
       typeof map.teamLeaderRoleId === "string" ? map.teamLeaderRoleId : DEFAULTS.teamLeaderRoleId,
+    veteranRoleId:
+      typeof map.veteranRoleId === "string" ? map.veteranRoleId : DEFAULTS.veteranRoleId,
     socialTiktokUrl:
       typeof map.socialTiktokUrl === "string" ? map.socialTiktokUrl : DEFAULTS.socialTiktokUrl,
     socialTwitchUrl:

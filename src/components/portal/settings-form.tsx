@@ -125,7 +125,7 @@ export function SettingsForm({
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <div>
           <label className="label">&ldquo;Registered&rdquo; role</label>
           {roleField("registeredRoleId", settings.registeredRoleId)}
@@ -138,6 +138,14 @@ export function SettingsForm({
           {roleField("teamLeaderRoleId", settings.teamLeaderRoleId)}
           <p className="mt-1 text-xs text-slate-500">
             Given to team leaders. The bot&apos;s role must sit above these in the role list.
+          </p>
+        </div>
+        <div>
+          <label className="label">&ldquo;Veteran&rdquo; role</label>
+          {roleField("veteranRoleId", settings.veteranRoleId)}
+          <p className="mt-1 text-xs text-slate-500">
+            Given the moment a player has competed in at least one event — a permanent badge,
+            unlike the other roles here it&apos;s never taken back off.
           </p>
         </div>
       </div>
