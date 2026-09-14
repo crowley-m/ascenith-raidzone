@@ -229,6 +229,7 @@ export async function kickMember(teamId: string, memberPlayerId: string) {
     targetId: teamId,
     meta: { memberPlayerId },
   });
+  void notifyPlayer(memberPlayerId, notify.teamKicked(team.name));
   void syncMemberRolesByPlayer(memberPlayerId);
   void revokeTeamVoice(teamId, memberPlayerId);
   revalidatePath("/me/team");
@@ -299,9 +300,13 @@ export async function disbandTeam(teamId: string) {
     where: { id: teamId },
     select: { discordRoleId: true, discordVoiceChannelId: true },
   });
+  const teamName = team.name;
   await db.team.delete({ where: { id: teamId } });
   await logAudit({ actorId: playerId, action: "team.disband", targetType: "Team", targetId: teamId });
-  for (const pid of memberIds) void syncMemberRolesByPlayer(pid);
+  for (const pid of memberIds) {
+    void syncMemberRolesByPlayer(pid);
+    if (pid !== playerId) void notifyPlayer(pid, notify.teamDisbanded(teamName));
+  }
   if (full?.discordVoiceChannelId) void deleteChannel(full.discordVoiceChannelId);
   if (full?.discordRoleId) void deleteGuildRole(full.discordRoleId);
   revalidatePath("/me/team");

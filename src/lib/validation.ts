@@ -50,7 +50,14 @@ export const eventSchema = z.object({
   bonusText: z.string().max(1500).nullable().optional(),
   rulesMd: z.string().max(20000).nullable().optional(),
   detailsMd: z.string().max(20000).nullable().optional(),
-  howToJoinVideoUrl: z.string().trim().max(500).nullable().optional().or(z.literal("")),
+  howToJoinVideoUrl: z
+    .string()
+    .trim()
+    .max(500)
+    .refine((s) => s === "" || /^https?:\/\//i.test(s), "Video link must start with http:// or https://")
+    .nullable()
+    .optional()
+    .or(z.literal("")),
   announcePing: z.coerce.boolean().optional(),
   announcePingAll: z.coerce.boolean().optional(),
   announcementMd: z.string().max(4000).nullable().optional(),
@@ -95,7 +102,17 @@ export const rewardSchema = z.object({
   amount: z.string().max(80).nullable().optional(),
   reason: z.string().min(1).max(1000),
   isPublic: z.coerce.boolean().optional(),
-  proofImageUrl: z.string().url().max(500).nullable().optional(),
+  // staff commonly paste a bare "imgur.com/x.png" — url() demands a scheme
+  // and rejects the whole reward log over a cosmetic slip, so accept it
+  // without one and add https:// ourselves.
+  proofImageUrl: z
+    .string()
+    .trim()
+    .max(500)
+    .transform((s) => (s && !/^https?:\/\//i.test(s) ? `https://${s}` : s))
+    .refine((s) => s === "" || z.string().url().safeParse(s).success, "Not a valid image URL")
+    .nullable()
+    .optional(),
 });
 
 export const seasonSchema = z.object({

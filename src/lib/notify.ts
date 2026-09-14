@@ -68,6 +68,12 @@ export const notify = {
   teamMemberLeft(memberName: string, teamName: string) {
     return `👋 **${memberName}** left your team **${teamName}**.`;
   },
+  teamKicked(teamName: string) {
+    return `👋 You were removed from **${teamName}**.`;
+  },
+  teamDisbanded(teamName: string) {
+    return `💥 Your team **${teamName}** was disbanded.`;
+  },
   teamShort(teamName: string, have: number, cap: number, eventTitle: string, eventId: string) {
     return (
       `⚠️ **${teamName}** has ${have}/${cap} players and **${eventTitle}** starts soon.\n` +

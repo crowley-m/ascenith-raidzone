@@ -16,6 +16,15 @@ client.once(Events.ClientReady, (c) => {
   startReminders(c);
 });
 
+// An unhandled 'error'/'shardError' on a Node EventEmitter with no listener
+// throws and kills the process — log instead so a network blip doesn't take
+// the whole bot down (the restart policy is the last resort, not the first).
+client.on(Events.Error, (err) => console.error("client error", err));
+client.on(Events.ShardError, (err) => console.error("shard error", err));
+
+process.on("unhandledRejection", (err) => console.error("unhandled rejection", err));
+process.on("uncaughtException", (err) => console.error("uncaught exception", err));
+
 client.on(Events.InteractionCreate, async (interaction) => {
   try {
     if (interaction.isChatInputCommand()) {

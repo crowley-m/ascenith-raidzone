@@ -21,8 +21,10 @@ export function VideoEmbed({ url, title = "Video" }: { url: string; title?: stri
 
   // Not a YouTube link (Twitch clip, Streamable, direct file, …) — still
   // give people a way to watch it instead of a silent gap on the page.
+  // Only ever render an http(s) href — this is free-typed staff input
+  // rendered straight into an <a>, so a javascript: URL must never reach it.
   if (!id) {
-    if (!url.trim()) return null;
+    if (!/^https?:\/\//i.test(url.trim())) return null;
     return (
       <a
         href={url}

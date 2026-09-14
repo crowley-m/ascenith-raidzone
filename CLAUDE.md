@@ -209,6 +209,30 @@ mutation writes an `AuditLog` row via `logAudit(...)`; viewer at `/portal/audit`
   proxy/CDN could cache and later leak it to an unauthenticated request.
   It now sends `private, no-store` whenever the image is only visible
   because the viewer is staff.
+- **Team removal notifications** — `kickMember`/`disbandTeam` (player) and
+  `staffKickTeamMember`/`staffDisbandTeam` (staff) all now DM the affected
+  player(s) (`notify.teamKicked`/`teamDisbanded`) — previously only the
+  voluntary-leave path (`notify.teamMemberLeft`, to the leader) sent
+  anything, so a kicked/disbanded player lost their roster spot and Discord
+  access with zero notice.
+- **`howToJoinVideoUrl` scheme restriction** — free-typed by staff and
+  rendered as a raw `href` by `<VideoEmbed>`'s non-YouTube fallback, so it's
+  validated to `http(s)` only (`eventSchema` in `src/lib/validation.ts`) and
+  `<VideoEmbed>` itself refuses to render anything else as a last line of
+  defense — a `javascript:` URL there would otherwise run in the site's
+  origin on click.
+- **Reward proof-image URL** — `rewardSchema.proofImageUrl` used to demand a
+  full `https://…` URL and reject the whole reward log over a bare
+  `imgur.com/x.png`; it now auto-prefixes a missing scheme before
+  validating.
+- **Bot crash resilience** — `src/bot/index.ts` now listens for
+  `Events.Error`/`Events.ShardError` on the client and
+  `unhandledRejection`/`uncaughtException` on the process, logging instead
+  of letting an unhandled emitter error kill the bot outright.
+- **`botConfigured` surfaced** — Portal → Settings shows a banner when
+  `DISCORD_BOT_TOKEN` isn't set on the *web* container specifically (`botConfigured`
+  in `src/lib/discord.ts`, previously computed but never read) — every
+  Discord call otherwise silently no-ops and saves still report success.
 - **Auth account linking** — `allowDangerousEmailAccountLinking: true` on the
   Discord provider means a sign-in can attach to an existing `User` row on
   OAuth-email match alone. If that row was already linked to a *different*

@@ -1,6 +1,6 @@
 import { requirePermission } from "@/lib/session";
 import { getSettings } from "@/lib/settings";
-import { listGuildTextChannels, listGuildRoles, botGuildPermissions } from "@/lib/discord";
+import { listGuildTextChannels, listGuildRoles, botGuildPermissions, botConfigured } from "@/lib/discord";
 import { SettingsForm } from "@/components/portal/settings-form";
 import { SyncAllRolesButton } from "@/components/portal/sync-all-roles-button";
 
@@ -21,6 +21,14 @@ export default async function PortalSettingsPage() {
       <p className="mt-1 text-sm text-slate-400">
         Bot behaviour and the Discord invite. These override the values baked in at deploy time.
       </p>
+
+      {!botConfigured && (
+        <div className="mt-4 border border-ember/40 bg-ember/5 p-3 text-xs text-ember">
+          <code className="font-mono">DISCORD_BOT_TOKEN</code> isn&apos;t set on the web container
+          — every Discord action (announcements, DMs, event spaces, role sync) silently no-ops.
+          Saves will still report success with nothing actually posted to Discord.
+        </div>
+      )}
 
       {botPerms && (
         <div

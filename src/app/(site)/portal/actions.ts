@@ -1258,11 +1258,12 @@ export async function assignRewardsToEvent(rewardIds: string[], eventId: string)
 
 export async function staffKickTeamMember(teamId: string, playerId: string) {
   const actor = await assertPermission("player:edit");
-  const team = await db.team.findUnique({ where: { id: teamId }, select: { leaderId: true } });
+  const team = await db.team.findUnique({ where: { id: teamId }, select: { leaderId: true, name: true } });
   if (!team) throw new Error("Team not found.");
   if (team.leaderId === playerId) throw new Error("Transfer leadership or disband the team instead.");
   await db.teamMember.deleteMany({ where: { teamId, playerId } });
   await logAudit({ actorId: actor.id, action: "team.staff_kick", targetType: "Team", targetId: teamId, meta: { playerId } });
+  void notifyPlayer(playerId, notify.teamKicked(team.name));
   revalidatePath(`/portal/teams/${teamId}`);
   revalidatePath("/portal/teams");
   revalidatePath("/teams");
@@ -1273,6 +1274,7 @@ export async function staffDisbandTeam(teamId: string) {
   const team = await db.team.findUnique({
     where: { id: teamId },
     select: {
+      name: true,
       discordRoleId: true,
       discordVoiceChannelId: true,
       members: { select: { playerId: true } },
@@ -1281,7 +1283,10 @@ export async function staffDisbandTeam(teamId: string) {
   await db.team.delete({ where: { id: teamId } });
   await logAudit({ actorId: actor.id, action: "team.staff_disband", targetType: "Team", targetId: teamId });
   if (team) {
-    for (const m of team.members) void syncMemberRolesByPlayer(m.playerId);
+    for (const m of team.members) {
+      void syncMemberRolesByPlayer(m.playerId);
+      void notifyPlayer(m.playerId, notify.teamDisbanded(team.name));
+    }
     if (team.discordVoiceChannelId) void deleteChannel(team.discordVoiceChannelId);
     if (team.discordRoleId) void deleteGuildRole(team.discordRoleId);
   }
