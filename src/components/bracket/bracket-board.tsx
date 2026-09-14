@@ -1,7 +1,18 @@
 import type { BracketView } from "@/lib/bracket";
 
+/** Earliest undecided match with both sides filled in — the next one to actually happen. */
+function upNextId(bracket: BracketView): string | null {
+  for (const r of bracket.rounds) {
+    for (const m of r.matches) {
+      if (!m.decided && m.a.label && m.b.label) return m.id;
+    }
+  }
+  return null;
+}
+
 /** Read-only single-elimination bracket. Columns per round, scrolls sideways. */
 export function BracketBoard({ bracket }: { bracket: BracketView }) {
+  const nextId = upNextId(bracket);
   return (
     <div className="overflow-x-auto pb-2">
       <div className="flex min-w-max gap-6">
@@ -12,10 +23,21 @@ export function BracketBoard({ bracket }: { bracket: BracketView }) {
             </div>
             <div className="flex flex-1 flex-col justify-around gap-3">
               {r.matches.map((m) => (
-                <div key={m.id} className="border border-edge bg-panel/40 text-sm">
-                  <Side label={m.a.label} score={m.a.score} won={m.a.won} decided={m.decided} />
-                  <div className="h-px bg-edge" />
-                  <Side label={m.b.label} score={m.b.score} won={m.b.won} decided={m.decided} />
+                <div key={m.id} className="relative">
+                  {m.id === nextId && (
+                    <span className="absolute -top-2 left-2 bg-void px-1 font-mono text-[0.58rem] font-bold uppercase tracking-[0.14em] text-teal">
+                      Up next
+                    </span>
+                  )}
+                  <div
+                    className={`border text-sm ${
+                      m.id === nextId ? "border-teal/60 bg-teal/5" : "border-edge bg-panel/40"
+                    }`}
+                  >
+                    <Side label={m.a.label} score={m.a.score} won={m.a.won} decided={m.decided} />
+                    <div className="h-px bg-edge" />
+                    <Side label={m.b.label} score={m.b.score} won={m.b.won} decided={m.decided} />
+                  </div>
                 </div>
               ))}
             </div>

@@ -205,9 +205,18 @@ mutation writes an `AuditLog` row via `logAudit(...)`; viewer at `/portal/audit`
   event (`status` → `CANCELLED`) DMs the roster + overwrites the announcement.
 - **Bracket** — optional single-elimination bracket per event (`src/lib/bracket.ts`,
   `Bracket` / `BracketMatch`). Staff draw it from the roster (`generateBracket`),
-  set winners (`setBracketMatch` propagates the winner into the next match).
-  Shown read-only on the public event page. Separate from the Results form
-  (1/2/3 placements that feed `/winners`).
+  set winners (`setBracketMatch` propagates the winner into the next match;
+  passing `winner: null` undoes it and recursively clears/rewrites everything
+  downstream). Shown read-only on the public event page — `<BracketBoard>`
+  highlights the earliest undecided match with both sides filled ("Up next"),
+  computed client-side from `BracketView`, no schema change. Separate from
+  the Results form (1/2/3 placements that feed `/winners`).
+
+- **Gallery uploads** — `<GalleryManager>` (`src/components/portal/gallery-manager.tsx`,
+  landing gallery / `/proof` / custom collections all share it) takes multiple
+  files at once (`addGalleryImage` loops `formData.getAll("image")`); caption/
+  small-label only apply when uploading exactly one image at a time, since
+  they can't sensibly apply to a batch.
 
 ## Portal event form
 

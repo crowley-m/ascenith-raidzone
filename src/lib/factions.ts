@@ -5,9 +5,6 @@ const FACTION_SERIES = "faction"; // season.series containing this = a Faction W
 export type FactionMember = {
   id: string;
   name: string;
-  gold: number;
-  silver: number;
-  bronze: number;
   attended: number;
 };
 
@@ -138,9 +135,6 @@ export async function factionBoard(): Promise<{
       const members: FactionMember[] = f.players.map((p) => ({
         id: p.id,
         name: p.characterName ?? "Unnamed",
-        gold: 0,
-        silver: 0,
-        bronze: 0,
         attended: p._count.attendance,
       }));
       members.sort((a, b) => b.attended - a.attended || a.name.localeCompare(b.name));

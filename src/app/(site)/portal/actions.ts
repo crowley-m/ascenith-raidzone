@@ -1805,32 +1805,44 @@ export async function deleteMediaCollection(id: string) {
 export async function addGalleryImage(_prev: FormState, formData: FormData): Promise<FormState> {
   const actor = await assertPermission("media:manage");
   const kind = await mediaKind(formData.get("kind"));
-  const file = formData.get("image");
-  if (!(file instanceof File) || file.size === 0) return { error: "Pick an image to upload." };
+  const files = formData.getAll("image").filter((f): f is File => f instanceof File && f.size > 0);
+  if (files.length === 0) return { error: "Pick at least one image to upload." };
 
   const last = await db.mediaAsset.findFirst({
     where: { kind },
     orderBy: { sortOrder: "desc" },
     select: { sortOrder: true },
   });
+  let sortOrder = last?.sortOrder ?? 0;
 
-  try {
-    const asset = await createMediaAsset({
-      kind,
-      file,
-      caption: (formData.get("caption") as string) || null,
-      tag: (formData.get("tag") as string) || null,
-      sortOrder: (last?.sortOrder ?? 0) + 1,
-      createdById: actor.id,
-    });
-    await logAudit({ actorId: actor.id, action: "media.add", targetType: "MediaAsset", targetId: asset.id });
-  } catch (e) {
-    return { error: e instanceof Error ? e.message : "Could not process that image." };
+  // a caption/tag only makes sense per-image — only apply it on a single upload
+  const caption = files.length === 1 ? ((formData.get("caption") as string) || null) : null;
+  const tag = files.length === 1 ? ((formData.get("tag") as string) || null) : null;
+
+  let uploaded = 0;
+  for (const file of files) {
+    try {
+      const asset = await createMediaAsset({
+        kind,
+        file,
+        caption,
+        tag,
+        sortOrder: ++sortOrder,
+        createdById: actor.id,
+      });
+      await logAudit({ actorId: actor.id, action: "media.add", targetType: "MediaAsset", targetId: asset.id });
+      uploaded++;
+    } catch (e) {
+      if (uploaded === 0) {
+        return { error: e instanceof Error ? e.message : "Could not process that image." };
+      }
+      return { error: `Uploaded ${uploaded} — stopped: ${e instanceof Error ? e.message : "a file failed"}.` };
+    }
   }
 
   revalidatePath("/portal/media");
   revalidatePath(mediaRevalidate(kind));
-  return { ok: true };
+  return { ok: true, count: uploaded };
 }
 
 export async function updateGalleryImage(_prev: FormState, formData: FormData): Promise<FormState> {

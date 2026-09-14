@@ -36,9 +36,13 @@ export function GalleryManager({
 }) {
   const [addState, addAction, adding] = useActionState(addGalleryImage, {});
   const formRef = useRef<HTMLFormElement>(null);
+  const [fileCount, setFileCount] = useState(0);
 
   useEffect(() => {
-    if (addState.ok) formRef.current?.reset();
+    if (addState.ok) {
+      formRef.current?.reset();
+      setFileCount(0);
+    }
   }, [addState.ok]);
 
   return (
@@ -48,7 +52,7 @@ export function GalleryManager({
         <h3 className="font-display font-bold text-white">Add an image</h3>
         <div>
           <label className="label" htmlFor={`image-${kind}`}>
-            Image file
+            Image file{fileCount > 1 ? "s" : ""}
           </label>
           <input
             id={`image-${kind}`}
@@ -56,8 +60,14 @@ export function GalleryManager({
             type="file"
             accept="image/png,image/jpeg,image/webp,image/gif"
             required
+            multiple
+            onChange={(e) => setFileCount(e.target.files?.length ?? 0)}
             className="block w-full text-sm text-slate-300 file:mr-3 file:border file:border-edge file:bg-void file:px-3 file:py-1.5 file:text-xs file:uppercase file:tracking-wide file:text-slate-200"
           />
+          <p className="mt-1 text-xs text-slate-500">
+            Select several at once to bulk-upload — caption/label below only apply when
+            uploading a single image.
+          </p>
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
           <div>
@@ -66,6 +76,7 @@ export function GalleryManager({
               name="caption"
               className="input"
               maxLength={40}
+              disabled={fileCount > 1}
               placeholder={kind === "proof" ? "PURGE — 1st place payout" : "PURGE 04"}
             />
           </div>
@@ -75,14 +86,20 @@ export function GalleryManager({
               name="tag"
               className="input"
               maxLength={40}
+              disabled={fileCount > 1}
               placeholder={kind === "proof" ? "30K Crystgin" : "base hold"}
             />
           </div>
         </div>
         {addState.error && <p className="text-sm text-ember">{addState.error}</p>}
+        {addState.ok && (
+          <p className="text-sm text-teal">
+            Uploaded {addState.count ?? 1} image{(addState.count ?? 1) === 1 ? "" : "s"}.
+          </p>
+        )}
         <div>
           <button className="btn-primary" disabled={adding}>
-            {adding ? "Uploading…" : "Upload"}
+            {adding ? "Uploading…" : fileCount > 1 ? `Upload ${fileCount} images` : "Upload"}
           </button>
         </div>
       </form>
