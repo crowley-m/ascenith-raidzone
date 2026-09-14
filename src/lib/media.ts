@@ -72,6 +72,21 @@ export async function processImageUpload(file: File): Promise<ProcessedImage> {
   }
 }
 
+const OWN_MEDIA_URL = /\/api\/media\/([A-Za-z0-9_-]+)(?:[/?#]|$)/;
+
+/**
+ * Delete the MediaAsset a `/api/media/<id>` URL points at — used when a poster/
+ * image field is replaced or its owning record is deleted, so the old upload
+ * doesn't sit in Postgres forever with nothing pointing at it. No-ops on a
+ * pasted external URL (nothing of ours to clean up) or a missing/already-gone
+ * row.
+ */
+export async function deleteMediaAssetFromUrl(url: string | null | undefined): Promise<void> {
+  const id = url?.match(OWN_MEDIA_URL)?.[1];
+  if (!id) return;
+  await db.mediaAsset.delete({ where: { id } }).catch(() => {});
+}
+
 export async function createMediaAsset(input: {
   kind: string; // "gallery" | "reward" | "proof" | a MediaCollection slug
   file: File;

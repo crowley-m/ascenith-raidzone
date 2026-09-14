@@ -51,20 +51,23 @@ async function discordFetch(path: string, init: RequestInit, attempt = 0): Promi
  * Best-effort — silently no-ops if the bot can't DM them (closed DMs, no
  * shared guild, no token). Never throws.
  */
-export async function dmUser(discordId: string, content: string): Promise<void> {
-  if (!discordId || !process.env.DISCORD_BOT_TOKEN) return;
+/** Returns whether the DM actually sent — lets callers surface a failure instead of it vanishing into a console log. */
+export async function dmUser(discordId: string, content: string): Promise<boolean> {
+  if (!discordId || !process.env.DISCORD_BOT_TOKEN) return false;
   try {
     const ch = (await discordFetch("/users/@me/channels", {
       method: "POST",
       body: JSON.stringify({ recipient_id: discordId }),
     })) as { id?: string };
-    if (!ch?.id) return;
+    if (!ch?.id) return false;
     await discordFetch(`/channels/${ch.id}/messages`, {
       method: "POST",
       body: JSON.stringify({ content: content.slice(0, 1900) }),
     });
+    return true;
   } catch (err) {
     console.error("dmUser failed", err);
+    return false;
   }
 }
 

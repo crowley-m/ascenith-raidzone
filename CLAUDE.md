@@ -171,6 +171,22 @@ mutation writes an `AuditLog` row via `logAudit(...)`; viewer at `/portal/audit`
   the race window; the bot path checks then inserts (Discord interactions
   are low-concurrency enough that this is an acceptable gap, matching the
   rest of the bot's non-transactional style).
+- **Orphaned upload cleanup** — `deleteMediaAssetFromUrl()` (`src/lib/media.ts`)
+  deletes the `MediaAsset` row a `/api/media/<id>` URL points at (no-op on a
+  pasted external URL). `saveEvent` calls it when a poster is replaced and
+  `deleteEvent` when the event goes away; `editBroadcast`/`deleteBroadcast`
+  do the same for the broadcast image — each of those upload fields is
+  exclusive to its one record. Season posters are deliberately **not**
+  auto-cleaned — they're a pasted `/api/media/<id>` URL of unknown origin
+  (often a gallery upload), so deleting on replace risked breaking a shared
+  asset.
+- **DM delivery visibility** — `dmUser()` (`src/lib/discord.ts`) returns
+  whether the send actually succeeded instead of swallowing every outcome
+  into a console line. `notifyPlayer()` (`src/lib/notify.ts`) writes a
+  `notify.dm_failed` audit row (visible at `/portal/audit`, filterable) when
+  a DM genuinely fails — closed DMs, rate limit, etc. — as opposed to the
+  player having notifications off, so a reward/placement DM that never
+  landed is now discoverable instead of invisible.
 - **Auth account linking** — `allowDangerousEmailAccountLinking: true` on the
   Discord provider means a sign-in can attach to an existing `User` row on
   OAuth-email match alone. If that row was already linked to a *different*

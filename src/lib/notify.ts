@@ -1,11 +1,16 @@
 import { db } from "@/lib/db";
 import { dmUser } from "@/lib/discord";
+import { logAudit } from "@/lib/audit";
 
 const APP_URL = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
 
 /**
  * Send a player a Discord DM, respecting their opt-out. Fire-and-forget:
  * callers should `void notifyPlayer(...)` so a slow/failed DM never blocks.
+ * A DM that actually fails to send (closed DMs, rate limit, etc.) — as
+ * opposed to being opted out — writes a `notify.dm_failed` audit row so it's
+ * not just a console line nobody sees; these matter most for reward/placement
+ * DMs, which are how a player finds out they won something.
  */
 export async function notifyPlayer(playerId: string, message: string): Promise<void> {
   try {
@@ -14,7 +19,10 @@ export async function notifyPlayer(playerId: string, message: string): Promise<v
       select: { dmNotifications: true, user: { select: { discordId: true } } },
     });
     if (!p?.dmNotifications || !p.user.discordId) return;
-    await dmUser(p.user.discordId, message);
+    const sent = await dmUser(p.user.discordId, message);
+    if (!sent) {
+      await logAudit({ action: "notify.dm_failed", targetType: "Player", targetId: playerId });
+    }
   } catch (err) {
     console.error("notifyPlayer failed", err);
   }

@@ -36,7 +36,7 @@ import {
   pinMessage,
 } from "@/lib/discord";
 import { eventChannelPayloads, EVENT_CHANNEL_ORDER } from "@/lib/event-channels";
-import { createMediaAsset } from "@/lib/media";
+import { createMediaAsset, deleteMediaAssetFromUrl } from "@/lib/media";
 import { getSettings } from "@/lib/settings";
 import { notify, notifyPlayer } from "@/lib/notify";
 import { syncMemberRolesByPlayer, syncAllMemberRoles } from "@/lib/discord-roles";
@@ -279,10 +279,13 @@ export async function saveEvent(_prev: FormState, formData: FormData): Promise<F
   let eventId: string;
   let prevStatus: string | null = null;
   if (id) {
-    const before = await db.event.findUnique({ where: { id }, select: { status: true } });
+    const before = await db.event.findUnique({ where: { id }, select: { status: true, posterUrl: true } });
     prevStatus = before?.status ?? null;
     await db.event.update({ where: { id }, data });
     eventId = id;
+    // a replaced/cleared poster leaves its old upload with nothing pointing at
+    // it — clean it up (no-ops on a pasted external URL or an unchanged one)
+    if (before?.posterUrl && before.posterUrl !== posterUrl) void deleteMediaAssetFromUrl(before.posterUrl);
   } else {
     const created = await db.event.create({ data: { ...data, createdById: actor.id } });
     eventId = created.id;
@@ -915,6 +918,7 @@ export async function deleteEvent(eventId: string): Promise<void> {
   // Signups / attendance / placements cascade; rewards & teams keep their rows
   // (eventId set null) so player history and squads survive.
   await db.event.delete({ where: { id: eventId } });
+  void deleteMediaAssetFromUrl(ev.posterUrl);
   await logAudit({
     actorId: actor.id,
     action: "event.delete",
@@ -2050,6 +2054,8 @@ export async function editBroadcast(_prev: FormState, formData: FormData): Promi
     where: { id },
     data: { title: title || null, body, imageUrl, asEmbed, editedAt: new Date() },
   });
+  // only clean up the old upload once the new one is actually saved
+  if (existing.imageUrl && existing.imageUrl !== imageUrl) void deleteMediaAssetFromUrl(existing.imageUrl);
   await logAudit({
     actorId: actor.id,
     action: "broadcast.edit",
@@ -2069,6 +2075,7 @@ export async function deleteBroadcast(id: string): Promise<FormState> {
 
   await deleteChannelMessage(existing.channelId, existing.messageId);
   await db.broadcast.delete({ where: { id } });
+  void deleteMediaAssetFromUrl(existing.imageUrl);
   await logAudit({
     actorId: actor.id,
     action: "broadcast.delete",
