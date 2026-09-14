@@ -69,25 +69,34 @@ export async function syncMemberRolesByPlayer(playerId: string): Promise<void> {
 /**
  * Reconcile managed roles for every linked member — a full backfill. Run after
  * first setting the role ids in Settings, or on a schedule. Serial + paced so
- * we stay well under Discord's rate limits. Returns how many members it touched.
+ * we stay well under Discord's rate limits. Cursor-paginates through every
+ * linked member rather than a single capped page, so a community past the
+ * old 400-member cap doesn't permanently leave its newest members unsynced.
+ * Returns how many members it touched.
  */
 export async function syncAllMemberRoles(): Promise<{ synced: number }> {
   const { registeredRoleId, teamLeaderRoleId } = await getSettings();
   const anyFaction = await db.faction.count({ where: { discordRoleId: { not: null } } });
   if (!registeredRoleId && !teamLeaderRoleId && anyFaction === 0) return { synced: 0 };
 
-  // cap the batch so the request stays well under any proxy timeout
-  const users = await db.user.findMany({
-    where: { discordId: { not: null } },
-    select: { id: true },
-    orderBy: { createdAt: "asc" },
-    take: 400,
-  });
   let synced = 0;
-  for (const u of users) {
-    await syncMemberRoles(u.id);
-    synced++;
-    await new Promise((r) => setTimeout(r, 150));
+  let cursor: string | undefined;
+  for (;;) {
+    const users = await db.user.findMany({
+      where: { discordId: { not: null } },
+      select: { id: true },
+      orderBy: { id: "asc" },
+      take: 400,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+    });
+    if (users.length === 0) break;
+    for (const u of users) {
+      await syncMemberRoles(u.id);
+      synced++;
+      await new Promise((r) => setTimeout(r, 150));
+    }
+    cursor = users[users.length - 1].id;
+    if (users.length < 400) break;
   }
   return { synced };
 }

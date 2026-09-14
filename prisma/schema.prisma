@@ -420,6 +420,7 @@ model EventSignup {
   @@unique([eventId, playerId])
   @@index([eventId])
   @@index([eventId, teamId])
+  @@index([playerId])
 }
 
 model EventAttendance {
@@ -435,6 +436,7 @@ model EventAttendance {
 
   @@unique([eventId, playerId])
   @@index([eventId])
+  @@index([playerId])
 }
 
 // ---------------------------------------------------------------------------

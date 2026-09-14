@@ -31,6 +31,7 @@ import {
   deleteChannelMessage,
   deleteChannel,
   deleteGuildRole,
+  removeGuildRole,
   eventEmoji,
   eventIndexContent,
   pinMessage,
@@ -1571,14 +1572,28 @@ export async function saveFaction(_prev: FormState, formData: FormData): Promise
   }
   const data = { ...parsed.data, discordRoleId: parsed.data.discordRoleId || null };
 
+  const previous = id ? await db.faction.findUnique({ where: { id }, select: { discordRoleId: true } }) : null;
+
   const faction = id
     ? await db.faction.update({ where: { id }, data })
     : await db.faction.create({ data });
   await logAudit({ actorId: actor.id, action: id ? "faction.update" : "faction.create", targetType: "Faction", targetId: faction.id });
 
   // reconcile the Discord role for everyone currently in this faction
-  const members = await db.player.findMany({ where: { factionId: faction.id }, select: { id: true } });
+  const members = await db.player.findMany({
+    where: { factionId: faction.id },
+    select: { id: true, user: { select: { discordId: true } } },
+  });
   for (const m of members) void syncMemberRolesByPlayer(m.id);
+
+  // syncMemberRoles only ever reconciles the *current* discordRoleId — if it
+  // just changed or was cleared, the old id is invisible to that query and
+  // would otherwise sit on every member who already had it forever.
+  if (previous?.discordRoleId && previous.discordRoleId !== faction.discordRoleId) {
+    for (const m of members) {
+      if (m.user.discordId) void removeGuildRole(m.user.discordId, previous.discordRoleId);
+    }
+  }
 
   revalidatePath("/portal/factions");
   return { ok: true };

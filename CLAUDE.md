@@ -233,6 +233,22 @@ mutation writes an `AuditLog` row via `logAudit(...)`; viewer at `/portal/audit`
   `DISCORD_BOT_TOKEN` isn't set on the *web* container specifically (`botConfigured`
   in `src/lib/discord.ts`, previously computed but never read) — every
   Discord call otherwise silently no-ops and saves still report success.
+- **Faction Discord-role reassignment** — `syncMemberRoles`'s reconciliation
+  query only ever looks at *currently assigned* faction role ids, so
+  changing or clearing a faction's `discordRoleId` left the old role stuck
+  on every member who'd already gotten it (invisible to that query).
+  `saveFaction` now diffs against the faction's previous `discordRoleId`
+  and explicitly `removeGuildRole`s it from current members when it changes.
+- **`syncAllMemberRoles` covers everyone** — used to hard-cap at 400 linked
+  members (oldest-first), so a community past that size silently never
+  resynced its newest members on any future "Resync all roles" run. Now
+  cursor-paginates through all of them; the per-member 150ms Discord pacing
+  is unchanged.
+- **`EventSignup`/`EventAttendance` `playerId` index** — both only had
+  `eventId`-led composite indexes, unusable for the playerId-only lookup a
+  player's roster/attendance history actually runs (leftmost-prefix rule).
+  Added `@@index([playerId])` to both (migration
+  `20260915010000_signup_attendance_player_index`).
 - **Auth account linking** — `allowDangerousEmailAccountLinking: true` on the
   Discord provider means a sign-in can attach to an existing `User` row on
   OAuth-email match alone. If that row was already linked to a *different*
