@@ -99,6 +99,39 @@ body {
   }
 }
 
+/* Skeleton shimmer — a soft crimson-tinted highlight sweeping diagonally
+   across each placeholder block, instead of a flat opacity pulse. */
+@keyframes skeleton-shimmer {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .skeleton-shimmer::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      105deg,
+      transparent 0%,
+      rgba(229, 72, 77, 0.05) 35%,
+      rgba(229, 72, 77, 0.16) 50%,
+      rgba(229, 72, 77, 0.05) 65%,
+      transparent 100%
+    );
+    animation: skeleton-shimmer 1.6s ease-in-out infinite;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-shimmer {
+    opacity: 0.6;
+  }
+}
+
 @layer components {
   .container-x {
     @apply mx-auto w-full max-w-5xl px-5;

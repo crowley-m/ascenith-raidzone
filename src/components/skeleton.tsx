@@ -1,6 +1,6 @@
-/** Generic pulsing placeholder block — compose into page-shaped skeletons. */
+/** Generic placeholder block with a diagonal shimmer sweep — compose into page-shaped skeletons. */
 export function Skeleton({ className = "" }: { className?: string }) {
-  return <div className={`animate-pulse rounded-sm bg-edge/60 ${className}`} />;
+  return <div className={`skeleton-shimmer relative overflow-hidden rounded-sm bg-edge/60 ${className}`} />;
 }
 
 /** A titled list of row-shaped placeholders — the shape most portal/public list pages share. */

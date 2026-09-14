@@ -483,7 +483,11 @@ scoped to that event's roster, short enough that scrolling alone is fine).
   (`src/components/skeleton.tsx`) back a handful of route `loading.tsx`
   files (`/portal`, `/portal/players`, `/portal/events`, `/portal/rewards`,
   `/events`) using Next's App Router streaming convention — not every portal
-  route has one yet, add more the same way as they're needed.
+  route has one yet, add more the same way as they're needed. `<Skeleton>`
+  itself uses a diagonal crimson-tinted shimmer sweep (`.skeleton-shimmer`
+  in `globals.css`, a `::after` gradient animated via `transform`) rather
+  than a flat opacity pulse — falls back to a static dimmed block under
+  `prefers-reduced-motion`.
 - **Live countdown** — `<LiveCountdown target={isoString} fallback={...} />`
   (`src/components/live-countdown.tsx`) renders `fallback` (the existing
   `relative()` string) until mounted and swaps to a ticking `Dd HH:MM:SS`
