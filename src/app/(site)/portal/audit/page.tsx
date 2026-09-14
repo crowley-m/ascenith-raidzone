@@ -66,13 +66,13 @@ export default async function AuditPage({
       </form>
 
       <div className="mt-6 overflow-x-auto">
-        <table className="w-full min-w-[720px] text-sm">
+        <table className="w-full min-w-[900px] table-fixed text-sm">
           <thead className="text-left text-xs uppercase text-slate-500">
             <tr>
-              <th className="py-2">When</th>
-              <th className="py-2">Who</th>
-              <th className="py-2">Action</th>
-              <th className="py-2">Target</th>
+              <th className="w-40 py-2">When</th>
+              <th className="w-32 py-2">Who</th>
+              <th className="w-40 py-2">Action</th>
+              <th className="w-32 py-2">Target</th>
               <th className="py-2">Meta</th>
             </tr>
           </thead>
@@ -84,7 +84,7 @@ export default async function AuditPage({
                   : null;
               return (
                 <tr key={r.id} className="align-top">
-                  <td className="py-2 text-slate-500">{fmtDateTime(r.createdAt)}</td>
+                  <td className="whitespace-nowrap py-2 text-slate-500">{fmtDateTime(r.createdAt)}</td>
                   <td className="py-2 text-slate-300">{r.actor?.name ?? r.actor?.email ?? "system"}</td>
                   <td className="py-2 font-mono text-xs text-teal">{r.action}</td>
                   <td className="py-2 text-slate-400">
@@ -95,7 +95,7 @@ export default async function AuditPage({
                       </Link>
                     ) : null}
                   </td>
-                  <td className="py-2 font-mono text-[0.7rem] text-slate-500">
+                  <td className="break-words py-2 font-mono text-[0.7rem] text-slate-500">
                     {r.meta ? JSON.stringify(r.meta) : ""}
                   </td>
                 </tr>
