@@ -55,7 +55,10 @@ mutation writes an `AuditLog` row via `logAudit(...)`; viewer at `/portal/audit`
 
 - **Player vs User** — `User` = auth identity, `Player` = community profile. A
   `Player` (status `PENDING`) is auto-created on every sign-in so staff see
-  everyone; it flips to `ACTIVE` when the profile is completed.
+  everyone; `updateProfileAction` flips it to `ACTIVE` once `characterName` is
+  set (required field), but only from `PENDING` — an `INACTIVE`/`BANNED`
+  player re-saving their own profile doesn't self-reactivate, since that's a
+  staff call.
 - **Teams** — player-made, **one per event**, for `format: TEAM` events. Forming
   a team (or joining one) signs it up for that event — `registerTeam()` in
   `src/lib/events.ts`; leaving / kick withdraws that member. A player with no

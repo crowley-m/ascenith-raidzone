@@ -43,6 +43,13 @@ export async function updateProfileAction(
       ? d.factionId
       : null;
 
+  // PENDING -> ACTIVE on a completed profile; leave INACTIVE/BANNED alone —
+  // that's a staff call, not something re-saving a profile should undo.
+  const existing = await db.player.findUnique({
+    where: { userId: user.id },
+    select: { status: true },
+  });
+
   await db.player.upsert({
     where: { userId: user.id },
     create: {
@@ -58,6 +65,7 @@ export async function updateProfileAction(
       factionId,
     },
     update: {
+      ...(existing?.status === "PENDING" ? { status: "ACTIVE" as const } : {}),
       characterName: d.characterName,
       gameUid: d.gameUid ?? null,
       platform: d.platform ?? null,
