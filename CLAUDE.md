@@ -451,11 +451,15 @@ scoped to that event's roster, short enough that scrolling alone is fine).
   text haven't been migrated yet — adopt the same one-`useEffect` pattern
   incrementally rather than assuming it's done everywhere.
 - **Page transitions** — `<PageTransition>` (`src/components/page-transition.tsx`)
-  wraps `{children}` in `(site)/layout.tsx`, keyed by `usePathname()`, for a
-  fade+rise (`.page-fade-in` in `globals.css`, skipped under
-  `prefers-reduced-motion`) on every route change. Keying by pathname forces
-  a full remount of the page subtree — fine for route-level content, but
-  don't rely on client state surviving a navigation inside it.
+  wraps `{children}` in `(site)/layout.tsx` in a stable (non-keyed) div and
+  replays the `.page-fade-in` CSS animation (`globals.css`, skipped under
+  `prefers-reduced-motion`) on route change by toggling the class off/on
+  with a forced reflow in between. **Deliberately not** `key={pathname}`-ed
+  — an earlier version was, which forced a full unmount/remount of the
+  entire page subtree on every navigation and intermittently raced with
+  `<ScrollReveal>`'s own pathname-driven effect, leaving whole
+  `data-reveal` sections stuck invisible. Content updates through normal
+  React reconciliation now; only the animation class replays.
 - **Top loading bar** — `<NavProgress>` (`src/components/nav-progress.tsx`,
   mounted in `(site)/layout.tsx` inside a `<Suspense>` since it reads
   `useSearchParams()`) is the NProgress-style bar: since App Router exposes
