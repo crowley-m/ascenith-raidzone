@@ -35,14 +35,14 @@ export default async function SeasonsPage() {
   }));
 
   return (
-    <div className="max-w-2xl">
+    <div>
       <h2 className="font-display text-xl font-bold text-white">Seasons</h2>
-      <p className="mt-1 text-sm text-slate-400">
+      <p className="mt-1 max-w-2xl text-sm text-slate-400">
         Each tournament series has its own seasons. Events link to a season in the event form;
         each season gets a public page at <code>/seasons/&lt;slug&gt;</code>.
       </p>
 
-      <div className="card mt-6">
+      <div className="card mt-6 max-w-3xl">
         <p className="label mb-2">New season</p>
         <SeasonForm seriesList={seriesList} />
       </div>
@@ -74,7 +74,7 @@ export default async function SeasonsPage() {
                 </Link>
               </summary>
 
-              <div className="mt-4 border-t border-edge pt-4">
+              <div className="mt-4 max-w-3xl border-t border-edge pt-4">
                 <SeasonForm
                   seriesList={seriesList}
                   season={{
