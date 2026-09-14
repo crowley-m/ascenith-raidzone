@@ -1286,6 +1286,9 @@ export async function saveSettings(_prev: FormState, formData: FormData): Promis
     ["socialTwitchUrl", str("socialTwitchUrl")],
     ["socialXUrl", str("socialXUrl")],
     ["socialFacebookUrl", str("socialFacebookUrl")],
+    ["rulesText", str("rulesText")],
+    ["antiCheatText", str("antiCheatText")],
+    ["disputesText", str("disputesText")],
   ];
 
   await db.$transaction(

@@ -2,22 +2,16 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { site } from "@/lib/site";
 import { PageMasthead } from "@/components/page-masthead";
+import { EventProse } from "@/components/event-prose";
+import { getSettings } from "@/lib/settings";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Rules & how to join",
   description:
     "ASCENITH RAIDZONE community rules, anti-cheat policy, and how to get on the roster. Event-specific rules are in each event brief.",
 };
-
-const RULES = [
-  "Be respectful. No harassment, hate speech, slurs, or targeted toxicity — in Discord or in game.",
-  "No cheating, exploiting, or third-party tools that give an unfair advantage on our servers.",
-  "No bug abuse. If you find a bug, report it in a ticket — don't use it.",
-  "Don't grief other members' bases or steal from teammates outside sanctioned event objectives.",
-  "Use the right channels. Keep event talk in event channels and support requests in tickets.",
-  "One account per person for events and rewards. Alt accounts used to farm rewards are removed.",
-  "Staff decisions on rewards and disputes are final, but you can always appeal politely in a ticket.",
-];
 
 const STEPS = [
   {
@@ -72,7 +66,8 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-export default function RulesPage() {
+export default async function RulesPage() {
+  const settings = await getSettings();
   return (
     <div className="bg-void">
       <PageMasthead
@@ -89,48 +84,20 @@ export default function RulesPage() {
 
       <div className="mx-auto w-full max-w-6xl px-5 pb-24">
       <Section title="Community rules">
-        <ol className="mt-5 space-y-3">
-          {RULES.map((r, i) => (
-            <li key={i} className="card flex gap-3 text-sm text-slate-300">
-              <span className="font-display font-bold text-teal">{i + 1}</span>
-              <span>{r}</span>
-            </li>
-          ))}
-        </ol>
+        <div className="card mt-5">
+          <EventProse source={settings.rulesText} />
+        </div>
       </Section>
 
       <Section title="Anti-cheat & fair play">
-        <ul className="mt-5 space-y-2 text-sm text-slate-300">
-          <li className="card">
-            <b className="text-white">Zero tolerance for cheats.</b> Aimbots, wallhacks, macros,
-            speed/teleport tools, or any third-party program that alters the game — instant
-            permanent ban, no appeal, rewards clawed back.
-          </li>
-          <li className="card">
-            <b className="text-white">No bug exploiting.</b> Duping, clipping into bases, out-of-map
-            spots, or any unintended mechanic used for an advantage voids your placement.
-          </li>
-          <li className="card">
-            <b className="text-white">No account sharing or boosting.</b> The person on comms is the
-            person who plays. Reward UIDs must match the registered player.
-          </li>
-          <li className="card">
-            <b className="text-white">Clips on request.</b> If staff ask for proof of a run or a
-            call, you provide it. No clip, no points.
-          </li>
-        </ul>
+        <div className="card mt-5">
+          <EventProse source={settings.antiCheatText} />
+        </div>
       </Section>
 
       <Section title="Disputes & appeals">
-        <div className="mt-5 space-y-2 text-sm text-slate-400">
-          <p>
-            Think a call went wrong, points were miscounted, or a reward is missing? Open a ticket
-            in Discord with the event name, what you expected, and any clips or screenshots.
-          </p>
-          <p>
-            Staff review and respond. Decisions on placements and rewards are final once reviewed,
-            but every appeal is read — be specific and stay civil and it gets sorted.
-          </p>
+        <div className="card mt-5">
+          <EventProse source={settings.disputesText} />
         </div>
       </Section>
 

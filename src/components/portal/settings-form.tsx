@@ -174,6 +174,42 @@ export function SettingsForm({
         </p>
       </div>
 
+      <div>
+        <label className="label">Community rules (/rules)</label>
+        <textarea
+          name="rulesText"
+          rows={7}
+          className="input font-mono text-xs"
+          defaultValue={settings.rulesText}
+        />
+        <p className="mt-1 text-xs text-slate-500">
+          One rule per line — <code>1. …</code> keeps the numbering.
+        </p>
+      </div>
+
+      <div>
+        <label className="label">Anti-cheat &amp; fair play (/rules)</label>
+        <textarea
+          name="antiCheatText"
+          rows={7}
+          className="input font-mono text-xs"
+          defaultValue={settings.antiCheatText}
+        />
+        <p className="mt-1 text-xs text-slate-500">
+          A short line ending in <code>:</code> becomes a heading, blank line starts a new point.
+        </p>
+      </div>
+
+      <div>
+        <label className="label">Disputes &amp; appeals (/rules)</label>
+        <textarea
+          name="disputesText"
+          rows={4}
+          className="input font-mono text-xs"
+          defaultValue={settings.disputesText}
+        />
+      </div>
+
       {state.error && <p className="text-sm text-ember">{state.error}</p>}
       {state.ok && <p className="text-sm text-teal">Saved.</p>}
       <div>

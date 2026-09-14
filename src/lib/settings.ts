@@ -22,6 +22,10 @@ export type Settings = {
   socialTwitchUrl: string;
   socialXUrl: string;
   socialFacebookUrl: string;
+  /** /rules content — free-typed, same one-point-per-line convention as event content. */
+  rulesText: string;
+  antiCheatText: string;
+  disputesText: string;
 };
 
 const DEFAULTS: Settings = {
@@ -50,6 +54,33 @@ const DEFAULTS: Settings = {
   socialTwitchUrl: "https://www.twitch.tv/potatozie1",
   socialXUrl: "https://x.com/potatoziee",
   socialFacebookUrl: "https://www.facebook.com/people/Potatozie-Gaming/100063656476567/",
+  rulesText: [
+    "1. Be respectful. No harassment, hate speech, slurs, or targeted toxicity — in Discord or in game.",
+    "2. No cheating, exploiting, or third-party tools that give an unfair advantage on our servers.",
+    "3. No bug abuse. If you find a bug, report it in a ticket — don't use it.",
+    "4. Don't grief other members' bases or steal from teammates outside sanctioned event objectives.",
+    "5. Use the right channels. Keep event talk in event channels and support requests in tickets.",
+    "6. One account per person for events and rewards. Alt accounts used to farm rewards are removed.",
+    "7. Staff decisions on rewards and disputes are final, but you can always appeal politely in a ticket.",
+  ].join("\n"),
+  antiCheatText: [
+    "Zero tolerance for cheats:",
+    "Aimbots, wallhacks, macros, speed/teleport tools, or any third-party program that alters the game — instant permanent ban, no appeal, rewards clawed back.",
+    "",
+    "No bug exploiting:",
+    "Duping, clipping into bases, out-of-map spots, or any unintended mechanic used for an advantage voids your placement.",
+    "",
+    "No account sharing or boosting:",
+    "The person on comms is the person who plays. Reward UIDs must match the registered player.",
+    "",
+    "Clips on request:",
+    "If staff ask for proof of a run or a call, you provide it. No clip, no points.",
+  ].join("\n"),
+  disputesText: [
+    "Think a call went wrong, points were miscounted, or a reward is missing? Open a ticket in Discord with the event name, what you expected, and any clips or screenshots.",
+    "",
+    "Staff review and respond. Decisions on placements and rewards are final once reviewed, but every appeal is read — be specific and stay civil and it gets sorted.",
+  ].join("\n"),
 };
 
 export async function getSettings(): Promise<Settings> {
@@ -87,6 +118,9 @@ export async function getSettings(): Promise<Settings> {
     socialXUrl: typeof map.socialXUrl === "string" ? map.socialXUrl : DEFAULTS.socialXUrl,
     socialFacebookUrl:
       typeof map.socialFacebookUrl === "string" ? map.socialFacebookUrl : DEFAULTS.socialFacebookUrl,
+    rulesText: typeof map.rulesText === "string" ? map.rulesText : DEFAULTS.rulesText,
+    antiCheatText: typeof map.antiCheatText === "string" ? map.antiCheatText : DEFAULTS.antiCheatText,
+    disputesText: typeof map.disputesText === "string" ? map.disputesText : DEFAULTS.disputesText,
   };
 }
 

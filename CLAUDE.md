@@ -125,6 +125,16 @@ mutation writes an `AuditLog` row via `logAudit(...)`; viewer at `/portal/audit`
   `"broadcast"`). Rides along as an image-only embed even when not posting
   "as an embed", so it attaches to a plain-text message too; edit can replace
   or remove it.
+- **Rules page content** — `/rules`' "Community rules" / "Anti-cheat & fair
+  play" / "Disputes & appeals" sections are `Settings.rulesText`/
+  `antiCheatText`/`disputesText` (Portal → Settings), rendered with the same
+  `<EventProse>`/`proseItems()` free-typed convention event content uses —
+  `1. …` numbers a rule, a short line ending in `:` becomes a heading, a
+  blank line starts a new point. "How to join" and the FAQ stay hardcoded in
+  `rules/page.tsx` — they reference actual internal routes (`/register`,
+  `/me/team`, …) as real `<Link>`s, which free-text prose can't do, and they
+  rarely change since they describe the site's own structure rather than
+  policy wording.
 - **Landing social links** — TikTok/Twitch/X/Facebook in the footer come from
   `Settings.social*Url` (Portal → Settings), not a hardcoded array — blank
   hides that one link. `src/app/page.tsx` builds the `{label, href}` list and
