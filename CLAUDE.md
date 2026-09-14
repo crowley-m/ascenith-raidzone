@@ -187,6 +187,28 @@ mutation writes an `AuditLog` row via `logAudit(...)`; viewer at `/portal/audit`
   a DM genuinely fails — closed DMs, rate limit, etc. — as opposed to the
   player having notifications off, so a reward/placement DM that never
   landed is now discoverable instead of invisible.
+- **`deleteEvent` teardown** — deleting an event straight from its page (no
+  requirement to archive first) used to skip `teardownEventAccess()`
+  entirely, silently losing the `EventParticipation` history snapshot and
+  orphaning the event's/each team's Discord role + voice channel.
+  `deleteEvent` now calls it unconditionally before the cascade — safe to
+  run twice if the event was already archived first.
+- **CSV formula-injection guard** — `toCsv()`'s `esc()` (`src/lib/csv.ts`)
+  prefixes a cell with `'` when it starts with `=`, `+`, `-`, `@`, tab or CR,
+  so a free-typed field (character name, team name, reward reason — none of
+  which are charset-restricted) can't open as a live formula when staff load
+  a roster/rewards/players export into Excel or Sheets.
+- **Reminder lead-time floor** — the bot's reminder tick
+  (`src/bot/reminders.ts`) only runs every 5 minutes; `saveSettings` now
+  rounds `reminderLeadMinutes` up to at least 5 when it's set above 0 (0
+  stays "off"), since a shorter lead could close its `(now, now+lead]`
+  window between ticks and never fire.
+- **Private media cache-control** — `/api/media/[id]` serves a non-public
+  reward-proof image to staff only, but used to send the same
+  `public, immutable` cache header as everything else, so a shared
+  proxy/CDN could cache and later leak it to an unauthenticated request.
+  It now sends `private, no-store` whenever the image is only visible
+  because the viewer is staff.
 - **Auth account linking** — `allowDangerousEmailAccountLinking: true` on the
   Discord provider means a sign-in can attach to an existing `User` row on
   OAuth-email match alone. If that row was already linked to a *different*

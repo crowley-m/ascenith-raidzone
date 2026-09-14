@@ -3,7 +3,12 @@ export function toCsv(rows: Record<string, unknown>[], columns?: string[]): stri
   if (rows.length === 0) return columns?.join(",") ?? "";
   const cols = columns ?? Object.keys(rows[0]);
   const esc = (v: unknown) => {
-    const s = v == null ? "" : v instanceof Date ? v.toISOString() : String(v);
+    let s = v == null ? "" : v instanceof Date ? v.toISOString() : String(v);
+    // Free-typed fields (character name, team name, reward reason, ...) flow
+    // in here unrestricted — a cell starting with one of these opens as a
+    // live formula in Excel/Sheets instead of plain text. Prefix with a
+    // quote to force it back to a literal.
+    if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
     return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
   return [cols.join(","), ...rows.map((r) => cols.map((c) => esc(r[c])).join(","))].join("\r\n");

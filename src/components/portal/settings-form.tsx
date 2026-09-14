@@ -107,7 +107,8 @@ export function SettingsForm({
           defaultValue={settings.reminderLeadMinutes}
         />
         <p className="mt-1 text-xs text-slate-500">
-          How long before an event the bot posts a &ldquo;starts soon&rdquo; reminder. 0 = off.
+          How long before an event the bot posts a &ldquo;starts soon&rdquo; reminder. 0 = off;
+          the bot only checks every 5 minutes, so anything else rounds up to at least 5.
         </p>
       </div>
 

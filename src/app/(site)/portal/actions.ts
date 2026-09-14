@@ -905,6 +905,11 @@ export async function deleteEvent(eventId: string): Promise<void> {
   const ev = await db.event.findUnique({ where: { id: eventId } });
   if (!ev) redirect("/portal/events");
 
+  // Deleting without archiving first used to skip this entirely — snapshot
+  // participation (survives the cascade below) and drop event/team roles +
+  // voice channels. Idempotent, so re-running it after a prior archive is safe.
+  await teardownEventAccess(eventId).catch((err) => console.error("teardownEventAccess during delete", err));
+
   // Best-effort: sink the Discord space so no orphan category is left behind.
   if (ev.discordCategoryId && !ev.discordArchivedAt) {
     const channels = Object.values((ev.discordChannels as Record<string, string>) ?? {});
@@ -1304,7 +1309,16 @@ export async function saveSettings(_prev: FormState, formData: FormData): Promis
         .filter(Boolean),
     ],
     ["autoBuildSpace", formData.get("autoBuildSpace") === "on"],
-    ["reminderLeadMinutes", Math.max(0, parseInt(str("reminderLeadMinutes") || "0", 10) || 0)],
+    [
+      "reminderLeadMinutes",
+      // The bot only ticks every 5 min — a lead under that can close its
+      // (now, now+lead] window between ticks and never fire at all. 0 stays
+      // "off"; anything else rounds up to the tick interval.
+      (() => {
+        const n = Math.max(0, parseInt(str("reminderLeadMinutes") || "0", 10) || 0);
+        return n === 0 ? 0 : Math.max(5, n);
+      })(),
+    ],
     ["howToJoinVideoUrl", str("howToJoinVideoUrl")],
     ["registeredRoleId", str("registeredRoleId").replace(/[^0-9]/g, "")],
     ["teamLeaderRoleId", str("teamLeaderRoleId").replace(/[^0-9]/g, "")],

@@ -16,6 +16,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   });
   if (!asset) return new Response("Not found", { status: 404 });
 
+  let isPrivate = false;
   if (asset.kind === "reward") {
     const publicRef = await db.reward.findFirst({
       where: { proofImageId: id, isPublic: true },
@@ -24,6 +25,9 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     if (!publicRef) {
       const session = await auth();
       if (!isStaff(session?.user?.role)) return new Response("Not found", { status: 404 });
+      // being served only because the viewer is staff — a shared proxy/CDN
+      // must never cache this and hand it to the next, unauthenticated request
+      isPrivate = true;
     }
   }
 
@@ -32,7 +36,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     headers: {
       "Content-Type": asset.contentType,
       "Content-Length": String(body.byteLength),
-      "Cache-Control": "public, max-age=31536000, immutable",
+      "Cache-Control": isPrivate ? "private, no-store" : "public, max-age=31536000, immutable",
     },
   });
 }
