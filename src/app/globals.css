@@ -48,11 +48,33 @@ body {
 @keyframes page-fade-in {
   from {
     opacity: 0;
-    transform: translateY(4px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
     transform: none;
+  }
+}
+@keyframes nav-progress-loading {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 85%;
+  }
+}
+@keyframes nav-progress-done {
+  0% {
+    width: 85%;
+    opacity: 1;
+  }
+  60% {
+    width: 100%;
+    opacity: 1;
+  }
+  100% {
+    width: 100%;
+    opacity: 0;
   }
 }
 @media (prefers-reduced-motion: no-preference) {
@@ -60,7 +82,20 @@ body {
     animation: toast-in 0.2s ease-out;
   }
   .page-fade-in {
-    animation: page-fade-in 0.25s ease-out;
+    animation: page-fade-in 0.4s ease-out;
+  }
+  .nav-progress-loading {
+    animation: nav-progress-loading 4s cubic-bezier(0.1, 0.7, 1, 0.1) forwards;
+  }
+  .nav-progress-done {
+    animation: nav-progress-done 0.3s ease-out forwards;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  /* still show the bar, just without the growing/fading motion */
+  .nav-progress-loading,
+  .nav-progress-done {
+    width: 100%;
   }
 }
 

@@ -452,10 +452,20 @@ scoped to that event's roster, short enough that scrolling alone is fine).
   incrementally rather than assuming it's done everywhere.
 - **Page transitions** — `<PageTransition>` (`src/components/page-transition.tsx`)
   wraps `{children}` in `(site)/layout.tsx`, keyed by `usePathname()`, for a
-  brief fade+rise (`.page-fade-in` in `globals.css`, skipped under
+  fade+rise (`.page-fade-in` in `globals.css`, skipped under
   `prefers-reduced-motion`) on every route change. Keying by pathname forces
   a full remount of the page subtree — fine for route-level content, but
   don't rely on client state surviving a navigation inside it.
+- **Top loading bar** — `<NavProgress>` (`src/components/nav-progress.tsx`,
+  mounted in `(site)/layout.tsx` inside a `<Suspense>` since it reads
+  `useSearchParams()`) is the NProgress-style bar: since App Router exposes
+  no navigation-start event, it starts growing the instant an internal
+  `<a>` is clicked (a same-origin, same-tab, non-download link to a
+  different path/query) and snaps to 100%+fades once `usePathname()` +
+  `useSearchParams()` actually change — i.e. the next page's data has
+  landed. A 5s failsafe clears it if a click never becomes a navigation.
+  Covers the gap `loading.tsx` skeletons don't — those only exist on a
+  handful of routes; this fires on every internal link everywhere.
 - **Skeleton loading** — `<Skeleton>`/`<TableSkeleton>`/`<TileSkeleton>`
   (`src/components/skeleton.tsx`) back a handful of route `loading.tsx`
   files (`/portal`, `/portal/players`, `/portal/events`, `/portal/rewards`,
