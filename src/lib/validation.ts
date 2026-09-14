@@ -6,7 +6,6 @@ export const profileSchema = z.object({
   platform: z.enum(["PC", "PLAYSTATION", "XBOX", "MOBILE"]).nullable().optional(),
   region: z.string().max(80).nullable().optional(),
   timezone: z.string().max(60).nullable().optional(),
-  playHours: z.string().max(200).nullable().optional(),
   languages: z.string().max(200).nullable().optional(),
   factionId: z.string().trim().max(40).nullable().optional().or(z.literal("")),
 });

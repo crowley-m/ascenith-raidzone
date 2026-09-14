@@ -10,7 +10,6 @@ type PlayerInit = {
   platform: string | null;
   region: string | null;
   timezone: string | null;
-  playHours: string | null;
   languages: string | null;
   factionId: string | null;
 };
@@ -52,7 +51,6 @@ type FormShape = {
   platform: string;
   region: string;
   timezone: string;
-  playHours: string;
   languages: string;
   factionId: string;
 };
@@ -63,7 +61,6 @@ const seed = (p: PlayerInit | null): FormShape => ({
   platform: p?.platform ?? "",
   region: p?.region ?? "",
   timezone: p?.timezone ?? "",
-  playHours: p?.playHours ?? "",
   languages: p?.languages ?? "",
   factionId: p?.factionId ?? "",
 });
@@ -112,7 +109,6 @@ export function ProfileForm({
       ["Platform", player?.platform ? PLATFORM_LABEL[player.platform] ?? player.platform : null],
       ["Server / region", player?.region ?? null],
       ["Timezone", player?.timezone ?? null],
-      ["Typical play hours", player?.playHours ?? null],
       ["Languages", player?.languages ?? null],
       ["Faction", factionName],
     ];
@@ -213,18 +209,13 @@ export function ProfileForm({
           </select>
         </div>
         <div>
-          <label className="label" htmlFor="playHours">Typical play hours</label>
-          <input id="playHours" className="input" maxLength={200}
-            value={form.playHours} onChange={set("playHours")} placeholder="e.g. Weeknights 8pm–midnight" />
-        </div>
-      </div>
-
-      <div className="grid gap-5 sm:grid-cols-2">
-        <div>
           <label className="label" htmlFor="languages">Languages</label>
           <input id="languages" className="input" maxLength={200}
             value={form.languages} onChange={set("languages")} placeholder="e.g. English" />
         </div>
+      </div>
+
+      <div className="grid gap-5 sm:grid-cols-2">
         {factions.length > 0 && (
           <div>
             <label className="label" htmlFor="factionId">Faction</label>

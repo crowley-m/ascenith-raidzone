@@ -26,7 +26,6 @@ export async function updateProfileAction(
     platform: clean(formData.get("platform")),
     region: clean(formData.get("region")),
     timezone: clean(formData.get("timezone")),
-    playHours: clean(formData.get("playHours")),
     languages: clean(formData.get("languages")),
     factionId: clean(formData.get("factionId")),
   });
@@ -60,7 +59,6 @@ export async function updateProfileAction(
       platform: d.platform ?? null,
       region: d.region ?? null,
       timezone: d.timezone ?? null,
-      playHours: d.playHours ?? null,
       languages: d.languages ?? null,
       factionId,
     },
@@ -71,7 +69,6 @@ export async function updateProfileAction(
       platform: d.platform ?? null,
       region: d.region ?? null,
       timezone: d.timezone ?? null,
-      playHours: d.playHours ?? null,
       languages: d.languages ?? null,
       factionId,
     },
