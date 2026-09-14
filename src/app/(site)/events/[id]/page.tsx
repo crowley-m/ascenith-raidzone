@@ -8,6 +8,7 @@ import { fmtInZone, DEFAULT_EVENT_TZ } from "@/lib/tz";
 import { SignupButton } from "@/components/signup-button";
 import { CheckInButton } from "@/components/check-in-button";
 import { TeamSignup } from "@/components/team/team-signup";
+import { FreeAgentBoard } from "@/components/team/free-agent-board";
 import { Markdown } from "@/components/markdown";
 import { EventProse } from "@/components/event-prose";
 import { VideoEmbed } from "@/components/video-embed";
@@ -49,7 +50,9 @@ export default async function EventDetailPage({
       signups: {
         where: { state: { in: ["SIGNED_UP", "WAITLIST"] } },
         include: {
-          player: { select: { id: true, characterName: true, region: true } },
+          player: {
+            select: { id: true, characterName: true, region: true, timezone: true, platform: true },
+          },
           team: { select: { id: true, name: true, tag: true, leaderId: true } },
         },
         orderBy: { createdAt: "asc" },
@@ -405,7 +408,7 @@ export default async function EventDetailPage({
             <div className="mt-12">
               <h2 className="font-poster text-2xl uppercase text-white">Bracket</h2>
               <div className="mt-4">
-                <BracketBoard bracket={bracket} />
+                <BracketBoard eventId={id} bracket={bracket} />
               </div>
             </div>
           )}
@@ -445,14 +448,16 @@ export default async function EventDetailPage({
                     <h3 className="font-mono text-xs font-bold uppercase tracking-wide text-slate-400">
                       Free agents — looking for a team ({freeAgents.length})
                     </h3>
-                    <ul className="mt-2 flex flex-wrap gap-2">
-                      {freeAgents.map((s) => (
-                        <li key={s.id} className="badge">
-                          {s.nickname || s.player.characterName || "Unnamed"}
-                          {s.player.region ? ` · ${s.player.region}` : ""}
-                        </li>
-                      ))}
-                    </ul>
+                    <FreeAgentBoard
+                      agents={freeAgents.map((s) => ({
+                        id: s.id,
+                        name: s.nickname || s.player.characterName || "Unnamed",
+                        region: s.player.region,
+                        timezone: s.player.timezone,
+                        platform: s.player.platform,
+                        note: s.lfgNote,
+                      }))}
+                    />
                     <p className="mt-2 font-mono text-[0.7rem] uppercase tracking-wide text-slate-600">
                       Leaders: recruit them in the event&apos;s{" "}
                       <span className="text-slate-400">#looking-for-team</span> channel.

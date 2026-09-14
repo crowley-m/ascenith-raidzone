@@ -415,6 +415,7 @@ model EventSignup {
   team      Team?       @relation(fields: [teamId], references: [id], onDelete: SetNull)
   state     SignupState @default(SIGNED_UP)
   nickname  String? // optional display name for this event only — overrides Player.characterName on rosters/results
+  lfgNote   String? // short "looking for a team" blurb, free agents only
   createdAt DateTime    @default(now())
 
   @@unique([eventId, playerId])

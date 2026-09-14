@@ -310,6 +310,15 @@ mutation writes an `AuditLog` row via `logAudit(...)`; viewer at `/portal/audit`
   nickname is a roster-display layer, not identity. `/me/profile`'s Character
   name field says so explicitly now, pointing players at the per-event
   nickname instead of renaming their real profile for a one-off team alias.
+- **Free-agent finder** — a team event's "looking for a team" list
+  (`registerAsFreeAgent`) now carries an optional short blurb
+  (`EventSignup.lfgNote`, ≤140 chars, set alongside the per-event nickname at
+  registration) and the public event page renders the list through
+  `<FreeAgentBoard>` (`src/components/team/free-agent-board.tsx`) — a client
+  component with region/timezone/platform filters built from whatever values
+  are actually present among the current free agents (no filter shown for a
+  dimension nobody's set). All client-side filtering over the list the page
+  already fetched — no extra query.
 - **Check-in** — signed-up players self-mark attendance (`checkInToEvent`) from
   the event page from 30 min before start until the wipe ends; staff still
   override via the portal toggle / "mark all".
@@ -356,8 +365,13 @@ mutation writes an `AuditLog` row via `logAudit(...)`; viewer at `/portal/audit`
   passing `winner: null` undoes it and recursively clears/rewrites everything
   downstream). Shown read-only on the public event page — `<BracketBoard>`
   highlights the earliest undecided match with both sides filled ("Up next"),
-  computed client-side from `BracketView`, no schema change. Separate from
-  the Results form (1/2/3 placements that feed `/winners`).
+  computed client-side from `BracketView`. It's a client component that polls
+  `GET /api/events/[id]/bracket` (a thin wrapper around `bracketForEvent()`)
+  every 10s while `bracket.champion` is unset, so a spectator watching a live
+  tournament sees results land without reloading — stops polling on its own
+  once a champion is decided, and skips a tick while the tab is
+  backgrounded (`document.hidden`). Separate from the Results form (1/2/3
+  placements that feed `/winners`).
 
 - **Gallery uploads** — `<GalleryManager>` (`src/components/portal/gallery-manager.tsx`,
   landing gallery / `/proof` / custom collections all share it) takes multiple

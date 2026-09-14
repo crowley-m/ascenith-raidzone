@@ -31,6 +31,7 @@ export function TeamSignup({
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<string | null>(null);
   const [freeAgentNick, setFreeAgentNick] = useState("");
+  const [freeAgentNote, setFreeAgentNote] = useState("");
 
   function run(fn: () => Promise<{ ok?: boolean; error?: string; state?: string }>) {
     start(async () => {
@@ -95,10 +96,17 @@ export function TeamSignup({
               placeholder="Display name for this event (optional)"
               className="input py-1.5 text-xs"
             />
+            <input
+              value={freeAgentNote}
+              onChange={(e) => setFreeAgentNote(e.target.value)}
+              maxLength={140}
+              placeholder="Short blurb for leaders browsing the list (optional) — e.g. platform, role, playtime"
+              className="input py-1.5 text-xs"
+            />
             <button
               className="btn-ghost text-xs"
               disabled={pending}
-              onClick={() => run(() => registerAsFreeAgent(eventId, freeAgentNick))}
+              onClick={() => run(() => registerAsFreeAgent(eventId, freeAgentNick, freeAgentNote))}
             >
               {pending ? "…" : "Register — looking for a team"}
             </button>

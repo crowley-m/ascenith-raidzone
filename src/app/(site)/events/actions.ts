@@ -30,6 +30,11 @@ const cleanNickname = (raw?: string | null) => {
   return t || null;
 };
 
+const cleanLfgNote = (raw?: string | null) => {
+  const t = (raw ?? "").trim().slice(0, 140);
+  return t || null;
+};
+
 const BAN_MESSAGE = "Your account is suspended — contact staff to resolve this.";
 
 /** Player signs up (or re-activates a withdrawn signup) for a SOLO event. */
@@ -77,7 +82,7 @@ export async function signUpForEvent(eventId: string, nickname?: string) {
  * player on the roster with no team so leaders can recruit them; joining or
  * forming a team later absorbs this signup.
  */
-export async function registerAsFreeAgent(eventId: string, nickname?: string) {
+export async function registerAsFreeAgent(eventId: string, nickname?: string, lfgNote?: string) {
   const session = await auth();
   const playerId = await callerPlayerId(eventId);
   if (await isBanned(playerId)) return { error: BAN_MESSAGE };
@@ -94,10 +99,11 @@ export async function registerAsFreeAgent(eventId: string, nickname?: string) {
   }
 
   const nick = cleanNickname(nickname);
+  const note = cleanLfgNote(lfgNote);
   await db.eventSignup.upsert({
     where: { eventId_playerId: { eventId, playerId } },
-    create: { eventId, playerId, state: "SIGNED_UP", nickname: nick },
-    update: { state: "SIGNED_UP", teamId: null, nickname: nick },
+    create: { eventId, playerId, state: "SIGNED_UP", nickname: nick, lfgNote: note },
+    update: { state: "SIGNED_UP", teamId: null, nickname: nick, lfgNote: note },
   });
   await logAudit({
     actorId: session?.user?.id,
