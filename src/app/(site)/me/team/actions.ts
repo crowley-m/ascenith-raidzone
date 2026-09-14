@@ -7,7 +7,7 @@ import { db } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 import { logAudit } from "@/lib/audit";
 import { teamCreateSchema, teamJoinSchema } from "@/lib/validation";
-import { uniqueInviteCode, teamForEvent } from "@/lib/team";
+import { uniqueInviteCode, teamForEvent, isBanned } from "@/lib/team";
 import { registerTeam } from "@/lib/events";
 import { updateEventNickname } from "@/app/(site)/events/actions";
 import { notify, notifyPlayer } from "@/lib/notify";
@@ -52,6 +52,7 @@ async function requireLeadership(playerId: string, teamId: string) {
 
 export async function createTeam(_prev: TeamState, formData: FormData): Promise<TeamState> {
   const playerId = await myPlayerId();
+  if (await isBanned(playerId)) return { error: "Your account is suspended — contact staff to resolve this." };
   const parsed = teamCreateSchema.safeParse({
     name: formData.get("name"),
     tag: formData.get("tag") ?? "",
@@ -106,25 +107,43 @@ export async function createTeam(_prev: TeamState, formData: FormData): Promise<
 
 export async function joinTeam(_prev: TeamState, formData: FormData): Promise<TeamState> {
   const playerId = await myPlayerId();
+  if (await isBanned(playerId)) return { error: "Your account is suspended — contact staff to resolve this." };
   const parsed = teamJoinSchema.safeParse({ code: formData.get("code") });
   if (!parsed.success) return { error: "Enter a valid invite code." };
 
   const team = await db.team.findUnique({
     where: { inviteCode: parsed.data.code },
-    select: { id: true, name: true, eventId: true, leaderId: true },
+    select: {
+      id: true,
+      name: true,
+      eventId: true,
+      leaderId: true,
+      event: { select: { teamSize: true } },
+    },
   });
   if (!team) return { error: "No team matches that code." };
   if (await teamForEvent(playerId, team.eventId)) {
     return { error: "You're already in a team for that event." };
   }
 
+  let full = false;
   try {
-    await db.teamMember.create({ data: { teamId: team.id, playerId } });
+    await db.$transaction(async (tx) => {
+      const memberCount = await tx.teamMember.count({ where: { teamId: team.id } });
+      if (team.event.teamSize && memberCount >= team.event.teamSize) {
+        full = true;
+        return;
+      }
+      await tx.teamMember.create({ data: { teamId: team.id, playerId } });
+    });
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
       return { error: "You're already on that team." };
     }
     throw e;
+  }
+  if (full) {
+    return { error: `This team is full — it caps at ${team.event.teamSize} members.` };
   }
   await logAudit({ actorId: playerId, action: "team.join", targetType: "Team", targetId: team.id });
   void syncMemberRolesByPlayer(playerId);

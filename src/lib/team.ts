@@ -40,6 +40,12 @@ export async function teamsForPlayer(playerId: string) {
   });
 }
 
+/** A banned player can't sign up, form/join teams, or register for events. */
+export async function isBanned(playerId: string): Promise<boolean> {
+  const p = await db.player.findUnique({ where: { id: playerId }, select: { status: true } });
+  return p?.status === "BANNED";
+}
+
 /** The player's team for one specific event, or null. */
 export async function teamForEvent(playerId: string, eventId: string) {
   return db.team.findFirst({

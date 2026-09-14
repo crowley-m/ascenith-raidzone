@@ -30,9 +30,16 @@ export async function ensureEventRole(eventId: string): Promise<string | null> {
   return roleId;
 }
 
-/** Grant a signed-up player access to the event's private channels (+ team voice). */
+/**
+ * Grant a signed-up player access to the event's private channels (+ team voice).
+ * Last line of defense against a banned player still ending up with access —
+ * e.g. a stale roster row re-synced after the ban — since signup/join are
+ * already blocked at the source.
+ */
 export async function grantEventAccess(eventId: string, playerId: string): Promise<void> {
   try {
+    const player = await db.player.findUnique({ where: { id: playerId }, select: { status: true } });
+    if (player?.status === "BANNED") return;
     const ev = await db.event.findUnique({
       where: { id: eventId },
       select: { discordRoleId: true },

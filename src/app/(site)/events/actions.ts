@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { auth } from "@/auth";
 import { logAudit } from "@/lib/audit";
-import { teamForEvent } from "@/lib/team";
+import { teamForEvent, isBanned } from "@/lib/team";
 import { promoteWaitlist, registerTeam } from "@/lib/events";
 import { grantEventAccess, revokeEventAccess } from "@/lib/event-space";
 
@@ -30,10 +30,13 @@ const cleanNickname = (raw?: string | null) => {
   return t || null;
 };
 
+const BAN_MESSAGE = "Your account is suspended — contact staff to resolve this.";
+
 /** Player signs up (or re-activates a withdrawn signup) for a SOLO event. */
 export async function signUpForEvent(eventId: string, nickname?: string) {
   const session = await auth();
   const playerId = await callerPlayerId(eventId);
+  if (await isBanned(playerId)) return { error: BAN_MESSAGE };
 
   const event = await db.event.findUnique({
     where: { id: eventId },
@@ -77,6 +80,7 @@ export async function signUpForEvent(eventId: string, nickname?: string) {
 export async function registerAsFreeAgent(eventId: string, nickname?: string) {
   const session = await auth();
   const playerId = await callerPlayerId(eventId);
+  if (await isBanned(playerId)) return { error: BAN_MESSAGE };
 
   const event = await db.event.findUnique({ where: { id: eventId } });
   if (!event || event.status !== "PUBLISHED") {
@@ -113,6 +117,7 @@ export async function checkInToEvent(eventId: string) {
   const session = await auth();
   if (!session?.user) redirect(`/login?callbackUrl=/events/${eventId}`);
   const playerId = await callerPlayerId(eventId);
+  if (await isBanned(playerId)) return { error: BAN_MESSAGE };
 
   const event = await db.event.findUnique({ where: { id: eventId } });
   if (!event || event.status !== "PUBLISHED") return { error: "This event isn't running." };
@@ -194,6 +199,7 @@ export async function withdrawFromEvent(eventId: string) {
  */
 export async function registerTeamForEvent(eventId: string) {
   const playerId = await callerPlayerId(eventId);
+  if (await isBanned(playerId)) return { error: BAN_MESSAGE };
   const team = await teamForEvent(playerId, eventId);
   if (!team) return { error: "Create or join a team first." };
   if (team.leaderId !== playerId) return { error: "Only your team leader can register the team." };

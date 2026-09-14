@@ -151,6 +151,26 @@ mutation writes an `AuditLog` row via `logAudit(...)`; viewer at `/portal/audit`
 - **`<VideoEmbed>` non-YouTube fallback** — `ytId()` only parses YouTube URLs;
   a Twitch clip, Streamable, or direct file link now renders a plain
   "▶ Watch ↗" link out to the URL instead of silently rendering nothing.
+- **Ban enforcement** — `setPlayerStatus(id, "BANNED")` (`/portal/actions.ts`)
+  does more than relabel the row: it withdraws every active `EventSignup`
+  (SIGNED_UP/WAITLIST → WITHDRAWN, detaching `teamId`), revokes that event's
+  Discord access role per event, runs `promoteWaitlist` behind them, and
+  strips managed roles via `syncMemberRolesByPlayer`. `isBanned()`
+  (`src/lib/team.ts`) is checked up front in every self-service entry point a
+  player could otherwise use to get back in — `signUpForEvent`,
+  `registerAsFreeAgent`, `checkInToEvent`, `registerTeamForEvent`,
+  `createTeam`, `joinTeam`, and the bot's `/signup` and `/join`. As a last
+  line of defense, `grantEventAccess` (`src/lib/event-space.ts`) itself
+  refuses to hand out the Discord role to a `BANNED` player even if
+  something re-syncs a stale roster row.
+- **Team capacity at join-time** — `Event.teamSize` used to only be enforced
+  in `registerTeam` (registration time), so a team could over-fill via
+  invite code before ever registering. `joinTeam` (web) and the bot's
+  `/join` now count current members against `event.teamSize` before adding
+  one — web wraps the count + insert in a `db.$transaction` to close most of
+  the race window; the bot path checks then inserts (Discord interactions
+  are low-concurrency enough that this is an acceptable gap, matching the
+  rest of the bot's non-transactional style).
 - **Auth account linking** — `allowDangerousEmailAccountLinking: true` on the
   Discord provider means a sign-in can attach to an existing `User` row on
   OAuth-email match alone. If that row was already linked to a *different*

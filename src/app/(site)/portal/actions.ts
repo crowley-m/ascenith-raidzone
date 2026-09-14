@@ -44,9 +44,11 @@ import {
   ensureEventRole,
   ensureTeamVoice,
   grantEventAccess,
+  revokeEventAccess,
   teardownEventAccess,
   resyncEventAccess,
 } from "@/lib/event-space";
+import { promoteWaitlist } from "@/lib/events";
 import { BRACKET_SIZES, entrantsForEvent, roundCount, seedOrder } from "@/lib/bracket";
 import { DEFAULT_EVENT_TZ, isValidEventTz, zonedInputToUtc } from "@/lib/tz";
 import { Prisma } from "@prisma/client";
@@ -63,6 +65,26 @@ const APP_URL = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
 export async function setPlayerStatus(playerId: string, status: PlayerStatus) {
   const actor = await assertPermission("player:status");
   await db.player.update({ where: { id: playerId }, data: { status } });
+
+  // A ban doesn't just relabel the player — pull them off every roster they're
+  // still on and strip the Discord access that came with it, so it actually
+  // stops them from playing instead of just marking them.
+  if (status === "BANNED") {
+    const signups = await db.eventSignup.findMany({
+      where: { playerId, state: { in: ["SIGNED_UP", "WAITLIST"] } },
+      select: { eventId: true },
+    });
+    await db.eventSignup.updateMany({
+      where: { playerId, state: { in: ["SIGNED_UP", "WAITLIST"] } },
+      data: { state: "WITHDRAWN", teamId: null },
+    });
+    for (const s of signups) {
+      void revokeEventAccess(s.eventId, playerId);
+      void promoteWaitlist(s.eventId);
+    }
+    void syncMemberRolesByPlayer(playerId);
+  }
+
   await logAudit({
     actorId: actor.id,
     action: "player.status",

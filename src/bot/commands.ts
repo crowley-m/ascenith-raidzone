@@ -239,6 +239,12 @@ export async function handleCommand(interaction: ChatInputCommandInteraction) {
           content: `You need a profile first — ${APP_URL}/register`,
         });
       }
+      if (user.player.status === "BANNED") {
+        return interaction.reply({
+          ephemeral: true,
+          content: "Your account is suspended — contact staff to resolve this.",
+        });
+      }
       const eventId = interaction.options.getString("event", true);
       const event = await db.event.findUnique({
         where: { id: eventId },
@@ -322,12 +328,18 @@ export async function handleCommand(interaction: ChatInputCommandInteraction) {
           content: `You need a profile first — ${APP_URL}/register`,
         });
       }
+      if (user.player.status === "BANNED") {
+        return interaction.reply({
+          ephemeral: true,
+          content: "Your account is suspended — contact staff to resolve this.",
+        });
+      }
       const player = user.player;
 
       const team = await db.team.findUnique({
         where: { inviteCode: code },
         include: {
-          event: { select: { id: true, title: true, mode: true } },
+          event: { select: { id: true, title: true, mode: true, teamSize: true } },
           leader: { select: { id: true, characterName: true, user: { select: { discordId: true } } } },
         },
       });
@@ -350,6 +362,16 @@ export async function handleCommand(interaction: ChatInputCommandInteraction) {
               ? "You're already on that team."
               : "You're already in a team for that event.",
         });
+      }
+
+      if (team.event.teamSize) {
+        const memberCount = await db.teamMember.count({ where: { teamId: team.id } });
+        if (memberCount >= team.event.teamSize) {
+          return interaction.reply({
+            ephemeral: true,
+            content: `That team is full — it caps at ${team.event.teamSize} members.`,
+          });
+        }
       }
 
       try {
