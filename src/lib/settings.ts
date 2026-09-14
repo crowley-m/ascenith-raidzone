@@ -17,6 +17,11 @@ export type Settings = {
   registeredRoleId: string;
   /** Discord role id granted to team leaders (blank = off). */
   teamLeaderRoleId: string;
+  /** Social links shown in the landing footer — blank hides that one. */
+  socialTiktokUrl: string;
+  socialTwitchUrl: string;
+  socialXUrl: string;
+  socialFacebookUrl: string;
 };
 
 const DEFAULTS: Settings = {
@@ -41,6 +46,10 @@ const DEFAULTS: Settings = {
   howToJoinVideoUrl: "",
   registeredRoleId: "",
   teamLeaderRoleId: "",
+  socialTiktokUrl: "https://www.tiktok.com/@potatoziee1",
+  socialTwitchUrl: "https://www.twitch.tv/potatozie1",
+  socialXUrl: "https://x.com/potatoziee",
+  socialFacebookUrl: "https://www.facebook.com/people/Potatozie-Gaming/100063656476567/",
 };
 
 export async function getSettings(): Promise<Settings> {
@@ -71,6 +80,13 @@ export async function getSettings(): Promise<Settings> {
       typeof map.registeredRoleId === "string" ? map.registeredRoleId : DEFAULTS.registeredRoleId,
     teamLeaderRoleId:
       typeof map.teamLeaderRoleId === "string" ? map.teamLeaderRoleId : DEFAULTS.teamLeaderRoleId,
+    socialTiktokUrl:
+      typeof map.socialTiktokUrl === "string" ? map.socialTiktokUrl : DEFAULTS.socialTiktokUrl,
+    socialTwitchUrl:
+      typeof map.socialTwitchUrl === "string" ? map.socialTwitchUrl : DEFAULTS.socialTwitchUrl,
+    socialXUrl: typeof map.socialXUrl === "string" ? map.socialXUrl : DEFAULTS.socialXUrl,
+    socialFacebookUrl:
+      typeof map.socialFacebookUrl === "string" ? map.socialFacebookUrl : DEFAULTS.socialFacebookUrl,
   };
 }
 

@@ -21,13 +21,6 @@ const DISCORD = process.env.NEXT_PUBLIC_DISCORD_INVITE ?? "https://discord.gg/a4
 const REGISTER = "/register";
 const LOGIN = "/login";
 
-const SOCIALS = [
-  { label: "TikTok", href: "https://www.tiktok.com/@potatoziee1" },
-  { label: "Twitch", href: "https://www.twitch.tv/potatozie1" },
-  { label: "X", href: "https://x.com/potatoziee" },
-  { label: "Facebook", href: "https://www.facebook.com/people/Potatozie-Gaming/100063656476567/" },
-];
-
 const NAV_PAGES = [
   { href: "/events", label: "Events" },
   { href: "/teams", label: "Teams" },
@@ -182,6 +175,7 @@ export function Landing({
   seasonLabel = "",
   seasons = [],
   discordOnline = null,
+  socials = [],
 }: {
   event?: OpEvent | null;
   upcoming?: UpcomingOp[];
@@ -191,6 +185,7 @@ export function Landing({
   seasonLabel?: string;
   seasons?: { series: string; count: number; latestSlug: string; champion: string | null }[];
   discordOnline?: number | null;
+  socials?: { label: string; href: string }[];
 }) {
   const season = seasonLabel || "S1";
   const { data: session } = useSession();
@@ -437,7 +432,7 @@ export function Landing({
             <a href={DISCORD}>Discord</a>
           </nav>
           <nav>
-            {SOCIALS.map((sm) => (
+            {socials.map((sm) => (
               <a key={sm.href} href={sm.href} target="_blank" rel="noreferrer">
                 {sm.label}
               </a>

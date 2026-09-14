@@ -5,6 +5,7 @@ import Discord from "next-auth/providers/discord";
 import { db } from "@/lib/db";
 import { authConfig } from "@/auth.config";
 import { syncMemberRoles } from "@/lib/discord-roles";
+import { logAudit } from "@/lib/audit";
 
 // Discord is the only sign-in route.
 
@@ -74,6 +75,27 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           avatar?: string | null;
           image_url?: string;
         };
+
+        // allowDangerousEmailAccountLinking means the adapter can attach this
+        // Discord account to an EXISTING User row purely because the OAuth
+        // email matched — if that row was already linked to a *different*
+        // Discord identity, two different people's data just got merged.
+        // Not something to block (that's the option's job), but it must not
+        // be invisible: flag it in the same audit trail staff already watch.
+        const existing = await db.user.findUnique({
+          where: { id: user.id },
+          select: { discordId: true },
+        });
+        if (existing?.discordId && p.id && existing.discordId !== p.id) {
+          void logAudit({
+            actorId: user.id,
+            action: "auth.discord_identity_changed",
+            targetType: "User",
+            targetId: user.id,
+            meta: { from: existing.discordId, to: p.id, reason: "email-linked" },
+          });
+        }
+
         await db.user.update({
           where: { id: user.id },
           data: {

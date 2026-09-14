@@ -141,6 +141,39 @@ export function SettingsForm({
         </div>
       </div>
 
+      <div>
+        <label className="label">Social links (landing footer)</label>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <input
+            name="socialTiktokUrl"
+            className="input"
+            defaultValue={settings.socialTiktokUrl}
+            placeholder="TikTok URL"
+          />
+          <input
+            name="socialTwitchUrl"
+            className="input"
+            defaultValue={settings.socialTwitchUrl}
+            placeholder="Twitch URL"
+          />
+          <input
+            name="socialXUrl"
+            className="input"
+            defaultValue={settings.socialXUrl}
+            placeholder="X (Twitter) URL"
+          />
+          <input
+            name="socialFacebookUrl"
+            className="input"
+            defaultValue={settings.socialFacebookUrl}
+            placeholder="Facebook URL"
+          />
+        </div>
+        <p className="mt-1 text-xs text-slate-500">
+          Shown in the landing page footer. Leave any blank to hide that link.
+        </p>
+      </div>
+
       {state.error && <p className="text-sm text-ember">{state.error}</p>}
       {state.ok && <p className="text-sm text-teal">Saved.</p>}
       <div>

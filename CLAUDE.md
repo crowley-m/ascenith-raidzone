@@ -125,6 +125,18 @@ mutation writes an `AuditLog` row via `logAudit(...)`; viewer at `/portal/audit`
   `"broadcast"`). Rides along as an image-only embed even when not posting
   "as an embed", so it attaches to a plain-text message too; edit can replace
   or remove it.
+- **Landing social links** — TikTok/Twitch/X/Facebook in the footer come from
+  `Settings.social*Url` (Portal → Settings), not a hardcoded array — blank
+  hides that one link. `src/app/page.tsx` builds the `{label, href}` list and
+  passes it into `<Landing>` as a prop (the component is `"use client"`, no
+  direct DB access).
+- **Auth account linking** — `allowDangerousEmailAccountLinking: true` on the
+  Discord provider means a sign-in can attach to an existing `User` row on
+  OAuth-email match alone. If that row was already linked to a *different*
+  Discord identity, `src/auth.ts`'s `signIn` event logs it as
+  `auth.discord_identity_changed` (visible in `/portal/audit`, `meta.from`/
+  `meta.to` are the old/new Discord ids) before overwriting — doesn't block
+  it, just makes an otherwise-silent merge visible to staff.
 - **Notifications** — players get Discord DMs (waitlist promotion, reward
   granted, event starting, placed in results, event cancelled, teammate
   joined / left) unless `Player.dmNotifications` is off. `src/lib/notify.ts`.

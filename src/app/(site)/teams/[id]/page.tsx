@@ -32,10 +32,10 @@ export default async function PublicTeamPage({
       where: { id },
       include: {
         event: { select: { id: true, title: true, mode: true } },
-        leader: { select: { characterName: true } },
+        leader: { select: { id: true, characterName: true } },
         members: {
           orderBy: { joinedAt: "asc" },
-          include: { player: { select: { characterName: true, region: true } } },
+          include: { player: { select: { id: true, characterName: true, region: true } } },
         },
         placements: {
           orderBy: { createdAt: "desc" },
@@ -80,7 +80,9 @@ export default async function PublicTeamPage({
       </h1>
       <p className="mt-3 text-sm text-slate-400">
         {team.members.length} member{team.members.length === 1 ? "" : "s"} · led by{" "}
-        {nameFor(team.leaderId, team.leader.characterName)}
+        <Link href={`/players/${team.leader.id}`} className="link">
+          {nameFor(team.leaderId, team.leader.characterName)}
+        </Link>
         {forEvent && (
           <>
             {" · formed for "}
@@ -101,7 +103,9 @@ export default async function PublicTeamPage({
           <ul className="mt-4 divide-y divide-edge/60">
             {team.members.map((m) => (
               <li key={m.id} className="flex items-center justify-between py-2.5 text-sm">
-                <span className="text-slate-100">{nameFor(m.playerId, m.player.characterName)}</span>
+                <Link href={`/players/${m.player.id}`} className="text-slate-100 hover:text-teal">
+                  {nameFor(m.playerId, m.player.characterName)}
+                </Link>
                 <span className="text-xs text-slate-500">{m.player.region ?? ""}</span>
               </li>
             ))}

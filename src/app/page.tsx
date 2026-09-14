@@ -163,6 +163,13 @@ export default async function HomePage() {
       seasonSummary(),
       guildPresence(),
     ]);
+  const socials = [
+    { label: "TikTok", href: settings.socialTiktokUrl },
+    { label: "Twitch", href: settings.socialTwitchUrl },
+    { label: "X", href: settings.socialXUrl },
+    { label: "Facebook", href: settings.socialFacebookUrl },
+  ].filter((s) => s.href);
+
   return (
     <Landing
       event={current ?? FALLBACK_EVENT}
@@ -173,6 +180,7 @@ export default async function HomePage() {
       seasonLabel={season}
       seasons={seasons}
       discordOnline={presence?.online ?? null}
+      socials={socials}
     />
   );
 }

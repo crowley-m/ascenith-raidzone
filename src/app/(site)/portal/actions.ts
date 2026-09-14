@@ -1282,6 +1282,10 @@ export async function saveSettings(_prev: FormState, formData: FormData): Promis
     ["howToJoinVideoUrl", str("howToJoinVideoUrl")],
     ["registeredRoleId", str("registeredRoleId").replace(/[^0-9]/g, "")],
     ["teamLeaderRoleId", str("teamLeaderRoleId").replace(/[^0-9]/g, "")],
+    ["socialTiktokUrl", str("socialTiktokUrl")],
+    ["socialTwitchUrl", str("socialTwitchUrl")],
+    ["socialXUrl", str("socialXUrl")],
+    ["socialFacebookUrl", str("socialFacebookUrl")],
   ];
 
   await db.$transaction(
