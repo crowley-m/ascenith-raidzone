@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { db } from "@/lib/db";
 import { EventCard } from "@/components/event-card";
 import { PageMasthead } from "@/components/page-masthead";
+import { minDelay } from "@/lib/min-delay";
 
 export const metadata: Metadata = { title: "Events" };
 export const dynamic = "force-dynamic";
@@ -10,11 +11,13 @@ export default async function EventsPage() {
   const now = new Date();
   let events: Awaited<ReturnType<typeof db.event.findMany>> = [];
   try {
-    events = await db.event.findMany({
-      where: { status: { in: ["PUBLISHED", "COMPLETED"] } },
-      orderBy: { startsAt: "desc" },
-      include: { _count: { select: { signups: true } } },
-    });
+    events = await minDelay(
+      db.event.findMany({
+        where: { status: { in: ["PUBLISHED", "COMPLETED"] } },
+        orderBy: { startsAt: "desc" },
+        include: { _count: { select: { signups: true } } },
+      }),
+    );
   } catch {
     /* db unreachable — render empty */
   }

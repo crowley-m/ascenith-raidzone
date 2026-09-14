@@ -6,6 +6,7 @@ import { fmtInZone, DEFAULT_EVENT_TZ } from "@/lib/tz";
 import { hiddenActorIds, maskName } from "@/lib/staff-mask";
 import { topRaiders } from "@/lib/leaderboard";
 import { TopRaiders } from "@/components/top-raiders";
+import { minDelay } from "@/lib/min-delay";
 
 export const dynamic = "force-dynamic";
 
@@ -27,7 +28,7 @@ export default async function PortalOverview() {
     hidden,
     disputedCount,
     pendingCount,
-  ] = await Promise.all([
+  ] = await minDelay(Promise.all([
     db.player.findMany({
       orderBy: { joinedAt: "desc" },
       take: 8,
@@ -62,7 +63,7 @@ export default async function PortalOverview() {
     hiddenActorIds(me.role),
     db.reward.count({ where: { disputedAt: { not: null } } }),
     db.player.count({ where: { status: "PENDING" } }),
-  ]);
+  ]));
 
   const raiders = await topRaiders(8);
 

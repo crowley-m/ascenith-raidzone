@@ -487,7 +487,14 @@ scoped to that event's roster, short enough that scrolling alone is fine).
   itself uses a diagonal crimson-tinted shimmer sweep (`.skeleton-shimmer`
   in `globals.css`, a `::after` gradient animated via `transform`) rather
   than a flat opacity pulse — falls back to a static dimmed block under
-  `prefers-reduced-motion`.
+  `prefers-reduced-motion`. Each of those 5 pages wraps its main data fetch
+  in `minDelay()` (`src/lib/min-delay.ts`) — the app and Postgres share a
+  box, so most of these queries resolve in a few ms, too fast for the
+  Suspense fallback to ever actually be visible; `minDelay` holds the
+  promise's resolution back to a 400ms floor without adding anything on top
+  of a fetch that's already slower than that. A deliberate trade-off (every
+  load on these 5 routes takes at least 400ms now, even a trivially fast
+  one) made because the skeleton being genuinely invisible was worse.
 - **Live countdown** — `<LiveCountdown target={isoString} fallback={...} />`
   (`src/components/live-countdown.tsx`) renders `fallback` (the existing
   `relative()` string) until mounted and swaps to a ticking `Dd HH:MM:SS`

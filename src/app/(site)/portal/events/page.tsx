@@ -3,18 +3,21 @@ import { requirePermission } from "@/lib/session";
 import { db } from "@/lib/db";
 import { can } from "@/lib/rbac";
 import { fmtInZone, DEFAULT_EVENT_TZ } from "@/lib/tz";
+import { minDelay } from "@/lib/min-delay";
 
 export const dynamic = "force-dynamic";
 
 export default async function PortalEventsPage() {
   const user = await requirePermission("event:view");
 
-  const events = await db.event.findMany({
-    orderBy: { startsAt: "desc" },
-    include: {
-      _count: { select: { signups: true, attendance: true } },
-    },
-  });
+  const events = await minDelay(
+    db.event.findMany({
+      orderBy: { startsAt: "desc" },
+      include: {
+        _count: { select: { signups: true, attendance: true } },
+      },
+    }),
+  );
 
   // Which event the landing page currently features (same rule as app/page.tsx):
   // an ongoing published event, else the soonest upcoming published one.

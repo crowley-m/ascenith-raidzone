@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requirePermission } from "@/lib/session";
 import { db } from "@/lib/db";
 import { fmtDate } from "@/lib/format";
+import { minDelay } from "@/lib/min-delay";
 import type { Prisma, PlayerStatus } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
@@ -28,7 +29,7 @@ export default async function PlayersPage({
     ];
   }
 
-  const [players, matched, counts] = await Promise.all([
+  const [players, matched, counts] = await minDelay(Promise.all([
     db.player.findMany({
       where,
       orderBy: [{ status: "asc" }, { createdAt: "desc" }],
@@ -42,7 +43,7 @@ export default async function PlayersPage({
     }),
     db.player.count({ where }),
     db.player.groupBy({ by: ["status"], _count: true }),
-  ]);
+  ]));
   const countFor = (s: string) => counts.find((c) => c.status === s)?._count ?? 0;
   const total = counts.reduce((n, c) => n + (typeof c._count === "number" ? c._count : 0), 0);
   const pages = Math.ceil(matched / take);
