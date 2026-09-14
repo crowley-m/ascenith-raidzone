@@ -5,6 +5,7 @@ import { fmtInZone, DEFAULT_EVENT_TZ } from "@/lib/tz";
 import { teamsForPlayer } from "@/lib/team";
 import { JoinWipeButton } from "@/components/me/join-wipe-button";
 import { DmToggle } from "@/components/me/dm-toggle";
+import { LifetimeRewards } from "@/components/me/lifetime-rewards";
 
 const STATUS_COPY: Record<string, string> = {
   PENDING: "Pending — finish your profile to get set for events and rewards.",
@@ -44,7 +45,7 @@ export default async function MeOverviewPage() {
     );
   }
 
-  const [teams, liveEvents] = await Promise.all([
+  const [teams, liveEvents, allRewards] = await Promise.all([
     teamsForPlayer(player.id),
     db.event.findMany({
       where: {
@@ -55,6 +56,7 @@ export default async function MeOverviewPage() {
       orderBy: { startsAt: "asc" },
       select: { id: true, title: true, mode: true, endsAt: true, format: true },
     }),
+    db.reward.findMany({ where: { playerId: player.id }, select: { item: true, amount: true } }),
   ]);
 
   const signedEventIds = new Set(player.signups.map((s) => s.eventId));
@@ -259,6 +261,8 @@ export default async function MeOverviewPage() {
             </div>
           </dl>
         </div>
+
+        <LifetimeRewards rewards={allRewards} />
 
         <div className="card">
           <div className="label mb-3">Notifications</div>

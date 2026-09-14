@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/session";
 import { db } from "@/lib/db";
 import { fmtDate } from "@/lib/format";
 import { RewardReceipt } from "@/components/me/reward-receipt";
+import { LifetimeRewards } from "@/components/me/lifetime-rewards";
 
 export default async function MyRewardsPage() {
   const user = await requireUser();
@@ -19,6 +20,9 @@ export default async function MyRewardsPage() {
   return (
     <div>
       <h2 className="font-display text-lg font-bold text-white">My rewards</h2>
+      <div className="mt-4 max-w-xs">
+        <LifetimeRewards rewards={rewards} />
+      </div>
       {rewards.length === 0 ? (
         <p className="mt-3 text-sm text-slate-400">
           No rewards yet. Show up to events and staff will log them here.

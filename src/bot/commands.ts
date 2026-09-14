@@ -44,11 +44,42 @@ export const commandData = [
   new SlashCommandBuilder()
     .setName("myevents")
     .setDescription("List the events you're signed up for"),
+  new SlashCommandBuilder()
+    .setName("join")
+    .setDescription("Join a team with its invite code")
+    .addStringOption((o) =>
+      o.setName("code").setDescription("The team's invite code").setRequired(true),
+    ),
+  new SlashCommandBuilder()
+    .setName("standings")
+    .setDescription("Show a season's results")
+    .addStringOption((o) =>
+      o.setName("season").setDescription("Which season").setRequired(true).setAutocomplete(true),
+    ),
 ].map((c) => c.toJSON());
 
+function seasonLabel(s: { series: string; number: number; name: string | null }) {
+  return `${s.series} — Season ${s.number}${s.name ? ` · ${s.name}` : ""}`;
+}
+
 export async function handleAutocomplete(interaction: AutocompleteInteraction) {
-  if (interaction.commandName !== "signup") return interaction.respond([]);
   const q = interaction.options.getFocused().toLowerCase();
+
+  if (interaction.commandName === "standings") {
+    const seasons = await db.season.findMany({
+      orderBy: [{ startsAt: "desc" }, { number: "desc" }],
+      take: 25,
+      select: { slug: true, series: true, number: true, name: true },
+    });
+    return interaction.respond(
+      seasons
+        .filter((s) => seasonLabel(s).toLowerCase().includes(q))
+        .slice(0, 25)
+        .map((s) => ({ name: seasonLabel(s).slice(0, 100), value: s.slug })),
+    );
+  }
+
+  if (interaction.commandName !== "signup") return interaction.respond([]);
   const events = await db.event.findMany({
     where: openSoloEventFilter(),
     orderBy: { startsAt: "asc" },
@@ -280,6 +311,156 @@ export async function handleCommand(interaction: ChatInputCommandInteraction) {
           )
           .join("\n\n"),
       });
+    }
+
+    case "join": {
+      const code = interaction.options.getString("code", true).trim().toUpperCase();
+      const user = await playerForDiscordUser(interaction.user.id);
+      if (!user?.player) {
+        return interaction.reply({
+          ephemeral: true,
+          content: `You need a profile first — ${APP_URL}/register`,
+        });
+      }
+      const player = user.player;
+
+      const team = await db.team.findUnique({
+        where: { inviteCode: code },
+        include: {
+          event: { select: { id: true, title: true, mode: true } },
+          leader: { select: { id: true, characterName: true, user: { select: { discordId: true } } } },
+        },
+      });
+      if (!team) {
+        return interaction.reply({ ephemeral: true, content: "No team matches that code." });
+      }
+
+      const existingTeam = await db.team.findFirst({
+        where: {
+          eventId: team.eventId,
+          OR: [{ leaderId: player.id }, { members: { some: { playerId: player.id } } }],
+        },
+        select: { id: true },
+      });
+      if (existingTeam) {
+        return interaction.reply({
+          ephemeral: true,
+          content:
+            existingTeam.id === team.id
+              ? "You're already on that team."
+              : "You're already in a team for that event.",
+        });
+      }
+
+      try {
+        await db.teamMember.create({ data: { teamId: team.id, playerId: player.id } });
+      } catch {
+        return interaction.reply({ ephemeral: true, content: "Couldn't join that team — try again." });
+      }
+      await db.auditLog
+        .create({
+          data: {
+            actorId: user.id,
+            action: "team.join",
+            targetType: "Team",
+            targetId: team.id,
+            meta: { via: "discord" },
+          },
+        })
+        .catch(() => {});
+
+      const guildMember = interaction.guild
+        ? await interaction.guild.members.fetch(interaction.user.id).catch(() => null)
+        : null;
+      if (team.discordRoleId && guildMember) {
+        await guildMember.roles.add(team.discordRoleId).catch(() => {});
+      }
+
+      // if the team's already registered for its event, this join puts them on the roster too
+      const registered = await db.eventSignup.findFirst({
+        where: { teamId: team.id, state: { in: ["SIGNED_UP", "WAITLIST"] } },
+        select: { state: true },
+      });
+      if (registered) {
+        await db.eventSignup.upsert({
+          where: { eventId_playerId: { eventId: team.eventId, playerId: player.id } },
+          create: { eventId: team.eventId, playerId: player.id, teamId: team.id, state: registered.state },
+          update: { teamId: team.id, state: registered.state },
+        });
+        const event = await db.event.findUnique({
+          where: { id: team.eventId },
+          select: { discordRoleId: true },
+        });
+        if (event?.discordRoleId && guildMember) {
+          await guildMember.roles.add(event.discordRoleId).catch(() => {});
+        }
+      }
+
+      if (team.leader.id !== player.id && team.leader.user.discordId) {
+        const leaderUser = await interaction.client.users.fetch(team.leader.user.discordId).catch(() => null);
+        await leaderUser
+          ?.send(`**${player.characterName ?? "A player"}** joined **${team.name}** via invite code.`)
+          .catch(() => {});
+      }
+
+      const forEvent = team.event.mode ? `RAIDZONE ${team.event.mode}` : team.event.title;
+      return interaction.reply({
+        ephemeral: true,
+        content:
+          `✅ Joined **${team.name}** for **${forEvent}**.` +
+          (registered ? " You're on the roster." : ""),
+      });
+    }
+
+    case "standings": {
+      const slug = interaction.options.getString("season", true);
+      const season = await db.season.findUnique({
+        where: { slug },
+        include: {
+          events: {
+            orderBy: { startsAt: "desc" },
+            include: {
+              placements: {
+                orderBy: { rank: "asc" },
+                include: {
+                  team: { select: { name: true, tag: true } },
+                  player: { select: { characterName: true } },
+                },
+              },
+            },
+          },
+        },
+      });
+      if (!season) {
+        return interaction.reply({ ephemeral: true, content: "Pick a season from the list." });
+      }
+      const withResults = season.events.filter((e) => e.placements.length > 0);
+      if (withResults.length === 0) {
+        return interaction.reply({
+          ephemeral: true,
+          content: `No results posted yet for that season. ${APP_URL}/seasons/${season.slug}`,
+        });
+      }
+      const medal = ["🥇", "🥈", "🥉"];
+      const embed = new EmbedBuilder()
+        .setColor(TEAL)
+        .setTitle(`${season.series} — Season ${season.number}${season.name ? ` · ${season.name}` : ""}`)
+        .setURL(`${APP_URL}/seasons/${season.slug}`)
+        .setDescription(
+          withResults
+            .slice(0, 10)
+            .map((e) => {
+              const title = e.mode ? `RAIDZONE ${e.mode}` : e.title;
+              const podium = e.placements
+                .slice(0, 3)
+                .map((p, i) => `${medal[i] ?? `#${p.rank}`} ${p.team ? `${p.team.tag ? `[${p.team.tag}] ` : ""}${p.team.name}` : (p.player?.characterName ?? "—")}`)
+                .join("  ");
+              return `**${title}**\n${podium}`;
+            })
+            .join("\n\n"),
+        )
+        .setFooter({ text: season.championName ? `Champion: ${season.championName}` : "ASCENITH RAIDZONE" });
+      return interaction.reply({ embeds: [embed] });
     }
   }
 }

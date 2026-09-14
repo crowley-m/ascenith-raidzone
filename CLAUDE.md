@@ -128,6 +128,22 @@ mutation writes an `AuditLog` row via `logAudit(...)`; viewer at `/portal/audit`
 - **Notifications** — players get Discord DMs (waitlist promotion, reward
   granted, event starting, placed in results, event cancelled, teammate
   joined / left) unless `Player.dmNotifications` is off. `src/lib/notify.ts`.
+- **Lifetime rewards summary** — `summarizeRewards()` (`src/lib/rewards-summary.ts`,
+  pure) groups a player's `Reward` rows by item name (case-insensitive, since
+  it's free-typed) and sums `amount` after stripping commas/spaces —
+  `Reward.amount` is a free-text string, not a number, so this tolerates
+  `" 1,300"` alongside non-numeric rewards (shown as `×N` instead of a total).
+  `<LifetimeRewards>` renders it on `/me` and `/me/rewards`.
+- **Bot self-service commands** — `src/bot/commands.ts`'s `/join <code>` and
+  `/standings <season>` duplicate a slice of web server-action logic directly
+  (the bot is a separate process — it can't import `"use server"` actions),
+  using the bot's own live `interaction.guild` for role grants instead of the
+  web's REST-based `src/lib/discord.ts`. `/join` mirrors `joinTeam` +
+  `registerTeam`'s per-member upsert (absorbs an existing free-agent signup
+  via the `eventId_playerId` unique constraint) and grants both the team's
+  voice-access role and, if the team's already registered, the event's role
+  too. `/standings` is read-only — same `Season → events → placements` shape
+  `/seasons/[slug]` renders, condensed to a podium-per-event embed.
 - **Per-event nickname** — `EventSignup.nickname` lets a player use a different
   display name for one event (multiple characters, an event-specific alias)
   without touching their profile. Set at sign-up (solo `signUpForEvent`, free
