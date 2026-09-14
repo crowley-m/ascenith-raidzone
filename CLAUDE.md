@@ -243,6 +243,16 @@ space actually has, whether each was posted yet, an "Edit content" jump link
 to that `#content-<name>` anchor, an "Open in Discord ↗" link
 (`discordId + DISCORD_GUILD_ID`), and add/remove.
 
+## Global portal search
+
+`/portal/search?q=` (`requirePermission("player:view")`, MODERATOR+, same
+gate as Players/Teams) — a plain GET `<form>` in the portal layout header
+(no JS, submits on Enter), queries Player (characterName/gameUid/Discord
+username/email), Team (name/tag) and Event (title/mode) in parallel and
+lists matches grouped by type, each linking straight to its detail page.
+Doesn't preserve the typed query in the header box on reload — layouts
+don't receive `searchParams` in the App Router, so it always starts empty.
+
 ## Player picker
 
 `src/components/portal/player-picker.tsx` — a searchable + scrollable

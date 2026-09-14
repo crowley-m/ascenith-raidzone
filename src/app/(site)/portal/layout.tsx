@@ -25,7 +25,16 @@ export default async function PortalLayout({ children }: { children: React.React
     <div className="mx-auto w-full max-w-[100rem] px-5 py-10">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <h1 className="font-display text-2xl font-extrabold text-white">Staff portal</h1>
-        <span className="badge border-teal/40 text-teal">{roleLabel(user.role)}</span>
+        <div className="flex items-center gap-3">
+          <form action="/portal/search" className="flex items-center">
+            <input
+              name="q"
+              placeholder="Search players, teams, events…"
+              className="input w-56 py-1.5 text-xs sm:w-72"
+            />
+          </form>
+          <span className="badge border-teal/40 text-teal">{roleLabel(user.role)}</span>
+        </div>
       </div>
 
       <div className="mt-6 gap-8 lg:grid lg:grid-cols-[12rem_1fr]">
