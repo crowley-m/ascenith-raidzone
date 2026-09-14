@@ -37,6 +37,20 @@ export async function updateProfileAction(
   }
 
   const d = parsed.data;
+
+  if (d.gameUid) {
+    const dupe = await db.player.findFirst({
+      where: { gameUid: d.gameUid, userId: { not: user.id } },
+      select: { id: true },
+    });
+    if (dupe) {
+      return {
+        error: "Please fix the errors below.",
+        fieldErrors: { gameUid: "Another player already has this UID — double-check it." },
+      };
+    }
+  }
+
   const factionId =
     d.factionId && (await db.faction.findUnique({ where: { id: d.factionId }, select: { id: true } }))
       ? d.factionId

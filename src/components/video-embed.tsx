@@ -18,7 +18,22 @@ function ytId(url: string): string | null {
 export function VideoEmbed({ url, title = "Video" }: { url: string; title?: string }) {
   const [play, setPlay] = useState(false);
   const id = ytId(url);
-  if (!id) return null;
+
+  // Not a YouTube link (Twitch clip, Streamable, direct file, …) — still
+  // give people a way to watch it instead of a silent gap on the page.
+  if (!id) {
+    if (!url.trim()) return null;
+    return (
+      <a
+        href={url}
+        target="_blank"
+        rel="noreferrer"
+        className="flex aspect-video w-full items-center justify-center border border-edge bg-black text-sm text-slate-300 hover:border-teal hover:text-teal"
+      >
+        ▶ Watch {title} ↗
+      </a>
+    );
+  }
 
   return (
     <div className="relative aspect-video w-full overflow-hidden border border-edge bg-black">

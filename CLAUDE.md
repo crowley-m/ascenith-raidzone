@@ -140,6 +140,17 @@ mutation writes an `AuditLog` row via `logAudit(...)`; viewer at `/portal/audit`
   hides that one link. `src/app/page.tsx` builds the `{label, href}` list and
   passes it into `<Landing>` as a prop (the component is `"use client"`, no
   direct DB access).
+- **Duplicate `gameUid`** — `Player.gameUid` has no DB-level `@unique` (blank/
+  legacy UIDs would collide on `null`/`""`), so `updateProfileAction` checks
+  app-side instead: a `db.player.findFirst` for another `User` already
+  holding that UID returns a `fieldErrors.gameUid` message instead of saving
+  — catches it before a Crystgin payout lands on the wrong account.
+- **Public player pages in the sitemap** — `sitemap.ts` includes `ACTIVE`
+  players with a `characterName` set, alongside events/seasons/teams/winners
+  — PENDING/INACTIVE/BANNED stay unindexed.
+- **`<VideoEmbed>` non-YouTube fallback** — `ytId()` only parses YouTube URLs;
+  a Twitch clip, Streamable, or direct file link now renders a plain
+  "▶ Watch ↗" link out to the URL instead of silently rendering nothing.
 - **Auth account linking** — `allowDangerousEmailAccountLinking: true` on the
   Discord provider means a sign-in can attach to an existing `User` row on
   OAuth-email match alone. If that row was already linked to a *different*

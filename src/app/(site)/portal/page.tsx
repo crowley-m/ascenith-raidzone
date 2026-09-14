@@ -25,6 +25,8 @@ export default async function PortalOverview() {
     rewardCount,
     lastCompleted,
     hidden,
+    disputedCount,
+    pendingCount,
   ] = await Promise.all([
     db.player.findMany({
       orderBy: { joinedAt: "desc" },
@@ -58,6 +60,8 @@ export default async function PortalOverview() {
       },
     }),
     hiddenActorIds(me.role),
+    db.reward.count({ where: { disputedAt: { not: null } } }),
+    db.player.count({ where: { status: "PENDING" } }),
   ]);
 
   const raiders = await topRaiders(8);
@@ -83,9 +87,26 @@ export default async function PortalOverview() {
               v: lastRate === null ? "—" : `${lastRate}%`,
               href: lastCompleted ? `/portal/events/${lastCompleted.id}` : "/portal/events",
             },
+            {
+              k: "Open disputes",
+              v: disputedCount,
+              href: "/portal/rewards",
+              flag: disputedCount > 0,
+            },
+            { k: "Pending players", v: pendingCount, href: "/portal/players?status=PENDING" },
           ].map((s) => (
-            <Link key={s.k} href={s.href} className="card text-center hover:border-teal/50">
-              <div className="font-display text-2xl font-bold text-white">{s.v}</div>
+            <Link
+              key={s.k}
+              href={s.href}
+              className={`card text-center hover:border-teal/50 ${
+                s.flag ? "border-ember/40" : ""
+              }`}
+            >
+              <div
+                className={`font-display text-2xl font-bold ${s.flag ? "text-ember" : "text-white"}`}
+              >
+                {s.v}
+              </div>
               <div className="text-xs text-slate-500">{s.k}</div>
             </Link>
           ))}

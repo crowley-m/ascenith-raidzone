@@ -23,7 +23,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   let dynamicEntries: MetadataRoute.Sitemap = [];
   try {
-    const [seasons, events, sections, teams] = await Promise.all([
+    const [seasons, events, sections, teams, players] = await Promise.all([
       db.season.findMany({ select: { slug: true, updatedAt: true } }),
       db.event.findMany({
         where: { status: { in: ["PUBLISHED", "COMPLETED"] } },
@@ -31,12 +31,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       }),
       winnersSections(),
       db.team.findMany({ select: { id: true, updatedAt: true } }),
+      db.player.findMany({
+        where: { status: "ACTIVE", characterName: { not: null } },
+        select: { id: true, updatedAt: true },
+      }),
     ]);
     dynamicEntries = [
       ...seasons.map((s) => ({ url: `${BASE}/seasons/${s.slug}`, lastModified: s.updatedAt })),
       ...events.map((e) => ({ url: `${BASE}/events/${e.id}`, lastModified: e.updatedAt })),
       ...sections.map((s) => ({ url: `${BASE}/winners/${s.slug}`, lastModified: now })),
       ...teams.map((t) => ({ url: `${BASE}/teams/${t.id}`, lastModified: t.updatedAt })),
+      ...players.map((p) => ({ url: `${BASE}/players/${p.id}`, lastModified: p.updatedAt })),
     ];
   } catch {
     /* db unreachable — static only */
