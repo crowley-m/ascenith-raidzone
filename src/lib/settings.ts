@@ -18,12 +18,13 @@ export type Settings = {
   /** Discord role id granted to team leaders (blank = off). */
   teamLeaderRoleId: string;
   /**
-   * Discord role id granted the moment a player has competed in at least one
-   * event (an EventParticipation row exists) — a permanent badge, unlike the
-   * per-event access role which gets deleted when that event is archived/
-   * deleted. Never revoked by syncMemberRoles once earned. Blank = off.
+   * Tiered "played N events" badges — free-typed "count | roleId" per line,
+   * e.g. "5 | 123456789012345678". Every threshold a player has reached is
+   * granted and stacks (never revoked by syncMemberRoles once earned) —
+   * unlike the per-event access role, which gets deleted when that event is
+   * archived/deleted, these are permanent.
    */
-  veteranRoleId: string;
+  veteranTiersText: string;
   /** Social links shown in the landing footer — blank hides that one. */
   socialTiktokUrl: string;
   socialTwitchUrl: string;
@@ -57,7 +58,7 @@ const DEFAULTS: Settings = {
   howToJoinVideoUrl: "",
   registeredRoleId: "",
   teamLeaderRoleId: "",
-  veteranRoleId: "",
+  veteranTiersText: "",
   socialTiktokUrl: "https://www.tiktok.com/@potatoziee1",
   socialTwitchUrl: "https://www.twitch.tv/potatozie1",
   socialXUrl: "https://x.com/potatoziee",
@@ -119,8 +120,8 @@ export async function getSettings(): Promise<Settings> {
       typeof map.registeredRoleId === "string" ? map.registeredRoleId : DEFAULTS.registeredRoleId,
     teamLeaderRoleId:
       typeof map.teamLeaderRoleId === "string" ? map.teamLeaderRoleId : DEFAULTS.teamLeaderRoleId,
-    veteranRoleId:
-      typeof map.veteranRoleId === "string" ? map.veteranRoleId : DEFAULTS.veteranRoleId,
+    veteranTiersText:
+      typeof map.veteranTiersText === "string" ? map.veteranTiersText : DEFAULTS.veteranTiersText,
     socialTiktokUrl:
       typeof map.socialTiktokUrl === "string" ? map.socialTiktokUrl : DEFAULTS.socialTiktokUrl,
     socialTwitchUrl:
@@ -132,6 +133,22 @@ export async function getSettings(): Promise<Settings> {
     antiCheatText: typeof map.antiCheatText === "string" ? map.antiCheatText : DEFAULTS.antiCheatText,
     disputesText: typeof map.disputesText === "string" ? map.disputesText : DEFAULTS.disputesText,
   };
+}
+
+export type VeteranTier = { count: number; roleId: string };
+
+/** "5 | 123456789012345678" per line → [{ count, roleId }], ascending, invalid lines dropped. */
+export function parseVeteranTiers(text: string): VeteranTier[] {
+  return text
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .map((l) => {
+      const [countRaw, roleRaw] = l.split("|");
+      return { count: parseInt((countRaw ?? "").trim(), 10), roleId: (roleRaw ?? "").trim() };
+    })
+    .filter((t) => Number.isFinite(t.count) && t.count > 0 && /^\d+$/.test(t.roleId))
+    .sort((a, b) => a.count - b.count);
 }
 
 export { DEFAULTS as SETTINGS_DEFAULTS };

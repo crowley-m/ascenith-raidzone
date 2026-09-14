@@ -125,7 +125,7 @@ export function SettingsForm({
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className="label">&ldquo;Registered&rdquo; role</label>
           {roleField("registeredRoleId", settings.registeredRoleId)}
@@ -140,14 +140,22 @@ export function SettingsForm({
             Given to team leaders. The bot&apos;s role must sit above these in the role list.
           </p>
         </div>
-        <div>
-          <label className="label">&ldquo;Veteran&rdquo; role</label>
-          {roleField("veteranRoleId", settings.veteranRoleId)}
-          <p className="mt-1 text-xs text-slate-500">
-            Given the moment a player has competed in at least one event — a permanent badge,
-            unlike the other roles here it&apos;s never taken back off.
-          </p>
-        </div>
+      </div>
+
+      <div>
+        <label className="label">Tiered veteran badges</label>
+        <textarea
+          name="veteranTiersText"
+          rows={4}
+          className="input font-mono text-sm"
+          defaultValue={settings.veteranTiersText}
+          placeholder={"5 | 123456789012345678\n20 | 234567890123456789"}
+        />
+        <p className="mt-1 text-xs text-slate-500">
+          One tier per line — <code>events played | Discord role id</code>. Every threshold a
+          player has reached is granted and stacks (Bronze, Silver, Gold, …) — unlike the other
+          roles here, these are never taken back off once earned.
+        </p>
       </div>
 
       <div>

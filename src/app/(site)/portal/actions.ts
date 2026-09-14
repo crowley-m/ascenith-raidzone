@@ -1328,7 +1328,7 @@ export async function saveSettings(_prev: FormState, formData: FormData): Promis
     ["howToJoinVideoUrl", str("howToJoinVideoUrl")],
     ["registeredRoleId", str("registeredRoleId").replace(/[^0-9]/g, "")],
     ["teamLeaderRoleId", str("teamLeaderRoleId").replace(/[^0-9]/g, "")],
-    ["veteranRoleId", str("veteranRoleId").replace(/[^0-9]/g, "")],
+    ["veteranTiersText", str("veteranTiersText")],
     ["socialTiktokUrl", str("socialTiktokUrl")],
     ["socialTwitchUrl", str("socialTwitchUrl")],
     ["socialXUrl", str("socialXUrl")],
