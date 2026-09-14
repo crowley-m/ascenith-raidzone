@@ -12,6 +12,7 @@ import { FreeAgentBoard } from "@/components/team/free-agent-board";
 import { Markdown } from "@/components/markdown";
 import { EventProse } from "@/components/event-prose";
 import { VideoEmbed } from "@/components/video-embed";
+import { LiveCountdown } from "@/components/live-countdown";
 import { teamForEvent } from "@/lib/team";
 import { bracketForEvent } from "@/lib/bracket";
 import { BracketBoard } from "@/components/bracket/bracket-board";
@@ -213,7 +214,12 @@ export default async function EventDetailPage({
         <div>
           <p className="eyebrow">
             {event.mode ? `${event.mode} event` : "Event"} &mdash;{" "}
-            <span className="text-slate-400">{statusWord}</span> &middot; {relative(event.startsAt)}
+            <span className="text-slate-400">{statusWord}</span> &middot;{" "}
+            {upcoming && !cancelled ? (
+              <LiveCountdown target={event.startsAt.toISOString()} fallback={relative(event.startsAt)} />
+            ) : (
+              relative(event.startsAt)
+            )}
           </p>
           <h1 className="mt-2 font-poster text-5xl uppercase leading-none text-white sm:text-6xl">
             {event.mode ? (

@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef } from "react";
 import { saveSettings } from "@/app/(site)/portal/actions";
+import { useToast } from "@/components/toast/toast-provider";
 import type { Settings } from "@/lib/settings";
 
 type Opt = { id: string; name: string };
@@ -16,6 +17,14 @@ export function SettingsForm({
   roles?: Opt[];
 }) {
   const [state, action, pending] = useActionState(saveSettings, {});
+  const toast = useToast();
+  const seen = useRef(state);
+  useEffect(() => {
+    if (state === seen.current) return;
+    seen.current = state;
+    if (state.ok) toast("Settings saved.");
+    else if (state.error) toast(state.error, "error");
+  }, [state, toast]);
 
   const chanField = (name: string, value: string) =>
     channels.length > 0 ? (
@@ -227,8 +236,6 @@ export function SettingsForm({
         />
       </div>
 
-      {state.error && <p className="text-sm text-ember">{state.error}</p>}
-      {state.ok && <p className="text-sm text-teal">Saved.</p>}
       <div>
         <button className="btn-primary" disabled={pending}>
           {pending ? "Saving…" : "Save settings"}

@@ -1,19 +1,26 @@
 import { requireStaff } from "@/lib/session";
 import { can, roleLabel } from "@/lib/rbac";
+import { db } from "@/lib/db";
 import { PortalNav } from "@/components/portal/portal-nav";
 
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
   const user = await requireStaff();
 
+  // ambient counts for the nav dots — cheap, and only queried for sections the role can see
+  const [pendingPlayers, openDisputes] = await Promise.all([
+    can(user.role, "player:view") ? db.player.count({ where: { status: "PENDING" } }) : 0,
+    can(user.role, "reward:view") ? db.reward.count({ where: { disputedAt: { not: null } } }) : 0,
+  ]);
+
   const items = [
     { href: "/portal", label: "Overview", show: true },
     { href: "/portal/analytics", label: "Analytics", show: can(user.role, "player:view") },
-    { href: "/portal/players", label: "Players", show: can(user.role, "player:view") },
+    { href: "/portal/players", label: "Players", show: can(user.role, "player:view"), dot: pendingPlayers > 0 },
     { href: "/portal/teams", label: "Teams", show: can(user.role, "player:view") },
     { href: "/portal/events", label: "Events", show: can(user.role, "event:view") },
     { href: "/portal/broadcast", label: "Broadcast", show: can(user.role, "event:manage") },
     { href: "/portal/seasons", label: "Seasons", show: can(user.role, "event:manage") },
-    { href: "/portal/rewards", label: "Rewards", show: can(user.role, "reward:view") },
+    { href: "/portal/rewards", label: "Rewards", show: can(user.role, "reward:view"), dot: openDisputes > 0 },
     { href: "/portal/factions", label: "Factions", show: can(user.role, "faction:manage") },
     { href: "/portal/media", label: "Gallery", show: can(user.role, "media:manage") },
     { href: "/portal/staff", label: "Staff", show: can(user.role, "staff:manage") },

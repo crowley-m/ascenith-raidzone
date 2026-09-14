@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { relative } from "@/lib/format";
 import { fmtInZone, DEFAULT_EVENT_TZ } from "@/lib/tz";
+import { LiveCountdown } from "@/components/live-countdown";
 
 export type EventCardData = {
   id: string;
@@ -26,6 +27,12 @@ export function EventCard({ event, href }: { event: EventCardData; href?: string
   const open =
     event.status === "PUBLISHED" &&
     (event.endsAt ? event.endsAt.getTime() > now : event.startsAt.getTime() > now);
+  const upcoming = event.status === "PUBLISHED" && event.startsAt.getTime() > now;
+
+  const pct = event.maxSlots ? Math.min(100, Math.round((signups / event.maxSlots) * 100)) : null;
+  const nearlyFull = pct !== null && pct >= 85 && pct < 100;
+  const full = pct === 100;
+
   return (
     <Link
       href={href ?? `/events/${event.id}`}
@@ -38,7 +45,13 @@ export function EventCard({ event, href }: { event: EventCardData; href?: string
             Running now
           </span>
         ) : (
-          <span className="badge">{relative(event.startsAt)}</span>
+          <span className="badge">
+            {upcoming ? (
+              <LiveCountdown target={event.startsAt.toISOString()} fallback={relative(event.startsAt)} />
+            ) : (
+              relative(event.startsAt)
+            )}
+          </span>
         )}
         {event.status !== "PUBLISHED" && (
           <span className="badge border-ember/40 text-ember">{event.status}</span>
@@ -74,6 +87,16 @@ export function EventCard({ event, href }: { event: EventCardData; href?: string
           </dd>
         </div>
       </dl>
+      {pct !== null && (
+        <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-edge">
+          <div
+            className={`h-full rounded-full transition-[width] duration-500 ${
+              full ? "bg-ember" : nearlyFull ? "animate-pulse bg-ember" : "bg-teal"
+            }`}
+            style={{ width: `${Math.max(pct, signups > 0 ? 4 : 0)}%` }}
+          />
+        </div>
+      )}
       {open && (
         <p className="mt-4 font-mono text-[0.7rem] font-bold uppercase tracking-[0.16em] text-teal">
           {live ? "Join the wipe" : "Sign up"} <span aria-hidden>→</span>

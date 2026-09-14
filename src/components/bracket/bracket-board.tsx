@@ -1,9 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import type { BracketView } from "@/lib/bracket";
 
 const POLL_MS = 10_000;
+// Grid geometry for the connector-line layout — a round-1 match reserves one
+// ROW-tall slot; round r's match spans 2^r of them and sits centered in it,
+// so its vertical center always lands at (position + 0.5) * 2^r rows from
+// the top — the same math a real single-elim bracket diagram uses.
+const ROW = 84;
+const COL = 208;
+const CONN = 28;
 
 /** Earliest undecided match with both sides filled in — the next one to actually happen. */
 function upNextId(bracket: BracketView): string | null {
@@ -47,6 +54,9 @@ export function BracketBoard({ eventId, bracket: initial }: { eventId: string; b
   }, [eventId, bracket.champion]);
 
   const nextId = upNextId(bracket);
+  const baseRows = bracket.rounds[0]?.matches.length ?? 0;
+  const gridTemplateColumns = bracket.rounds.map((_, i) => (i === 0 ? `${COL}px` : `${CONN}px ${COL}px`)).join(" ");
+
   return (
     <div className="overflow-x-auto pb-2">
       {!bracket.champion && (
@@ -58,34 +68,64 @@ export function BracketBoard({ eventId, bracket: initial }: { eventId: string; b
           Live — updates automatically
         </div>
       )}
-      <div className="flex min-w-max gap-6">
-        {bracket.rounds.map((r) => (
-          <div key={r.round} className="flex w-52 flex-col">
-            <div className="mb-3 font-mono text-[0.66rem] font-bold uppercase tracking-[0.18em] text-slate-500">
-              {r.name}
-            </div>
-            <div className="flex flex-1 flex-col justify-around gap-3">
-              {r.matches.map((m) => (
-                <div key={m.id} className="relative">
-                  {m.id === nextId && (
-                    <span className="absolute -top-2 left-2 bg-void px-1 font-mono text-[0.58rem] font-bold uppercase tracking-[0.14em] text-teal">
-                      Up next
-                    </span>
-                  )}
+
+      <div className="flex" style={{ width: bracket.rounds.length * COL + (bracket.rounds.length - 1) * CONN }}>
+        {bracket.rounds.map((r, i) => (
+          <div
+            key={r.round}
+            style={{ width: COL, marginLeft: i === 0 ? 0 : CONN }}
+            className="font-mono text-[0.66rem] font-bold uppercase tracking-[0.18em] text-slate-500"
+          >
+            {r.name}
+          </div>
+        ))}
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns, gridTemplateRows: `repeat(${baseRows}, ${ROW}px)` }}>
+        {bracket.rounds.map((r, ri) => {
+          const roundCol = ri === 0 ? 1 : ri * 2 + 1;
+          const span = 2 ** ri;
+          return (
+            <Fragment key={r.round}>
+              {ri > 0 &&
+                r.matches.map((m) => (
                   <div
-                    className={`border text-sm ${
-                      m.id === nextId ? "border-teal/60 bg-teal/5" : "border-edge bg-panel/40"
-                    }`}
+                    key={`c-${m.id}`}
+                    aria-hidden
+                    className="relative"
+                    style={{ gridColumn: roundCol - 1, gridRow: `${m.position * span + 1} / span ${span}` }}
                   >
-                    <Side label={m.a.label} score={m.a.score} won={m.a.won} decided={m.decided} />
-                    <div className="h-px bg-edge" />
-                    <Side label={m.b.label} score={m.b.score} won={m.b.won} decided={m.decided} />
+                    <span className="absolute bottom-1/4 left-0 top-1/4 w-px bg-edge" />
+                    <span className="absolute left-0 top-1/2 h-px w-full bg-edge" />
+                  </div>
+                ))}
+              {r.matches.map((m) => (
+                <div
+                  key={m.id}
+                  className="flex items-center"
+                  style={{ gridColumn: roundCol, gridRow: `${m.position * span + 1} / span ${span}` }}
+                >
+                  <div className="relative w-full">
+                    {m.id === nextId && (
+                      <span className="absolute -top-2 left-2 bg-void px-1 font-mono text-[0.58rem] font-bold uppercase tracking-[0.14em] text-teal">
+                        Up next
+                      </span>
+                    )}
+                    <div
+                      className={`border text-sm ${
+                        m.id === nextId ? "border-teal/60 bg-teal/5" : "border-edge bg-panel/40"
+                      }`}
+                    >
+                      <Side label={m.a.label} score={m.a.score} won={m.a.won} decided={m.decided} />
+                      <div className="h-px bg-edge" />
+                      <Side label={m.b.label} score={m.b.score} won={m.b.won} decided={m.decided} />
+                    </div>
                   </div>
                 </div>
               ))}
-            </div>
-          </div>
-        ))}
+            </Fragment>
+          );
+        })}
       </div>
 
       {bracket.champion && (

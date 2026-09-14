@@ -14,6 +14,7 @@ import {
   disbandTeam,
 } from "@/app/(site)/me/team/actions";
 import { NicknameEditor } from "@/components/nickname-editor";
+import { CopyButton } from "@/components/copy-button";
 
 type TeamEvent = { id: string; title: string; mode: string | null };
 
@@ -116,7 +117,6 @@ export function TeamPanel({
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
-  const [copied, setCopied] = useState(false);
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -187,17 +187,7 @@ export function TeamPanel({
           <code className="border border-edge bg-void px-3 py-2 font-mono text-lg tracking-[0.35em] text-teal">
             {team.inviteCode}
           </code>
-          <button
-            className="btn-ghost text-xs"
-            onClick={() => {
-              navigator.clipboard?.writeText(team.inviteCode).then(() => {
-                setCopied(true);
-                setTimeout(() => setCopied(false), 1500);
-              });
-            }}
-          >
-            {copied ? "Copied" : "Copy"}
-          </button>
+          <CopyButton value={team.inviteCode} />
           {isLeader && (
             <button
               className="btn-ghost text-xs"

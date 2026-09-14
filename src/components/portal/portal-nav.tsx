@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-export type PortalNavItem = { href: string; label: string };
+export type PortalNavItem = { href: string; label: string; dot?: boolean };
 
 export function PortalNav({ items }: { items: PortalNavItem[] }) {
   const pathname = usePathname();
@@ -21,7 +21,7 @@ export function PortalNav({ items }: { items: PortalNavItem[] }) {
           <Link
             key={it.href}
             href={it.href}
-            className={`shrink-0 whitespace-nowrap px-4 py-2 text-sm font-medium transition
+            className={`relative shrink-0 whitespace-nowrap px-4 py-2 text-sm font-medium transition
               lg:rounded-md lg:border-l-2 ${
                 active
                   ? "border-teal text-white lg:bg-panel/60"
@@ -29,6 +29,12 @@ export function PortalNav({ items }: { items: PortalNavItem[] }) {
               }`}
           >
             {it.label}
+            {it.dot && (
+              <span
+                aria-label="needs attention"
+                className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-ember lg:right-2 lg:top-1/2 lg:-translate-y-1/2"
+              />
+            )}
           </Link>
         );
       })}

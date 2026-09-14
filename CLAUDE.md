@@ -370,8 +370,14 @@ mutation writes an `AuditLog` row via `logAudit(...)`; viewer at `/portal/audit`
   every 10s while `bracket.champion` is unset, so a spectator watching a live
   tournament sees results land without reloading — stops polling on its own
   once a champion is decided, and skips a tick while the tab is
-  backgrounded (`document.hidden`). Separate from the Results form (1/2/3
-  placements that feed `/winners`).
+  backgrounded (`document.hidden`). Laid out with real connector lines via
+  CSS Grid, not just columns of cards: round `r`'s match at `position p`
+  spans `2^r` grid rows starting at `p*2^r`, which is exactly why its
+  vertical center always lands at the midpoint between its two children's
+  centers — a connector element in the gap column just draws a line from
+  25% to 75% of that same span (`ROW`/`COL`/`CONN` constants in
+  `bracket-board.tsx`). Separate from the Results form (1/2/3 placements
+  that feed `/winners`).
 
 - **Gallery uploads** — `<GalleryManager>` (`src/components/portal/gallery-manager.tsx`,
   landing gallery / `/proof` / custom collections all share it) takes multiple
@@ -432,6 +438,42 @@ input) used anywhere staff pick one player from a long list, e.g.
 option list is the full player roster rather than a short per-event list
 (`ResultsForm`'s placement dropdowns stay native `<select>` — entrants are
 scoped to that event's roster, short enough that scrolling alone is fine).
+
+## UI/UX layer
+
+- **Toasts** — `<ToastProvider>` (`src/components/toast/toast-provider.tsx`)
+  is mounted once in `(site)/layout.tsx`, so every page under the public
+  site/`/me`/`/portal` can call `const toast = useToast(); toast("Saved.")` /
+  `toast("...", "error")`. `SettingsForm` is the reference conversion (its
+  old inline `Saved.`/error text is gone, replaced by a toast fired from a
+  `useEffect` that only reacts when the `useActionState` result object
+  actually changes). Other forms still using inline `state.ok`/`state.error`
+  text haven't been migrated yet — adopt the same one-`useEffect` pattern
+  incrementally rather than assuming it's done everywhere.
+- **Page transitions** — `<PageTransition>` (`src/components/page-transition.tsx`)
+  wraps `{children}` in `(site)/layout.tsx`, keyed by `usePathname()`, for a
+  brief fade+rise (`.page-fade-in` in `globals.css`, skipped under
+  `prefers-reduced-motion`) on every route change. Keying by pathname forces
+  a full remount of the page subtree — fine for route-level content, but
+  don't rely on client state surviving a navigation inside it.
+- **Skeleton loading** — `<Skeleton>`/`<TableSkeleton>`/`<TileSkeleton>`
+  (`src/components/skeleton.tsx`) back a handful of route `loading.tsx`
+  files (`/portal`, `/portal/players`, `/portal/events`, `/portal/rewards`,
+  `/events`) using Next's App Router streaming convention — not every portal
+  route has one yet, add more the same way as they're needed.
+- **Live countdown** — `<LiveCountdown target={isoString} fallback={...} />`
+  (`src/components/live-countdown.tsx`) renders `fallback` (the existing
+  `relative()` string) until mounted and swaps to a ticking `Dd HH:MM:SS`
+  clock — used on the event detail page's eyebrow line and `<EventCard>`'s
+  badge, only while the event hasn't started yet.
+- **Signup "hype meter"** — `<EventCard>` renders a thin fill bar under the
+  slot count when `maxSlots` is set (`signups / maxSlots`), pulsing amber
+  past 85% full and solid amber at capacity.
+- **`<CopyButton>`** (`src/components/copy-button.tsx`) — a small
+  copy-to-clipboard button with a checkmark micro-animation on success; used
+  for the team invite code (`team-forms.tsx`). Deliberately not applied to
+  the Discord invite link — that's a click-to-open link, not text someone
+  needs to copy.
 
 ## Migrations
 
