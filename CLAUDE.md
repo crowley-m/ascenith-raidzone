@@ -42,7 +42,16 @@ prisma/schema.prisma + migrations/ + seed.ts
 
 Showcase pages share the broadsheet `PageMasthead` and put `data-reveal` on
 sections for the `ScrollReveal` fade-in (scoped to `.site-shell`, so the landing
-is never touched).
+is never touched). `ScrollReveal` (`src/components/scroll-reveal.tsx`) mounts
+once and watches `.site-shell` with a `MutationObserver` rather than querying
+`data-reveal` elements once on mount/pathname-change — it used to do the
+latter, which depended on its effect happening to run *after* whatever else
+had changed the DOM for a route change, and intermittently lost that race
+(most visibly against the page-transition wrapper's old remount behavior),
+leaving whole sections stuck at `opacity: 0` with correct data underneath
+them the whole time. The MutationObserver reacts to `data-reveal` elements
+actually appearing, whenever that happens, so there's no timing to get
+wrong — and each element gets its own 2.5s failsafe timer regardless.
 
 ## RBAC
 
