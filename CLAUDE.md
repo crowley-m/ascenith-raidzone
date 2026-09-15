@@ -425,10 +425,15 @@ private), not a everyday action.
 - **"Push now" per channel** — `pushSingleEventChannel(eventId, name)` pushes
   just one channel's content on demand, without touching the rest or saving
   the whole event form. `EventChannelsManager` shows each content channel's
-  live status — "not posted yet" / "content changed — not pushed yet" /
-  "up to date" (`event/[id]/page.tsx` computes the pending set the same way,
-  comparing fresh payloads against `discordContentHashes`) — and only shows
-  "Push now" when there's actually something to push.
+  live status — "not posted" / "changed, not pushed" / "up to date"
+  (`event/[id]/page.tsx` computes the pending set the same way, comparing
+  fresh payloads against `discordContentHashes`) — and only shows "Push
+  now" when there's actually something to push. Each channel is its own
+  bordered card (name + status badge on top, actions in their own row
+  below a divider, "Remove" pushed to the far right) rather than one dense
+  line per channel — the original single-line layout packed name, status
+  text, and every action link together and read as a wall of text once a
+  channel actually had something to say.
 - **"Sync channels" reports what happened** — `syncEventChannels` now
   returns `changed: string[]`; the button shows "Already synced — nothing
   changed." when nothing did, or names what got updated / how many new

@@ -117,41 +117,39 @@ export function EventChannelsManager({
           </div>
         )}
       </div>
-      <p className="mt-1 text-xs text-slate-500">
+      <p className="mt-1.5 border-b border-edge pb-4 text-xs text-slate-500">
         Every channel this event&apos;s space actually has right now, and what to do with each
         one. This only affects this event — the default set new events start with lives in
         Settings.
       </p>
 
-      <ul className="mt-3 divide-y divide-edge/60">
+      <ul className="mt-4 space-y-2.5">
         {names.map((name) => {
           const hasContentField = HAS_CONTENT_FIELD.has(name);
           const isSeeded = seededSet.has(name);
           const isPending = pendingSet.has(name);
+          const needsPush = hasContentField && (!isSeeded || isPending);
           return (
-            <li key={name} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 py-2.5 text-sm">
-              <div>
-                <span className="font-mono text-slate-200">#{name}</span>
+            <li key={name} className="border border-edge/60 bg-void/40 p-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-mono text-sm text-slate-200">#{name}</span>
                 {hasContentField ? (
-                  <span
-                    className={`ml-2 text-xs ${!isSeeded || isPending ? "text-ember" : "text-teal"}`}
-                  >
-                    {!isSeeded ? "not posted yet" : isPending ? "content changed — not pushed yet" : "up to date"}
+                  <span className={`badge ${needsPush ? "border-ember/40 text-ember" : "border-teal/40 text-teal"}`}>
+                    {!isSeeded ? "not posted" : isPending ? "changed, not pushed" : "up to date"}
                   </span>
                 ) : (
-                  <span className="ml-2 text-xs text-slate-600">plain channel, no content</span>
-                )}
-                {pushMsg[name] && (
-                  <span className="ml-2 text-[0.66rem] text-slate-400">{pushMsg[name]}</span>
+                  <span className="text-xs text-slate-600">plain channel, no content</span>
                 )}
               </div>
-              <div className="flex shrink-0 items-center gap-3 font-mono text-[0.66rem] uppercase tracking-widest">
+              {pushMsg[name] && <p className="mt-1.5 text-xs text-slate-400">{pushMsg[name]}</p>}
+
+              <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1.5 border-t border-edge/60 pt-2.5 font-mono text-[0.66rem] uppercase tracking-widest">
                 {hasContentField && (
                   <a href={`#content-${name}`} className="text-slate-400 hover:text-teal">
                     Edit content
                   </a>
                 )}
-                {hasContentField && (!isSeeded || isPending) && (
+                {needsPush && (
                   <button
                     className="text-teal hover:text-cream disabled:opacity-50"
                     disabled={pendingTx && busy === `push:${name}`}
@@ -171,7 +169,7 @@ export function EventChannelsManager({
                   </a>
                 )}
                 <button
-                  className="text-slate-500 hover:text-red-300 disabled:opacity-50"
+                  className="ml-auto text-slate-500 hover:text-red-300 disabled:opacity-50"
                   disabled={pendingTx && busy === name}
                   onClick={() => remove(name)}
                 >
@@ -186,7 +184,7 @@ export function EventChannelsManager({
         )}
       </ul>
 
-      <div className="mt-3 border-t border-edge pt-3">
+      <div className="mt-5 border-t border-edge pt-4">
         <label className="label">Add a channel</label>
         <div className="flex flex-wrap gap-2">
           <input
@@ -216,7 +214,7 @@ export function EventChannelsManager({
         </p>
       </div>
 
-      <p className="mt-3 border-t border-edge pt-3 text-xs text-slate-500">
+      <p className="mt-4 border-t border-edge pt-4 text-xs text-slate-500">
         Changed a field below? Saving the event pushes that field&apos;s channel right away — no need to
         hit &ldquo;Sync channels&rdquo; unless you want to also pick up channels added outside this
         page, or use &ldquo;Push now&rdquo; above for a one-off update without saving the whole
