@@ -434,6 +434,20 @@ private), not a everyday action.
   line per channel — the original single-line layout packed name, status
   text, and every action link together and read as a wall of text once a
   channel actually had something to say.
+- **Inline content editor** — "Edit content" expands a textarea right
+  inside that channel's own card instead of jumping to the field's spot on
+  the big Edit form further down the page. `saveEventChannelContent(eventId,
+  name, content)` (`portal/actions.ts`) maps the channel name to its Event
+  field via `CHANNEL_CONTENT_FIELD` (mirrors the mapping in
+  `eventChannelPayloads()` — e.g. `rewards` → `rewardsMd`), saves it, then
+  pushes straight to Discord in the same call (`pushEventChannelContent`
+  with `only`+`force`) — one Save does both, no separate "Push now" needed
+  afterward. `page.tsx` builds the `content: Record<string,string>` prop
+  (current raw text per channel) that pre-fills the textarea on open. The
+  big Edit form's own copy of these fields can go stale in its uncommitted
+  client state until the page is hard-reloaded if you edit both at once —
+  a rare collision, not worth a forced remount that would risk wiping
+  someone's in-progress typing in that form instead.
 - **"Sync channels" reports what happened** — `syncEventChannels` now
   returns `changed: string[]`; the button shows "Already synced — nothing
   changed." when nothing did, or names what got updated / how many new

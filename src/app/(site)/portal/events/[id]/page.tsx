@@ -83,6 +83,19 @@ export default async function PortalEventDetail({
     .filter(([name, payload]) => contentHashes[name] !== JSON.stringify(payload))
     .map(([name]) => name);
 
+  // the raw free-typed text behind each content channel — pre-fills the
+  // inline editor in the Channels panel
+  const channelContent: Record<string, string> = {
+    announcement: event.announcementMd ?? "",
+    "how-to-join": event.howToJoinMd ?? "",
+    registration: event.registrationMd ?? "",
+    rules: event.rulesMd ?? "",
+    gameplay: event.gameplayMd ?? "",
+    schedule: event.scheduleMd ?? "",
+    "wipe-info": event.wipeInfoMd ?? "",
+    rewards: event.rewardsMd ?? "",
+  };
+
   const isTeamEvent = event.format === "TEAM";
   const confirmed = event.signups.filter((s) => s.state === "SIGNED_UP");
   const waitlist = event.signups.filter((s) => s.state === "WAITLIST");
@@ -511,6 +524,7 @@ export default async function PortalEventDetail({
               channels={(event.discordChannels as Record<string, string>) ?? {}}
               seeded={Object.keys((event.discordSeedMessages as Record<string, string>) ?? {})}
               pending={pendingChannels}
+              content={channelContent}
               guildId={process.env.DISCORD_GUILD_ID}
               archived={!!event.discordArchivedAt}
             />

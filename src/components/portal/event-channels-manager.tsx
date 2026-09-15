@@ -2,7 +2,12 @@
 
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { addEventChannel, removeEventChannel, pushSingleEventChannel } from "@/app/(site)/portal/actions";
+import {
+  addEventChannel,
+  removeEventChannel,
+  pushSingleEventChannel,
+  saveEventChannelContent,
+} from "@/app/(site)/portal/actions";
 import { SyncChannelsButton, ResyncRolesButton, ReannounceButton } from "@/components/portal/build-space-button";
 
 const KNOWN_ORDER = [
@@ -19,7 +24,9 @@ const KNOWN_ORDER = [
   "chat",
 ];
 
-// channels whose content is edited in the form below — anchors to `#content-<name>`
+// channels whose content is edited inline here — anchors to `#content-<name>`
+// on the big Edit form too, as a fallback / for the fields it also shows
+// alongside it (e.g. wipe-info's wipeCycle/raidWindow)
 const HAS_CONTENT_FIELD = new Set([
   "announcement",
   "registration",
@@ -36,6 +43,7 @@ export function EventChannelsManager({
   channels,
   seeded,
   pending,
+  content,
   guildId,
   archived = false,
 }: {
@@ -43,6 +51,7 @@ export function EventChannelsManager({
   channels: Record<string, string>;
   seeded: string[];
   pending: string[];
+  content: Record<string, string>;
   guildId?: string;
   archived?: boolean;
 }) {
@@ -51,6 +60,8 @@ export function EventChannelsManager({
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [pushMsg, setPushMsg] = useState<Record<string, string>>({});
+  const [editing, setEditing] = useState<string | null>(null);
+  const [draft, setDraft] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const seededSet = new Set(seeded);
   const pendingSet = new Set(pending);
@@ -105,6 +116,27 @@ export function EventChannelsManager({
     });
   }
 
+  function startEditing(name: string) {
+    setEditing(name);
+    setDraft(content[name] ?? "");
+    setPushMsg((m) => ({ ...m, [name]: "" }));
+  }
+
+  function saveContent(name: string) {
+    setBusy(`save:${name}`);
+    start(async () => {
+      const res = await saveEventChannelContent(eventId, name, draft);
+      setBusy(null);
+      if (res?.error) {
+        setPushMsg((m) => ({ ...m, [name]: res.error! }));
+      } else {
+        setEditing(null);
+        setPushMsg((m) => ({ ...m, [name]: "Saved and pushed." }));
+        router.refresh();
+      }
+    });
+  }
+
   return (
     <div className="card mt-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -129,6 +161,7 @@ export function EventChannelsManager({
           const isSeeded = seededSet.has(name);
           const isPending = pendingSet.has(name);
           const needsPush = hasContentField && (!isSeeded || isPending);
+          const isEditing = editing === name;
           return (
             <li key={name} className="border border-edge/60 bg-void/40 p-3">
               <div className="flex flex-wrap items-center gap-2">
@@ -143,39 +176,68 @@ export function EventChannelsManager({
               </div>
               {pushMsg[name] && <p className="mt-1.5 text-xs text-slate-400">{pushMsg[name]}</p>}
 
-              <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1.5 border-t border-edge/60 pt-2.5 font-mono text-[0.66rem] uppercase tracking-widest">
-                {hasContentField && (
-                  <a href={`#content-${name}`} className="text-slate-400 hover:text-teal">
-                    Edit content
-                  </a>
-                )}
-                {needsPush && (
+              {isEditing ? (
+                <div className="mt-3 border-t border-edge/60 pt-3">
+                  <textarea
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    rows={6}
+                    className="input font-mono text-xs"
+                    placeholder="Free-typed — # heading, Label:, and -/*/1. lines are formatted automatically."
+                    autoFocus
+                  />
+                  <div className="mt-2 flex items-center gap-3">
+                    <button
+                      className="btn-primary text-xs disabled:opacity-50"
+                      disabled={pendingTx && busy === `save:${name}`}
+                      onClick={() => saveContent(name)}
+                    >
+                      {pendingTx && busy === `save:${name}` ? "Saving…" : "Save"}
+                    </button>
+                    <button
+                      type="button"
+                      className="text-xs text-slate-400 hover:text-white"
+                      onClick={() => setEditing(null)}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1.5 border-t border-edge/60 pt-2.5 font-mono text-[0.66rem] uppercase tracking-widest">
+                  {hasContentField && (
+                    <button className="text-slate-400 hover:text-teal" onClick={() => startEditing(name)}>
+                      Edit content
+                    </button>
+                  )}
+                  {needsPush && (
+                    <button
+                      className="text-teal hover:text-cream disabled:opacity-50"
+                      disabled={pendingTx && busy === `push:${name}`}
+                      onClick={() => pushNow(name)}
+                    >
+                      {pendingTx && busy === `push:${name}` ? "…" : "Push now"}
+                    </button>
+                  )}
+                  {guildId && channels[name] && (
+                    <a
+                      href={`https://discord.com/channels/${guildId}/${channels[name]}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-slate-400 hover:text-teal"
+                    >
+                      Open in Discord ↗
+                    </a>
+                  )}
                   <button
-                    className="text-teal hover:text-cream disabled:opacity-50"
-                    disabled={pendingTx && busy === `push:${name}`}
-                    onClick={() => pushNow(name)}
+                    className="ml-auto text-slate-500 hover:text-red-300 disabled:opacity-50"
+                    disabled={pendingTx && busy === name}
+                    onClick={() => remove(name)}
                   >
-                    {pendingTx && busy === `push:${name}` ? "…" : "Push now"}
+                    {pendingTx && busy === name ? "…" : "Remove"}
                   </button>
-                )}
-                {guildId && channels[name] && (
-                  <a
-                    href={`https://discord.com/channels/${guildId}/${channels[name]}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-slate-400 hover:text-teal"
-                  >
-                    Open in Discord ↗
-                  </a>
-                )}
-                <button
-                  className="ml-auto text-slate-500 hover:text-red-300 disabled:opacity-50"
-                  disabled={pendingTx && busy === name}
-                  onClick={() => remove(name)}
-                >
-                  {pendingTx && busy === name ? "…" : "Remove"}
-                </button>
-              </div>
+                </div>
+              )}
             </li>
           );
         })}
@@ -215,10 +277,9 @@ export function EventChannelsManager({
       </div>
 
       <p className="mt-4 border-t border-edge pt-4 text-xs text-slate-500">
-        Changed a field below? Saving the event pushes that field&apos;s channel right away — no need to
-        hit &ldquo;Sync channels&rdquo; unless you want to also pick up channels added outside this
-        page, or use &ldquo;Push now&rdquo; above for a one-off update without saving the whole
-        form. &ldquo;Repost announcement&rdquo; is different — it deletes and reposts so the{" "}
+        Edit a channel&apos;s content above and hit Save — it saves and pushes to Discord in one
+        step. Saving the whole event form further down also re-pushes anything that changed there,
+        and &ldquo;Repost announcement&rdquo; is different again — it deletes and reposts so the{" "}
         <span className="font-mono">@everyone</span> ping fires again.
       </p>
 

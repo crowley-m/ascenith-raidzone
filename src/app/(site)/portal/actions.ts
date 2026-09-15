@@ -589,6 +589,62 @@ export async function pushSingleEventChannel(eventId: string, name: string): Pro
   return { ok: true, changed };
 }
 
+// Which Event field a channel's free-typed content actually comes from —
+// mirrors the mapping in eventChannelPayloads().
+const CHANNEL_CONTENT_FIELD: Record<string, string> = {
+  announcement: "announcementMd",
+  "how-to-join": "howToJoinMd",
+  registration: "registrationMd",
+  rules: "rulesMd",
+  gameplay: "gameplayMd",
+  schedule: "scheduleMd",
+  "wipe-info": "wipeInfoMd",
+  rewards: "rewardsMd",
+};
+
+/**
+ * Save one channel's content field and push it straight to Discord in the
+ * same action — the inline editor on the Channels panel, so editing a
+ * single channel's text doesn't need a trip through the full event form.
+ */
+export async function saveEventChannelContent(
+  eventId: string,
+  name: string,
+  content: string,
+): Promise<FormState> {
+  const actor = await assertPermission("event:manage");
+  const field = CHANNEL_CONTENT_FIELD[name];
+  if (!field) return { error: "That channel's content isn't editable here." };
+
+  await db.event.update({
+    where: { id: eventId },
+    data: { [field]: content.trim() || null } as Prisma.EventUpdateInput,
+  });
+
+  const ev = await db.event.findUnique({ where: { id: eventId } });
+  let changed: string[] = [];
+  if (ev?.discordCategoryId) {
+    const channels = (ev.discordChannels as Record<string, string>) ?? {};
+    const seed = (ev.discordSeedMessages as Record<string, string>) ?? {};
+    try {
+      const result = await pushEventChannelContent(eventId, channels, seed, { only: [name], force: true });
+      changed = result.changed;
+    } catch (err) {
+      return { error: `Saved, but Discord push failed: ${err instanceof Error ? err.message : "push failed"}` };
+    }
+  }
+
+  await logAudit({
+    actorId: actor.id,
+    action: "event.channel_content_update",
+    targetType: "Event",
+    targetId: eventId,
+    meta: { name },
+  });
+  revalidatePath(`/portal/events/${eventId}`);
+  return { ok: true, changed };
+}
+
 /**
  * Add one custom channel to an already-built event space (beyond the default
  * template). If the name matches one of the recognised content channels
