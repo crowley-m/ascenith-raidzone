@@ -619,10 +619,15 @@ scoped to that event's roster, short enough that scrolling alone is fine).
   is the one role selector both `DiscordCategoryForm` and `DiscordChannelForm` use — checkbox-driven
   pill/chip toggles (`peer` + `sr-only` input, visual state on the sibling `<span>`) instead of a
   cramped flat-wrapped row of native checkboxes, same `name="roleIds"` multi-value convention. The
-  category form's "Channels to create" is a card-by-card list (`ChannelListBuilder`, client
-  `useState` array of `{id, value}` rows, one `<input name="channelNames">` per card with its own
-  remove button, "+ Add channel" to append) instead of a newline-split textarea — the server action
-  reads it with `formData.getAll("channelNames")`, not a single split string.
+  category form's "Channels to create" is a card-by-card list (`ChannelListBuilder`/`ChannelCard`,
+  client `useState` array of `{id, name, message, pin, showMessage}` rows) instead of a newline-split
+  textarea — each card has its own collapsible "+ Add welcome message" post box (own textarea + pin
+  checkbox), not one shared message for every bulk-created channel. Submitted as three
+  index-aligned arrays — one `channelNames`/`channelSeedMessages`/`channelPinSeeds` input triplet per
+  card, in DOM order — `saveDiscordCategory` zips them back into per-channel rows with
+  `formData.getAll(...)` on each name (a card with the message box collapsed still emits empty
+  hidden `channelSeedMessages`/`channelPinSeeds` inputs so the three arrays stay the same length and
+  positionally aligned).
 
 ## Migrations
 

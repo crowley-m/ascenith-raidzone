@@ -1706,17 +1706,24 @@ export async function saveDiscordCategory(_prev: FormState, formData: FormData):
       meta: { name, roleIds },
     });
 
-    // optional starter channels — one input per card, synced to the category's roles
-    const channelNames = formData
-      .getAll("channelNames")
-      .map((v) => String(v).trim())
-      .filter(Boolean)
+    // optional starter channels — one card per channel, each with its own
+    // post box; the three arrays are index-aligned by DOM order (one triplet
+    // of inputs per card, so getAll(...) on each name lines up positionally).
+    const rawNames = formData.getAll("channelNames").map(String);
+    const rawMessages = formData.getAll("channelSeedMessages").map(String);
+    const rawPins = formData.getAll("channelPinSeeds").map(String);
+    const channelRows = rawNames
+      .map((n, i) => ({
+        name: n.trim(),
+        message: (rawMessages[i] || "").trim(),
+        pin: rawPins[i] === "1",
+      }))
+      .filter((r) => r.name)
       .slice(0, 20);
-    const seedMessage = (formData.get("seedMessage") as string) || "";
-    const pinSeed = formData.get("pinSeed") === "on";
-    for (let i = 0; i < channelNames.length; i++) {
+    for (let i = 0; i < channelRows.length; i++) {
+      const row = channelRows[i];
       const chDiscordId = await createManagedChannel({
-        name: channelNames[i],
+        name: row.name,
         categoryId: discordId,
         kind: "text",
         roleIds,
@@ -1725,7 +1732,7 @@ export async function saveDiscordCategory(_prev: FormState, formData: FormData):
       await db.discordManagedChannel.create({
         data: {
           discordId: chDiscordId,
-          name: channelNames[i],
+          name: row.name,
           kind: "text",
           categoryId: created.id,
           position: i,
@@ -1734,7 +1741,7 @@ export async function saveDiscordCategory(_prev: FormState, formData: FormData):
           createdById: actor.id,
         },
       });
-      void seedChannelMessage(chDiscordId, seedMessage, pinSeed);
+      if (row.message) void seedChannelMessage(chDiscordId, row.message, row.pin);
     }
   }
 
