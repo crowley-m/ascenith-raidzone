@@ -635,6 +635,107 @@ export async function deleteChannel(channelId: string): Promise<void> {
   await discordFetch(`/channels/${channelId}`, { method: "DELETE" }).catch(() => {});
 }
 
+// --------------------------------------------------------------------------
+// General-purpose category/channel management (Portal → Discord) — separate
+// from the per-event space builder above. Staff pick exactly which roles can
+// see each channel; @everyone is always denied.
+// --------------------------------------------------------------------------
+
+/** Create a plain category (type 4). Returns the id, or null if the bot can't. */
+export async function createGuildCategory(name: string): Promise<string | null> {
+  const gid = process.env.DISCORD_GUILD_ID;
+  if (!gid || !process.env.DISCORD_BOT_TOKEN) return null;
+  try {
+    const c = (await discordFetch(`/guilds/${gid}/channels`, {
+      method: "POST",
+      body: JSON.stringify({ name: name.slice(0, 100), type: 4 }),
+    })) as { id?: string };
+    return c.id ?? null;
+  } catch (err) {
+    console.error("createGuildCategory failed", err);
+    return null;
+  }
+}
+
+async function managedChannelOverwrites(roleIds: string[], kind: "text" | "voice") {
+  const gid = process.env.DISCORD_GUILD_ID!;
+  const view = BigInt(PERM_VIEW_CHANNEL);
+  const extra = kind === "voice" ? BigInt(PERM_CONNECT) : BigInt(PERM_SEND_MESSAGES);
+  const botId = await botUserId();
+  const ow: Array<{ id: string; type: number; allow?: string; deny?: string }> = [
+    { id: gid, type: 0, deny: (view | extra).toString() },
+  ];
+  for (const roleId of roleIds) ow.push({ id: roleId, type: 0, allow: (view | extra).toString() });
+  if (botId) ow.push({ id: botId, type: 1, allow: (view | extra).toString() });
+  return ow;
+}
+
+/**
+ * Create a text or voice channel under `categoryId`, visible only to
+ * `roleIds` (+ staff/bot) — @everyone is always denied. Empty `roleIds`
+ * means staff/bot only. Returns the id, or null if the bot can't.
+ */
+export async function createManagedChannel(opts: {
+  name: string;
+  categoryId: string;
+  kind: "text" | "voice";
+  roleIds: string[];
+}): Promise<string | null> {
+  const gid = process.env.DISCORD_GUILD_ID;
+  if (!gid || !process.env.DISCORD_BOT_TOKEN) return null;
+  try {
+    const overwrites = await managedChannelOverwrites(opts.roleIds, opts.kind);
+    const c = (await discordFetch(`/guilds/${gid}/channels`, {
+      method: "POST",
+      body: JSON.stringify({
+        name: opts.name.slice(0, 100),
+        type: opts.kind === "voice" ? 2 : 0,
+        parent_id: opts.categoryId,
+        permission_overwrites: overwrites,
+      }),
+    })) as { id?: string };
+    return c.id ?? null;
+  } catch (err) {
+    console.error("createManagedChannel failed", err);
+    return null;
+  }
+}
+
+/** Replace which roles can see a managed channel. Returns whether it stuck. */
+export async function setManagedChannelRoles(
+  channelId: string,
+  kind: "text" | "voice",
+  roleIds: string[],
+): Promise<boolean> {
+  if (!process.env.DISCORD_BOT_TOKEN) return false;
+  try {
+    const overwrites = await managedChannelOverwrites(roleIds, kind);
+    await discordFetch(`/channels/${channelId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ permission_overwrites: overwrites }),
+    });
+    return true;
+  } catch (err) {
+    console.error("setManagedChannelRoles failed", err);
+    return false;
+  }
+}
+
+/** Rename any channel or category. Returns whether it stuck. */
+export async function renameGuildChannel(channelId: string, name: string): Promise<boolean> {
+  if (!process.env.DISCORD_BOT_TOKEN) return false;
+  try {
+    await discordFetch(`/channels/${channelId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ name: name.slice(0, 100) }),
+    });
+    return true;
+  } catch (err) {
+    console.error("renameGuildChannel failed", err);
+    return false;
+  }
+}
+
 /**
  * Archive an event's space: rename the category to mark it done, sink it to the
  * bottom, and make it fully private. Every channel (and the category) has its

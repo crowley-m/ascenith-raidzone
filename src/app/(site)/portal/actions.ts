@@ -35,6 +35,10 @@ import {
   eventEmoji,
   eventIndexContent,
   pinMessage,
+  createGuildCategory,
+  createManagedChannel,
+  setManagedChannelRoles,
+  renameGuildChannel,
 } from "@/lib/discord";
 import { eventChannelPayloads, EVENT_CHANNEL_ORDER } from "@/lib/event-channels";
 import { createMediaAsset, deleteMediaAssetFromUrl } from "@/lib/media";
@@ -1624,6 +1628,136 @@ export async function setPlayerFaction(playerId: string, factionId: string | nul
   });
   void syncMemberRolesByPlayer(playerId);
   revalidatePath(`/portal/players/${playerId}`);
+}
+
+// --------------------------------------------------------------------------
+// Discord server management (Portal → Discord) — general-purpose categories
+// and channels, separate from the per-event space builder in event-space.ts.
+// Only ever touches what it created itself; a category/channel made
+// manually in Discord never shows up here.
+// --------------------------------------------------------------------------
+
+export async function saveDiscordCategory(_prev: FormState, formData: FormData): Promise<FormState> {
+  const actor = await assertPermission("discord:manage");
+  const id = (formData.get("id") as string) || null;
+  const name = ((formData.get("name") as string) || "").trim();
+  if (!name) return { error: "Name is required." };
+
+  if (id) {
+    const existing = await db.discordCategory.findUnique({ where: { id } });
+    if (!existing) return { error: "That category is gone." };
+    if (name !== existing.name) {
+      const ok = await renameGuildChannel(existing.discordId, name);
+      if (!ok) return { error: "Discord: couldn't rename that category — check the bot's permissions." };
+      await db.discordCategory.update({ where: { id }, data: { name } });
+    }
+    await logAudit({
+      actorId: actor.id,
+      action: "discord.category_rename",
+      targetType: "Discord",
+      targetId: existing.discordId,
+      meta: { name },
+    });
+  } else {
+    const discordId = await createGuildCategory(name);
+    if (!discordId) return { error: "Discord: couldn't create that category — check the bot's permissions." };
+    const created = await db.discordCategory.create({ data: { discordId, name, createdById: actor.id } });
+    await logAudit({
+      actorId: actor.id,
+      action: "discord.category_create",
+      targetType: "Discord",
+      targetId: created.discordId,
+      meta: { name },
+    });
+  }
+
+  revalidatePath("/portal/discord");
+  return { ok: true };
+}
+
+export async function deleteDiscordCategory(id: string) {
+  const actor = await assertPermission("discord:manage");
+  const category = await db.discordCategory.findUnique({ where: { id }, include: { channels: true } });
+  if (!category) return;
+  // categories don't cascade-delete their children on Discord — drop each first
+  for (const ch of category.channels) void deleteChannel(ch.discordId);
+  void deleteChannel(category.discordId);
+  await db.discordCategory.delete({ where: { id } });
+  await logAudit({
+    actorId: actor.id,
+    action: "discord.category_delete",
+    targetType: "Discord",
+    targetId: category.discordId,
+    meta: { name: category.name },
+  });
+  revalidatePath("/portal/discord");
+}
+
+export async function saveDiscordChannel(_prev: FormState, formData: FormData): Promise<FormState> {
+  const actor = await assertPermission("discord:manage");
+  const id = (formData.get("id") as string) || null;
+  const categoryId = (formData.get("categoryId") as string) || "";
+  const name = ((formData.get("name") as string) || "").trim();
+  const kind = formData.get("kind") === "voice" ? "voice" : "text";
+  const roleIds = formData.getAll("roleIds").map(String).filter(Boolean);
+  if (!name) return { error: "Name is required." };
+
+  if (id) {
+    const existing = await db.discordManagedChannel.findUnique({ where: { id } });
+    if (!existing) return { error: "That channel is gone." };
+    if (name !== existing.name) {
+      const ok = await renameGuildChannel(existing.discordId, name);
+      if (!ok) return { error: "Discord: couldn't rename that channel — check the bot's permissions." };
+    }
+    const rolesOk = await setManagedChannelRoles(existing.discordId, existing.kind as "text" | "voice", roleIds);
+    if (!rolesOk) return { error: "Discord: couldn't update who can see that channel." };
+    await db.discordManagedChannel.update({
+      where: { id },
+      data: { name, roleIds: roleIds as Prisma.InputJsonValue },
+    });
+    await logAudit({
+      actorId: actor.id,
+      action: "discord.channel_update",
+      targetType: "Discord",
+      targetId: existing.discordId,
+      meta: { name, roleIds },
+    });
+  } else {
+    if (!categoryId) return { error: "Pick a category." };
+    const category = await db.discordCategory.findUnique({ where: { id: categoryId } });
+    if (!category) return { error: "That category is gone." };
+    const discordId = await createManagedChannel({ name, categoryId: category.discordId, kind, roleIds });
+    if (!discordId) return { error: "Discord: couldn't create that channel — check the bot's permissions." };
+    const created = await db.discordManagedChannel.create({
+      data: { discordId, name, kind, categoryId, roleIds: roleIds as Prisma.InputJsonValue, createdById: actor.id },
+    });
+    await logAudit({
+      actorId: actor.id,
+      action: "discord.channel_create",
+      targetType: "Discord",
+      targetId: created.discordId,
+      meta: { name, kind, roleIds },
+    });
+  }
+
+  revalidatePath("/portal/discord");
+  return { ok: true };
+}
+
+export async function deleteDiscordChannel(id: string) {
+  const actor = await assertPermission("discord:manage");
+  const channel = await db.discordManagedChannel.findUnique({ where: { id } });
+  if (!channel) return;
+  void deleteChannel(channel.discordId);
+  await db.discordManagedChannel.delete({ where: { id } });
+  await logAudit({
+    actorId: actor.id,
+    action: "discord.channel_delete",
+    targetType: "Discord",
+    targetId: channel.discordId,
+    meta: { name: channel.name },
+  });
+  revalidatePath("/portal/discord");
 }
 
 // --------------------------------------------------------------------------

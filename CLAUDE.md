@@ -438,6 +438,30 @@ lists matches grouped by type, each linking straight to its detail page.
 Doesn't preserve the typed query in the header box on reload — layouts
 don't receive `searchParams` in the App Router, so it always starts empty.
 
+## Discord server management (`/portal/discord`)
+
+General-purpose Discord categories/channels staff create directly from the
+portal — `discord:manage` permission (ADMIN+, same tier as `event:manage`).
+Deliberately separate from the per-event space builder
+(`src/lib/event-space.ts` / `buildEventSpace`), which creates a
+category+channel set scoped to one event and tears it down when it's
+archived/deleted — this section is for standalone, persistent server
+organization (a community hangout channel, a staff-only channel, etc.) with
+no event attached. `DiscordCategory` / `DiscordManagedChannel` (schema)
+track only what was created **through this page** — a category or channel
+set up manually in Discord never appears here and this tool never touches
+it (`deleteDiscordCategory` explicitly deletes each of its own channels on
+Discord first, since deleting a category on Discord does not cascade to its
+children). Each channel's visibility is a plain list of Discord role ids
+(`DiscordManagedChannel.roleIds`, a JSON string array) — @everyone is always
+denied at creation and on every edit (`managedChannelOverwrites()` in
+`src/lib/discord.ts` rebuilds the full permission-overwrite set from
+scratch each time, the same pattern `applyEventChannelPerms` uses); an empty
+role list means staff/bot only. `saveDiscordCategory`/`saveDiscordChannel`
+follow the same create-or-update-by-optional-`id` shape as `saveFaction`,
+and the page itself mirrors `/portal/factions`' `<details>`-accordion
+layout (`ConfirmButton` for deletes).
+
 ## Player picker
 
 `src/components/portal/player-picker.tsx` — a searchable + scrollable

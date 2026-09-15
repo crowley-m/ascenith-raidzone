@@ -21,7 +21,8 @@ export type Permission =
   | "faction:manage"
   | "media:manage"
   | "staff:manage"
-  | "settings:manage";
+  | "settings:manage"
+  | "discord:manage";
 
 const MIN_RANK: Record<Permission, number> = {
   "player:view": RANK.MODERATOR,
@@ -38,6 +39,7 @@ const MIN_RANK: Record<Permission, number> = {
   "media:manage": RANK.MODERATOR,
   "staff:manage": RANK.OWNER,
   "settings:manage": RANK.OWNER,
+  "discord:manage": RANK.ADMIN,
 };
 
 export function isStaff(role: Role | null | undefined): role is Role {

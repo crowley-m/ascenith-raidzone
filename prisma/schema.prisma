@@ -40,6 +40,8 @@ model User {
   auditLogs     AuditLog[]
   createdMedia  MediaAsset[] @relation("MediaCreator")
   broadcasts    Broadcast[]  @relation("BroadcastPoster")
+  createdDiscordCategories DiscordCategory[]       @relation("DiscordCategoryCreator")
+  createdDiscordChannels   DiscordManagedChannel[] @relation("DiscordChannelCreator")
 }
 
 model Account {
@@ -540,6 +542,40 @@ model Setting {
   key       String   @id
   value     Json
   updatedAt DateTime @updatedAt
+}
+
+// ---------------------------------------------------------------------------
+// Discord server management — general-purpose categories/channels staff
+// create directly from the portal, separate from the per-event space builder
+// (src/lib/event-space.ts) and torn down independently of any event. Only
+// tracks what it created itself — a category/channel made manually in
+// Discord never shows up here and this tool never touches it.
+// ---------------------------------------------------------------------------
+
+model DiscordCategory {
+  id          String   @id @default(cuid())
+  discordId   String   @unique
+  name        String
+  createdById String
+  createdBy   User     @relation("DiscordCategoryCreator", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+
+  channels DiscordManagedChannel[]
+}
+
+model DiscordManagedChannel {
+  id          String          @id @default(cuid())
+  discordId   String          @unique
+  name        String
+  kind        String          @default("text") // "text" | "voice"
+  categoryId  String
+  category    DiscordCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  roleIds     Json            @default("[]") // Discord role ids allowed to view this channel — empty = staff/bot only
+  createdById String
+  createdBy   User            @relation("DiscordChannelCreator", fields: [createdById], references: [id])
+  createdAt   DateTime        @default(now())
+
+  @@index([categoryId])
 }
 
 // ---------------------------------------------------------------------------
