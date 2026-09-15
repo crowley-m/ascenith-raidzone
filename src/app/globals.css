@@ -45,56 +45,6 @@ body {
     transform: none;
   }
 }
-/* Curtain-wipe page transition — a standalone overlay, see page-wipe.tsx.
-   Sits off-screen left at rest; wipe-cover slides it fully across, then
-   wipe-reveal slides it the rest of the way off to the right. */
-.page-wipe {
-  position: fixed;
-  inset: 0;
-  z-index: 300;
-  pointer-events: none;
-  background: #0a0a0b;
-  transform: translateX(-100%);
-}
-.page-wipe-edge {
-  position: absolute;
-  inset-block: 0;
-  right: 0;
-  width: 3px;
-  background: #e5484d;
-  box-shadow: 0 0 16px 2px rgba(229, 72, 77, 0.7);
-}
-@keyframes wipe-cover {
-  from {
-    transform: translateX(-100%);
-  }
-  to {
-    transform: translateX(0%);
-  }
-}
-@keyframes wipe-reveal {
-  from {
-    transform: translateX(0%);
-  }
-  to {
-    transform: translateX(100%);
-  }
-}
-@media (prefers-reduced-motion: no-preference) {
-  .wipe-cover {
-    animation: wipe-cover 260ms cubic-bezier(0.65, 0, 0.35, 1) forwards;
-  }
-  .wipe-reveal {
-    animation: wipe-reveal 300ms cubic-bezier(0.65, 0, 0.35, 1) forwards;
-  }
-}
-/* desktop only — matches PageWipe's own DESKTOP_QUERY cutoff; a CSS-level
-   backstop so it can never paint on mobile regardless of JS state */
-@media (max-width: 1023px) {
-  .page-wipe {
-    display: none;
-  }
-}
 @keyframes nav-progress-loading {
   from {
     width: 0%;

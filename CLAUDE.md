@@ -459,41 +459,20 @@ scoped to that event's roster, short enough that scrolling alone is fine).
   actually changes). Other forms still using inline `state.ok`/`state.error`
   text haven't been migrated yet — adopt the same one-`useEffect` pattern
   incrementally rather than assuming it's done everywhere.
-- **Page transitions** — `<PageWipe>` (`src/components/page-wipe.tsx`,
-  mounted in `(site)/layout.tsx` next to `<NavProgress>`) is a curtain-wipe:
-  a full-screen panel slides in from the left the instant an internal link
-  is clicked, then slides the rest of the way off to the right once the
-  destination page's data has actually landed (`pathname`/`searchParams`
-  change), revealing it underneath. It's a **standalone overlay that never
-  touches page content** — deliberately, after the previous fade-based
-  `PageTransition` (now removed) caused two real bugs by wrapping
-  `{children}`: a `key={pathname}`-remounted version forced a full
-  unmount/remount every navigation and raced with `<ScrollReveal>`, and even
-  the non-remounting class-toggle version that replaced it could flash
-  content at full opacity for a frame before its animation class reapplied.
-  `PageWipe` sidesteps that whole failure mode by animating a `position:
-  fixed` element that sits in front of everything, same idea as
-  `NavProgress`, not something the actual page tree passes through. Uses
-  `useLayoutEffect` for its own class swap (`wipe-cover`/`wipe-reveal` in
-  `globals.css`) with the same remove→reflow→re-add pattern, plus a 4s
-  failsafe back to idle if a click never turns into a navigation. Skipped
-  under `prefers-reduced-motion`. Also listens for `popstate` (browser
-  back/forward, including a mobile edge-swipe-back gesture) and triggers
-  the same wipe — that doesn't fire a click on an `<a>`, so without this it
-  would just snap to the previous page with no transition. A back/forward
-  nav still covers, but skips the 300ms reveal-out animation and snaps
-  straight to idle the instant the previous page's data lands — an
-  `isBackNav` ref (set `true` in the `popstate` handler, `false` in the
-  click handler) is read once, at the point the covering→revealing
-  decision gets made. The edge-glow
-  strip (`.page-wipe-edge`) is only rendered while `status !== "idle"` —
-  its `box-shadow` blur bleeds ~16px past the element's own bounds, so
-  always rendering it (even "off-screen") left a persistent thin glow
-  pinned to the left edge of every page. **Desktop only** (`≥1024px`,
-  `DESKTOP_QUERY` in the component, matching the same cutoff `PortalNav`
-  uses for its own layout switch) — guarded at both the JS trigger point
-  and with a `max-width: 1023px { display: none }` CSS backstop, since it
-  read as actively getting in the way on a phone rather than as polish.
+- **Page transitions — removed.** Two approaches were tried and both were
+  pulled back out: a fade that wrapped `{children}` (`PageTransition`) and
+  later a curtain-wipe standalone overlay (`PageWipe`). The wipe in
+  particular caused a string of real problems — a persistent glow-bleed
+  artifact, back/forward navigation feeling stuck since a `force-dynamic`
+  page's back-nav isn't actually instant (no client cache to fall back on,
+  so the covering curtain sat there for the real fetch time, not just an
+  animation artifact), and general mobile trouble — enough that it was
+  removed outright rather than patched further. There is currently no
+  page-transition effect; `<NavProgress>` (the top loading bar) is the only
+  navigation feedback. If this gets revisited, keep it as a standalone
+  overlay (never wrap page content — that's what broke `ScrollReveal`
+  twice) and account for `force-dynamic` pages not being instant on
+  back/forward before assuming any fixed-duration animation will feel right.
 - **Landing intro loader** — `<IntroLoader>`
   (`src/components/landing/IntroLoader.tsx`, mounted first inside
   `Landing.tsx`'s root) is a separate thing from `PageTransition`: a
@@ -514,7 +493,13 @@ scoped to that event's roster, short enough that scrolling alone is fine).
   `useSearchParams()` actually change — i.e. the next page's data has
   landed. A 5s failsafe clears it if a click never becomes a navigation.
   Covers the gap `loading.tsx` skeletons don't — those only exist on a
-  handful of routes; this fires on every internal link everywhere.
+  handful of routes; this fires on every internal link everywhere. Styled
+  after the "deadline" meme (a chaser closing in on a fixed target across a
+  red/cream bar) rather than a plain hairline — `ChaserIcon` (a small skull,
+  positioned as a child of the growing crimson fill so it rides its own
+  right edge automatically, no separate synced animation needed) and
+  `TargetIcon` (a running figure, fixed near the bar's right end) are both
+  inline SVGs in the same file.
 - **Skeleton loading** — `<Skeleton>`/`<TableSkeleton>`/`<TileSkeleton>`
   (`src/components/skeleton.tsx`) back a handful of route `loading.tsx`
   files (`/portal`, `/portal/players`, `/portal/events`, `/portal/rewards`,
