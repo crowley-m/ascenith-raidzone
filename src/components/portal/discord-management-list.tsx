@@ -111,17 +111,17 @@ function CategoryBlock({
           />
           <span className="font-medium text-slate-100">{category.name}</span>
           <span
-            className="cursor-help text-xs text-slate-600"
+            className="cursor-help text-xs text-slate-400"
             title={category.creatorLabel}
           >
             ⓘ
           </span>
-          <span className="text-xs text-slate-500">
+          <span className="text-xs text-slate-400">
             {category.channels.length} channel{category.channels.length === 1 ? "" : "s"}
           </span>
           {category.missing && <span className="badge border-ember/40 text-ember">Not found on Discord</span>}
           {category.roleIds.length === 0 ? (
-            <span className="text-xs text-slate-600">header: staff/bot only</span>
+            <span className="text-xs text-slate-400">header: staff/bot only</span>
           ) : (
             category.roleIds.map((rid) => (
               <span key={rid} className="badge border-teal/40 text-teal">
@@ -129,7 +129,7 @@ function CategoryBlock({
               </span>
             ))
           )}
-          {category.note && <span className="text-xs italic text-slate-500">— {category.note}</span>}
+          {category.note && <span className="text-xs italic text-slate-400">— {category.note}</span>}
         </summary>
 
         <div className="mt-4 space-y-4 border-t border-edge pt-4">
@@ -178,7 +178,7 @@ function CategoryBlock({
                 <button
                   type="button"
                   onClick={() => setSelected(new Set())}
-                  className="text-slate-500 hover:text-slate-300"
+                  className="text-slate-400 hover:text-slate-300"
                 >
                   Clear
                 </button>
@@ -206,13 +206,13 @@ function CategoryBlock({
                       />
                       <span className="badge">{ch.kind === "voice" ? "voice" : "text"}</span>
                       <span className="text-sm text-slate-100">{ch.name}</span>
-                      <span className="cursor-help text-xs text-slate-600" title={ch.creatorLabel}>
+                      <span className="cursor-help text-xs text-slate-400" title={ch.creatorLabel}>
                         ⓘ
                       </span>
                       {ch.synced && <span className="badge border-teal/40 text-teal">synced</span>}
                       {ch.missing && <span className="badge border-ember/40 text-ember">Not found on Discord</span>}
                       {ch.roleIds.length === 0 ? (
-                        <span className="text-xs text-slate-600">staff/bot only</span>
+                        <span className="text-xs text-slate-400">staff/bot only</span>
                       ) : (
                         ch.roleIds.map((rid) => (
                           <span key={rid} className="badge border-teal/40 text-teal">
@@ -220,7 +220,7 @@ function CategoryBlock({
                           </span>
                         ))
                       )}
-                      {ch.topic && <span className="text-xs italic text-slate-500">— {ch.topic}</span>}
+                      {ch.topic && <span className="text-xs italic text-slate-400">— {ch.topic}</span>}
                     </summary>
                     <div className="mt-3 border-t border-edge/60 pt-3">
                       <DiscordChannelForm
@@ -252,7 +252,7 @@ function CategoryBlock({
                 </li>
               ))}
               {visibleChannels.length === 0 && (
-                <li className="text-xs text-slate-500">
+                <li className="text-xs text-slate-400">
                   {query ? "No channels match." : "No channels in this category yet."}
                 </li>
               )}

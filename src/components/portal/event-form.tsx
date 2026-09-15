@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useId, useRef, useState } from "react";
 import { saveEvent } from "@/app/(site)/portal/actions";
 import { EVENT_TIMEZONES, DEFAULT_EVENT_TZ } from "@/lib/tz";
 import { proseItems } from "@/lib/prose";
@@ -13,7 +13,7 @@ function MiniPreview({ text }: { text: string }) {
   if (!groups.length) return null;
   return (
     <div className="mt-2 border-l-2 border-teal bg-void/60 px-3 py-2 text-xs text-slate-300">
-      <p className="mb-1 font-mono text-[0.6rem] uppercase tracking-widest text-slate-600">
+      <p className="mb-1 font-mono text-[0.6rem] uppercase tracking-widest text-slate-400">
         Preview
       </p>
       <div className="space-y-1.5">
@@ -118,6 +118,8 @@ export function EventForm({
   defaultChannels?: string[];
 }) {
   const spaceLocked = !!event?.hasDiscordSpace;
+  const uid = useId();
+  const fid = (name: string) => `${uid}-${name}`;
   const [state, action, pending] = useActionState(saveEvent, {});
   const formRef = useRef<HTMLFormElement>(null);
   const [channelPlan, setChannelPlan] = useState<Set<string>>(
@@ -319,7 +321,7 @@ export function EventForm({
         </span>
       </div>
 
-      <nav className="sticky top-0 z-10 -mx-1 flex items-center gap-4 border-b border-edge bg-panel/95 px-1 py-2 font-mono text-[0.66rem] uppercase tracking-widest text-slate-500 backdrop-blur">
+      <nav className="sticky top-0 z-10 -mx-1 flex items-center gap-4 border-b border-edge bg-panel/95 px-1 py-2 font-mono text-[0.66rem] uppercase tracking-widest text-slate-400 backdrop-blur">
         <a href="#basics" className="hover:text-teal">Basics</a>
         <a href="#brief" className="hover:text-teal">Public brief</a>
         <a href="#discord" className="hover:text-teal">Discord</a>
@@ -344,8 +346,9 @@ export function EventForm({
       </p>
 
       <div>
-        <label className="label">Title *</label>
+        <label htmlFor={fid("title")} className="label">Title *</label>
         <input
+          id={fid("title")}
           name="title"
           required
           className="input"
@@ -355,8 +358,9 @@ export function EventForm({
       </div>
 
       <div>
-        <label className="label">Description (internal / short)</label>
+        <label htmlFor={fid("description")} className="label">Description (internal / short)</label>
         <textarea
+          id={fid("description")}
           name="description"
           rows={3}
           className="input"
@@ -366,8 +370,9 @@ export function EventForm({
       </div>
 
       <div>
-        <label className="label">Timezone — the start / end times below are in this zone</label>
+        <label htmlFor={fid("timezone")} className="label">Timezone — the start / end times below are in this zone</label>
         <select
+          id={fid("timezone")}
           name="timezone"
           className="input sm:max-w-sm"
           defaultValue={event?.timezone ?? DEFAULT_EVENT_TZ}
@@ -378,7 +383,7 @@ export function EventForm({
             </option>
           ))}
         </select>
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 text-xs text-slate-400">
           Enter the wall-clock time you&apos;d announce (e.g. 8:00 PM Manila). It&apos;s stored
           as an absolute moment and shown to everyone in this zone; Discord shows it in each
           member&apos;s own zone.
@@ -387,18 +392,19 @@ export function EventForm({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <label className="label">Starts *</label>
-          <input type="datetime-local" name="startsAt" required className="input" defaultValue={event?.startsAt ?? ""} />
+          <label htmlFor={fid("startsAt")} className="label">Starts *</label>
+          <input id={fid("startsAt")} type="datetime-local" name="startsAt" required className="input" defaultValue={event?.startsAt ?? ""} />
         </div>
         <div>
-          <label className="label">Ends (wipe) — exact</label>
-          <input type="datetime-local" name="endsAt" className="input" defaultValue={event?.endsAt ?? ""} />
+          <label htmlFor={fid("endsAt")} className="label">Ends (wipe) — exact</label>
+          <input id={fid("endsAt")} type="datetime-local" name="endsAt" className="input" defaultValue={event?.endsAt ?? ""} />
         </div>
       </div>
 
       <div>
-        <label className="label">…or ends N weeks after start</label>
+        <label htmlFor={fid("endsWeeks")} className="label">…or ends N weeks after start</label>
         <input
+          id={fid("endsWeeks")}
           type="number"
           name="endsWeeks"
           min={0}
@@ -406,7 +412,7 @@ export function EventForm({
           className="input sm:max-w-[10rem]"
           placeholder="2"
         />
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 text-xs text-slate-400">
           Set this and the end date is worked out for you (start + N weeks). Overrides the exact
           field above.
         </p>
@@ -414,8 +420,9 @@ export function EventForm({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <label className="label">Server / world</label>
+          <label htmlFor={fid("server")} className="label">Server / world</label>
           <input
+            id={fid("server")}
             name="server"
             className="input"
             defaultValue={event?.server ?? ""}
@@ -423,8 +430,8 @@ export function EventForm({
           />
         </div>
         <div>
-          <label className="label">Format</label>
-          <select name="format" className="input" defaultValue={event?.format ?? "SOLO"}>
+          <label htmlFor={fid("format")} className="label">Format</label>
+          <select id={fid("format")} name="format" className="input" defaultValue={event?.format ?? "SOLO"}>
             <option value="SOLO">Solo — players sign up individually</option>
             <option value="TEAM">Team — a leader registers the whole team</option>
           </select>
@@ -433,10 +440,11 @@ export function EventForm({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <label className="label">
+          <label htmlFor={fid("maxSlots")} className="label">
             Max <span className="lowercase">slots / teams</span> (blank = unlimited)
           </label>
           <input
+            id={fid("maxSlots")}
             type="number"
             name="maxSlots"
             min={0}
@@ -446,8 +454,9 @@ export function EventForm({
           />
         </div>
         <div>
-          <label className="label">Team size cap (team events, optional)</label>
+          <label htmlFor={fid("teamSize")} className="label">Team size cap (team events, optional)</label>
           <input
+            id={fid("teamSize")}
             type="number"
             name="teamSize"
             min={0}
@@ -460,8 +469,8 @@ export function EventForm({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <label className="label">Status</label>
-          <select name="status" className="input" defaultValue={event?.status ?? "DRAFT"}>
+          <label htmlFor={fid("status")} className="label">Status</label>
+          <select id={fid("status")} name="status" className="input" defaultValue={event?.status ?? "DRAFT"}>
             <option value="DRAFT">Draft</option>
             <option value="PUBLISHED">Published (announces to Discord)</option>
             <option value="COMPLETED">Completed</option>
@@ -469,8 +478,8 @@ export function EventForm({
           </select>
         </div>
         <div>
-          <label className="label">Season</label>
-          <select name="seasonId" className="input" defaultValue={event?.seasonId ?? ""}>
+          <label htmlFor={fid("seasonId")} className="label">Season</label>
+          <select id={fid("seasonId")} name="seasonId" className="input" defaultValue={event?.seasonId ?? ""}>
             <option value="">— none —</option>
             {seasons.map((s) => (
               <option key={s.id} value={s.id}>
@@ -491,12 +500,12 @@ export function EventForm({
       </p>
 
       <div>
-        <label className="label">Summary (1–2 lines, landing card)</label>
-        <textarea name="summary" rows={2} className="input" defaultValue={event?.summary ?? ""} placeholder="No rules, no limits. 2-week wipe. Top 3 on the Glory Points board take the pool." />
+        <label htmlFor={fid("summary")} className="label">Summary (1–2 lines, landing card)</label>
+        <textarea id={fid("summary")} name="summary" rows={2} className="input" defaultValue={event?.summary ?? ""} placeholder="No rules, no limits. 2-week wipe. Top 3 on the Glory Points board take the pool." />
       </div>
 
       <div>
-        <label className="label">Poster / key art</label>
+        <label htmlFor={fid("posterFile")} className="label">Poster / key art</label>
         {event?.posterUrl && (
           /* eslint-disable-next-line @next/next/no-img-element */
           <img
@@ -506,16 +515,19 @@ export function EventForm({
           />
         )}
         <input
+          id={fid("posterFile")}
           name="posterFile"
           type="file"
           accept="image/png,image/jpeg,image/webp,image/gif"
           className="input mt-2 text-xs file:mr-3 file:border-0 file:bg-edge file:px-3 file:py-1.5 file:text-slate-200"
         />
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 text-xs text-slate-400">
           Upload an image, or paste a URL below — uploading replaces the URL. Shown at the top of
           the event page and as the image on the Discord announcement embed.
         </p>
+        <label htmlFor={fid("posterUrl")} className="sr-only">Poster image URL</label>
         <input
+          id={fid("posterUrl")}
           name="posterUrl"
           type="url"
           className="input mt-2 font-mono text-xs"
@@ -526,18 +538,19 @@ export function EventForm({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <label className="label">Mode (next to RAIDZONE)</label>
-          <input name="mode" className="input" defaultValue={event?.mode ?? ""} placeholder="PURGE" />
+          <label htmlFor={fid("mode")} className="label">Mode (next to RAIDZONE)</label>
+          <input id={fid("mode")} name="mode" className="input" defaultValue={event?.mode ?? ""} placeholder="PURGE" />
         </div>
         <div>
-          <label className="label">Wipe cycle</label>
-          <input name="wipeCycle" className="input" defaultValue={event?.wipeCycle ?? ""} placeholder="2 weeks" />
+          <label htmlFor={fid("wipeCycle")} className="label">Wipe cycle</label>
+          <input id={fid("wipeCycle")} name="wipeCycle" className="input" defaultValue={event?.wipeCycle ?? ""} placeholder="2 weeks" />
         </div>
       </div>
 
       <div>
-        <label className="label">Raid window — one per line</label>
+        <label htmlFor={fid("raidWindow")} className="label">Raid window — one per line</label>
         <textarea
+          id={fid("raidWindow")}
           name="raidWindow"
           rows={2}
           className="input"
@@ -547,8 +560,9 @@ export function EventForm({
       </div>
 
       <div>
-        <label className="label">Reward tiers — one per line, &ldquo;place | reward&rdquo;</label>
+        <label htmlFor={fid("rewardTiersText")} className="label">Reward tiers — one per line, &ldquo;place | reward&rdquo;</label>
         <textarea
+          id={fid("rewardTiersText")}
           name="rewardTiersText"
           rows={4}
           className="input font-mono text-xs"
@@ -565,8 +579,9 @@ export function EventForm({
       </div>
 
       <div>
-        <label className="label">Bonus lines — one per line</label>
+        <label htmlFor={fid("bonusText")} className="label">Bonus lines — one per line</label>
         <textarea
+          id={fid("bonusText")}
           name="bonusText"
           rows={3}
           className="input"
@@ -576,8 +591,9 @@ export function EventForm({
       </div>
 
       <div>
-        <label className="label">Reward pool (free text — optional)</label>
+        <label htmlFor={fid("rewardPoolText")} className="label">Reward pool (free text — optional)</label>
         <textarea
+          id={fid("rewardPoolText")}
           name="rewardPoolText"
           rows={2}
           className="input"
@@ -598,16 +614,17 @@ export function EventForm({
             className="accent-teal disabled:opacity-60"
           />
           Event rules (Markdown)
-          <span className="normal-case text-slate-600">— builds the #rules channel too</span>
+          <span className="normal-case text-slate-400">— builds the #rules channel too</span>
         </label>
         <textarea
           name="rulesMd"
+          aria-label="Event rules content"
           rows={8}
           className="input font-mono text-xs"
           defaultValue={event?.rulesMd ?? ""}
           placeholder={"- No cheating — permanent ban, no appeal\n- No bug exploiting\n- No account sharing — reward UID must match the player\n- Clips on request, or no points"}
         />
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 text-xs text-slate-400">
           Shown in its own section on the event page and posted to the event&apos;s Discord{" "}
           <code>rules</code> channel when you build the space.
         </p>
@@ -615,8 +632,9 @@ export function EventForm({
       </div>
 
       <div>
-        <label className="label">Full brief (Markdown) — the whole event details page</label>
+        <label htmlFor={fid("detailsMd")} className="label">Full brief (Markdown) — the whole event details page</label>
         <textarea
+          id={fid("detailsMd")}
           name="detailsMd"
           rows={14}
           className="input font-mono text-xs"
@@ -626,15 +644,16 @@ export function EventForm({
       </div>
 
       <div>
-        <label className="label">How-to-join video (YouTube URL)</label>
+        <label htmlFor={fid("howToJoinVideoUrl")} className="label">How-to-join video (YouTube URL)</label>
         <input
+          id={fid("howToJoinVideoUrl")}
           name="howToJoinVideoUrl"
           type="url"
           className="input font-mono text-xs"
           defaultValue={event?.howToJoinVideoUrl ?? ""}
           placeholder="https://youtu.be/…"
         />
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 text-xs text-slate-400">
           Plays on this event&apos;s page, and in the landing &ldquo;How to join&rdquo; section
           while this is the featured event.
         </p>
@@ -652,23 +671,23 @@ export function EventForm({
       <div className="flex items-center justify-between gap-3 border border-edge/60 bg-panel/20 px-3 py-2">
         <input type="hidden" name="channelPlanSet" value="1" />
         {spaceLocked ? (
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-slate-400">
             This event already has its Discord space — the checkboxes below are locked because
             changing them here won&apos;t touch the channels that already exist. Use the
             &ldquo;Channels&rdquo; panel on the event page to add or remove channels instead.
           </p>
         ) : (
           <>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-400">
               Each field below has a checkbox — check it to build that channel. Unchecked ones are
               just skipped; you can add any of them later from the event page.
             </p>
             <div className="flex shrink-0 items-center gap-3">
-              <span className="font-mono text-xs text-slate-500">{channelPlan.size} selected</span>
+              <span className="font-mono text-xs text-slate-400">{channelPlan.size} selected</span>
               <button type="button" onClick={selectAllChannels} className="font-mono text-[0.66rem] uppercase tracking-widest text-teal hover:text-cream">
                 All
               </button>
-              <button type="button" onClick={selectNoChannels} className="font-mono text-[0.66rem] uppercase tracking-widest text-slate-500 hover:text-teal">
+              <button type="button" onClick={selectNoChannels} className="font-mono text-[0.66rem] uppercase tracking-widest text-slate-400 hover:text-teal">
                 None
               </button>
             </div>
@@ -676,8 +695,8 @@ export function EventForm({
         )}
       </div>
 
-      <div className={spaceLocked ? "opacity-50" : ""}>
-        <label className="label">Other channels (no content needed)</label>
+      <fieldset className={spaceLocked ? "opacity-50" : ""}>
+        <legend className="label">Other channels (no content needed)</legend>
         <div className="flex flex-wrap gap-3">
           {OTHER_CHANNELS.map(([name, label, hint]) => (
             <label
@@ -694,11 +713,11 @@ export function EventForm({
                 className="accent-teal disabled:opacity-60"
               />
               <span className="font-mono">{label}</span>
-              <span className="text-xs text-slate-500">— {hint}</span>
+              <span className="text-xs text-slate-400">— {hint}</span>
             </label>
           ))}
         </div>
-      </div>
+      </fieldset>
 
       <label className="flex items-start gap-2 text-sm text-slate-300">
         <input
@@ -709,7 +728,7 @@ export function EventForm({
         />
         <span>
           Ping <span className="font-mono">@everyone</span> in the announcement
-          <span className="mt-0.5 block text-xs text-slate-500">
+          <span className="mt-0.5 block text-xs text-slate-400">
             On by default. Editing the announcement afterwards won&apos;t re-ping.
           </span>
         </span>
@@ -724,7 +743,7 @@ export function EventForm({
         />
         <span>
           Ping <span className="font-mono">@everyone</span> in <em>every</em> event channel
-          <span className="mt-0.5 block text-xs text-slate-500">
+          <span className="mt-0.5 block text-xs text-slate-400">
             how-to-join, rules, gameplay, wipe-info and rewards too — one ping per channel
             when the space is first built. Off by default (it&apos;s a lot of pings).
           </span>
@@ -812,19 +831,20 @@ export function EventForm({
                 className="accent-teal disabled:opacity-60"
               />
               {label}
-              <span className={`normal-case ${live ? "text-teal" : "text-slate-600"}`}>
+              <span className={`normal-case ${live ? "text-teal" : "text-slate-400"}`}>
                 {live ? `filled — ${live.length} chars` : "empty"}
               </span>
             </label>
             <div className="mt-2">
               <textarea
                 name={name}
+                aria-label={`${label} content`}
                 rows={rows}
                 className="input font-mono text-xs"
                 defaultValue={initial}
                 placeholder={ph || undefined}
               />
-              <p className="mt-1 text-xs text-slate-500">{hint}</p>
+              <p className="mt-1 text-xs text-slate-400">{hint}</p>
               <MiniPreview text={live} />
             </div>
           </div>
@@ -839,7 +859,7 @@ export function EventForm({
               <li key={w}>{w}</li>
             ))}
           </ul>
-          <p className="mt-1 text-slate-500">
+          <p className="mt-1 text-slate-400">
             Just a heads-up — nothing here blocks saving, check and ignore if it&apos;s intentional.
           </p>
         </div>

@@ -118,10 +118,10 @@ export function ProfileForm({
         <dl className="divide-y divide-edge/60 border border-edge">
           {rows.map(([label, value, wantUid]) => (
             <div key={label} className="flex items-baseline justify-between gap-4 px-4 py-3">
-              <dt className="text-sm text-slate-500">{label}</dt>
+              <dt className="text-sm text-slate-400">{label}</dt>
               <dd className="text-right text-sm text-slate-100">
                 {value ?? (
-                  <span className={wantUid ? "text-ember" : "text-slate-600"}>
+                  <span className={wantUid ? "text-ember" : "text-slate-400"}>
                     {wantUid ? "not set — staff need this" : "—"}
                   </span>
                 )}
@@ -158,7 +158,7 @@ export function ProfileForm({
           <label className="label" htmlFor="characterName">Character name *</label>
           <input id="characterName" className="input" required maxLength={60}
             value={form.characterName} onChange={set("characterName")} />
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-1 text-xs text-slate-400">
             Your real, permanent identity — used for results, rewards and the bot. Want a
             different name for just one event or team? Use &ldquo;Change name for this
             event&rdquo; on that event&apos;s page instead of changing this.
@@ -169,7 +169,7 @@ export function ProfileForm({
           <label className="label" htmlFor="gameUid">In-game ID (UID)</label>
           <input id="gameUid" className="input" maxLength={40}
             value={form.gameUid} onChange={set("gameUid")} placeholder="e.g. 1000123456789" />
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-1 text-xs text-slate-400">
             Your main character&apos;s UID — this is where staff send event rewards.
           </p>
           {err("gameUid") && <p className="mt-1 text-xs text-ember">{err("gameUid")}</p>}
@@ -225,14 +225,14 @@ export function ProfileForm({
                 <option key={f.id} value={f.id}>{f.name}</option>
               ))}
             </select>
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-1 text-xs text-slate-400">
               Pick your banner — grants the faction&apos;s Discord role. Staff may reassign.
             </p>
           </div>
         )}
       </div>
 
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-slate-400">
         Teams are managed on the <a href="/me/team" className="link">Team</a> page.
       </p>
 

@@ -107,7 +107,7 @@ export default async function PortalOverview() {
               >
                 {s.v}
               </div>
-              <div className="text-xs text-slate-500">{s.k}</div>
+              <div className="text-xs text-slate-400">{s.k}</div>
             </Link>
           ))}
         </div>
@@ -123,7 +123,7 @@ export default async function PortalOverview() {
                 <Link href={`/portal/players/${p.id}`} className="text-slate-200 hover:text-teal">
                   {p.characterName ?? "Unnamed"}
                 </Link>
-                <span className="text-slate-500">
+                <span className="text-slate-400">
                   {p.user.discordUsername ?? p.user.email ?? "—"}
                 </span>
               </li>
@@ -139,11 +139,11 @@ export default async function PortalOverview() {
               <li key={e.id} className="flex items-center justify-between py-3 text-sm">
                 <Link href={`/portal/events/${e.id}`} className="text-slate-200 hover:text-teal">
                   {e.title}
-                  <span className="ml-2 text-[0.6rem] uppercase tracking-wide text-slate-500">
+                  <span className="ml-2 text-[0.6rem] uppercase tracking-wide text-slate-400">
                     {e.format === "TEAM" ? "team" : "solo"}
                   </span>
                 </Link>
-                <span className="text-slate-500">
+                <span className="text-slate-400">
                   {fmtInZone(e.startsAt, e.timezone ?? DEFAULT_EVENT_TZ)} · {e._count.signups} in
                   {e.maxSlots ? ` / ${e.maxSlots}` : ""}
                 </span>
@@ -172,7 +172,7 @@ export default async function PortalOverview() {
                   {maskName(a.actor?.name ?? a.actor?.email, a.actorId, hidden, "system")}
                 </span>{" "}
                 {a.action}
-                <span className="block text-slate-600">{fmtDateTime(a.createdAt)}</span>
+                <span className="block text-slate-400">{fmtDateTime(a.createdAt)}</span>
               </li>
             ))}
           </ul>

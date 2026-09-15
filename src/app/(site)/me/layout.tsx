@@ -9,7 +9,7 @@ export default async function MeLayout({ children }: { children: React.ReactNode
     <div className="container-x py-10">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <h1 className="font-display text-2xl font-extrabold text-white">Your account</h1>
-        <p className="font-mono text-xs uppercase tracking-wide text-slate-500">
+        <p className="font-mono text-xs uppercase tracking-wide text-slate-400">
           {user.name ?? user.email ?? "Player"} &middot; {roleLabel(user.role)}
         </p>
       </div>

@@ -109,9 +109,9 @@ body {
     @apply mx-auto w-full max-w-5xl px-5;
   }
 
-  /* section eyebrow — mono, muted, uppercase */
+  /* section eyebrow — mono, muted, uppercase. slate-400 (not 500) to clear WCAG AA's 4.5:1 against void/panel */
   .eyebrow {
-    @apply font-mono text-[0.7rem] font-bold uppercase tracking-[0.22em] text-slate-500;
+    @apply font-mono text-[0.7rem] font-bold uppercase tracking-[0.22em] text-slate-400;
   }
 
   .btn {

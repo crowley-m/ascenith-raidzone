@@ -66,7 +66,7 @@ export default async function PortalEventsPage({
     <div>
       <div className="flex flex-wrap items-center gap-3">
         <h2 className="font-display text-xl font-bold text-white">Events</h2>
-        <span className="text-sm text-slate-500">
+        <span className="text-sm text-slate-400">
           {matched > take
             ? `${(pageN - 1) * take + 1}–${(pageN - 1) * take + events.length} of ${matched}`
             : `${events.length} shown`}
@@ -108,13 +108,13 @@ export default async function PortalEventsPage({
 
       <div className="mt-6 overflow-x-auto">
         <table className="w-full min-w-[640px] text-sm">
-          <thead className="text-left text-xs uppercase text-slate-500">
+          <thead className="text-left text-xs uppercase text-slate-400">
             <tr>
-              <th className="py-2">Title</th>
-              <th className="py-2">Starts</th>
-              <th className="py-2">Status</th>
-              <th className="py-2">Signups</th>
-              <th className="py-2">Attended</th>
+              <th scope="col" className="py-2">Title</th>
+              <th scope="col" className="py-2">Starts</th>
+              <th scope="col" className="py-2">Status</th>
+              <th scope="col" className="py-2">Signups</th>
+              <th scope="col" className="py-2">Attended</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-edge/60">
@@ -164,7 +164,7 @@ export default async function PortalEventsPage({
           {pageN > 1 && (
             <Link href={pageHref(pageN - 1)} className="link">← Newer</Link>
           )}
-          <span className="text-slate-500">Page {pageN} / {pages}</span>
+          <span className="text-slate-400">Page {pageN} / {pages}</span>
           {pageN < pages && (
             <Link href={pageHref(pageN + 1)} className="link">Older →</Link>
           )}

@@ -64,15 +64,16 @@ export function GalleryManager({
             onChange={(e) => setFileCount(e.target.files?.length ?? 0)}
             className="block w-full text-sm text-slate-300 file:mr-3 file:border file:border-edge file:bg-void file:px-3 file:py-1.5 file:text-xs file:uppercase file:tracking-wide file:text-slate-200"
           />
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-1 text-xs text-slate-400">
             Select several at once to bulk-upload — caption/label below only apply when
             uploading a single image.
           </p>
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
           <div>
-            <label className="label">Caption</label>
+            <label className="label" htmlFor={`caption-${kind}`}>Caption</label>
             <input
+              id={`caption-${kind}`}
               name="caption"
               className="input"
               maxLength={40}
@@ -81,8 +82,9 @@ export function GalleryManager({
             />
           </div>
           <div>
-            <label className="label">Small label</label>
+            <label className="label" htmlFor={`tag-${kind}`}>Small label</label>
             <input
+              id={`tag-${kind}`}
               name="tag"
               className="input"
               maxLength={40}
@@ -105,7 +107,7 @@ export function GalleryManager({
       </form>
 
       <div>
-        <p className="text-xs uppercase tracking-widest text-slate-500">
+        <p className="text-xs uppercase tracking-widest text-slate-400">
           {images.length} image{images.length === 1 ? "" : "s"}
           {liveSlots ? ` · first ${liveSlots} show on the landing page` : ""}
         </p>
@@ -178,9 +180,9 @@ function ImageRow({
           className="input"
           placeholder="Small label"
         />
-        <div className="flex items-center gap-3 text-xs text-slate-500 sm:col-span-2">
+        <div className="flex items-center gap-3 text-xs text-slate-400 sm:col-span-2">
           <span
-            className={`badge ${live ? "border-teal/40 text-teal" : "border-edge text-slate-500"}`}
+            className={`badge ${live ? "border-teal/40 text-teal" : "border-edge text-slate-400"}`}
           >
             {liveSlots === undefined ? "shown" : live ? `slot ${index + 1}` : "hidden"}
           </span>

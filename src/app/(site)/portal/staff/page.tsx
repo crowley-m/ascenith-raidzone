@@ -43,7 +43,7 @@ export default async function StaffPage() {
                 {s.user.name ?? s.user.discordUsername ?? s.user.email}
               </span>
               <span className="badge ml-2 border-teal/40 text-teal">{s.role}</span>
-              <span className="block text-xs text-slate-500">
+              <span className="block text-xs text-slate-400">
                 {s.user.email} · since {fmtDate(s.createdAt)}
               </span>
             </span>

@@ -35,7 +35,7 @@ export default async function WinnersSectionPage({
       <div className="mx-auto w-full max-w-6xl px-5 pb-24 pt-8">
         <Link
           href="/winners"
-          className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-slate-500 hover:text-teal"
+          className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-slate-400 hover:text-teal"
         >
           ← Hall of winners
         </Link>

@@ -57,7 +57,7 @@ export default async function PlayersPage({
     <div>
       <div className="flex flex-wrap items-center gap-3">
         <h2 className="font-display text-xl font-bold text-white">Players</h2>
-        <span className="text-sm text-slate-500">
+        <span className="text-sm text-slate-400">
           {matched > take
             ? `${(pageN - 1) * take + 1}–${(pageN - 1) * take + players.length} of ${matched}`
             : `${players.length} shown`}
@@ -111,15 +111,15 @@ export default async function PlayersPage({
 
       <div className="mt-6 overflow-x-auto">
         <table className="w-full min-w-[640px] text-sm">
-          <thead className="text-left text-xs uppercase text-slate-500">
+          <thead className="text-left text-xs uppercase text-slate-400">
             <tr>
-              <th className="py-2">Character</th>
-              <th className="py-2">Contact</th>
-              <th className="py-2">Platform</th>
-              <th className="py-2">Faction</th>
-              <th className="py-2">Status</th>
-              <th className="py-2">Rewards</th>
-              <th className="py-2">Joined</th>
+              <th scope="col" className="py-2">Character</th>
+              <th scope="col" className="py-2">Contact</th>
+              <th scope="col" className="py-2">Platform</th>
+              <th scope="col" className="py-2">Faction</th>
+              <th scope="col" className="py-2">Status</th>
+              <th scope="col" className="py-2">Rewards</th>
+              <th scope="col" className="py-2">Joined</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-edge/60">
@@ -147,7 +147,7 @@ export default async function PlayersPage({
                   </span>
                 </td>
                 <td className="py-3 text-slate-400">{p._count.rewards}</td>
-                <td className="py-3 text-slate-500">{fmtDate(p.createdAt)}</td>
+                <td className="py-3 text-slate-400">{fmtDate(p.createdAt)}</td>
               </tr>
             ))}
           </tbody>
@@ -160,7 +160,7 @@ export default async function PlayersPage({
           {pageN > 1 && (
             <Link href={pageHref(pageN - 1)} className="link">← Newer</Link>
           )}
-          <span className="text-slate-500">Page {pageN} / {pages}</span>
+          <span className="text-slate-400">Page {pageN} / {pages}</span>
           {pageN < pages && (
             <Link href={pageHref(pageN + 1)} className="link">Older →</Link>
           )}

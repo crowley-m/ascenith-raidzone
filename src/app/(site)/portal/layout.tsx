@@ -31,12 +31,19 @@ export default async function PortalLayout({ children }: { children: React.React
 
   return (
     <div className="mx-auto w-full max-w-[100rem] px-5 py-10">
+      <a
+        href="#portal-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-50 focus:bg-teal focus:px-3 focus:py-2 focus:font-mono focus:text-xs focus:uppercase focus:tracking-widest focus:text-void"
+      >
+        Skip portal navigation
+      </a>
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <h1 className="font-display text-2xl font-extrabold text-white">Staff portal</h1>
         <div className="flex items-center gap-3">
           <form action="/portal/search" className="flex items-center">
             <input
               name="q"
+              aria-label="Search players, teams, events"
               placeholder="Search players, teams, events…"
               className="input w-56 py-1.5 text-xs sm:w-72"
             />
@@ -49,7 +56,9 @@ export default async function PortalLayout({ children }: { children: React.React
         <aside className="lg:sticky lg:top-6 lg:self-start">
           <PortalNav items={items} />
         </aside>
-        <div className="mt-6 min-w-0 lg:mt-0">{children}</div>
+        <div id="portal-content" tabIndex={-1} className="mt-6 min-w-0 focus:outline-none lg:mt-0">
+          {children}
+        </div>
       </div>
     </div>
   );

@@ -60,7 +60,7 @@ export function EventCard({ event, href }: { event: EventCardData; href?: string
       <h3 className="mt-3 font-display text-lg font-bold text-white group-hover:text-teal">
         {event.title}
         {event.format === "TEAM" && (
-          <span className="ml-2 align-middle text-[0.6rem] uppercase tracking-wide text-slate-500">
+          <span className="ml-2 align-middle text-[0.6rem] uppercase tracking-wide text-slate-400">
             team event
           </span>
         )}
@@ -70,17 +70,17 @@ export function EventCard({ event, href }: { event: EventCardData; href?: string
       )}
       <dl className="mt-4 flex flex-wrap gap-x-6 gap-y-1 text-xs text-slate-400">
         <div>
-          <dt className="inline text-slate-500">When: </dt>
+          <dt className="inline text-slate-400">When: </dt>
           <dd className="inline">{fmtInZone(event.startsAt, event.timezone ?? DEFAULT_EVENT_TZ)}</dd>
         </div>
         {event.server && (
           <div>
-            <dt className="inline text-slate-500">Server: </dt>
+            <dt className="inline text-slate-400">Server: </dt>
             <dd className="inline">{event.server}</dd>
           </div>
         )}
         <div>
-          <dt className="inline text-slate-500">Signed up: </dt>
+          <dt className="inline text-slate-400">Signed up: </dt>
           <dd className="inline">
             {signups}
             {event.maxSlots ? ` / ${event.maxSlots}` : ""}

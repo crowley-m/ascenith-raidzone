@@ -211,7 +211,7 @@ export default async function EventDetailPage({
         &larr; All events
       </Link>
 
-      <nav className="sticky top-16 z-30 mt-4 flex flex-wrap gap-4 border-y border-edge bg-void/95 px-1 py-2 font-mono text-[0.66rem] uppercase tracking-widest text-slate-500 backdrop-blur">
+      <nav className="sticky top-16 z-30 mt-4 flex flex-wrap gap-4 border-y border-edge bg-void/95 px-1 py-2 font-mono text-[0.66rem] uppercase tracking-widest text-slate-400 backdrop-blur">
         <a href="#brief" className="hover:text-teal">Brief</a>
         {(tiers.length > 0 || event.bonusText || event.rewardPoolText) && (
           <a href="#rewards" className="hover:text-teal">Rewards</a>
@@ -235,7 +235,7 @@ export default async function EventDetailPage({
           <h1 className="mt-2 font-poster text-5xl uppercase leading-none text-white sm:text-6xl">
             {event.mode ? (
               <>
-                RAIDZONE <span className="text-slate-500">{event.mode}</span>
+                RAIDZONE <span className="text-slate-400">{event.mode}</span>
               </>
             ) : (
               event.title
@@ -255,23 +255,23 @@ export default async function EventDetailPage({
 
           <div className="mt-5 flex flex-wrap gap-x-6 gap-y-1 border-y border-edge py-3 font-mono text-xs uppercase tracking-wide text-slate-300">
             <span>
-              <span className="text-slate-600">Starts </span>
+              <span className="text-slate-400">Starts </span>
               {fmtInZone(event.startsAt, tz)}
             </span>
             {event.server && (
               <span>
-                <span className="text-slate-600">Server </span>
+                <span className="text-slate-400">Server </span>
                 {event.server}
               </span>
             )}
             <span>
-              <span className="text-slate-600">Format </span>
+              <span className="text-slate-400">Format </span>
               {isTeamEvent
                 ? `Team${event.teamSize ? ` · up to ${event.teamSize}` : ""}`
                 : "Solo"}
             </span>
             <span>
-              <span className="text-slate-600">{isTeamEvent ? "Teams " : "Slots "}</span>
+              <span className="text-slate-400">{isTeamEvent ? "Teams " : "Slots "}</span>
               {isTeamEvent ? teamGroups.size : confirmed.length}
               {event.maxSlots ? ` / ${event.maxSlots}` : ""}
             </span>
@@ -434,10 +434,10 @@ export default async function EventDetailPage({
             {isTeamEvent ? (
               <>
                 <h2 className="font-poster text-2xl uppercase text-white">
-                  Teams <span className="text-slate-500">({teamGroups.size})</span>
+                  Teams <span className="text-slate-400">({teamGroups.size})</span>
                 </h2>
                 {teamGroups.size === 0 ? (
-                  <p className="mt-3 font-mono text-xs uppercase text-slate-500">
+                  <p className="mt-3 font-mono text-xs uppercase text-slate-400">
                     No teams registered yet.
                   </p>
                 ) : (
@@ -475,7 +475,7 @@ export default async function EventDetailPage({
                         note: s.lfgNote,
                       }))}
                     />
-                    <p className="mt-2 font-mono text-[0.7rem] uppercase tracking-wide text-slate-600">
+                    <p className="mt-2 font-mono text-[0.7rem] uppercase tracking-wide text-slate-400">
                       Leaders: recruit them in the event&apos;s{" "}
                       <span className="text-slate-400">#looking-for-team</span> channel.
                     </p>
@@ -485,11 +485,11 @@ export default async function EventDetailPage({
             ) : (
               <>
                 <h2 className="font-poster text-2xl uppercase text-white">
-                  Roster <span className="text-slate-500">({confirmed.length})</span>
+                  Roster <span className="text-slate-400">({confirmed.length})</span>
                 </h2>
                 <ul className="mt-3 flex flex-wrap gap-2">
                   {confirmed.length === 0 && (
-                    <li className="font-mono text-xs uppercase text-slate-500">
+                    <li className="font-mono text-xs uppercase text-slate-400">
                       No sign-ups yet. Be first.
                     </li>
                   )}
@@ -573,7 +573,7 @@ export default async function EventDetailPage({
             {checkInOpen && mySignup?.state === "SIGNED_UP" && (
               <div className="mt-4 border-t border-edge pt-4">
                 <div className="eyebrow">Check in</div>
-                <p className="mt-1 font-mono text-[0.7rem] uppercase tracking-wide text-slate-500">
+                <p className="mt-1 font-mono text-[0.7rem] uppercase tracking-wide text-slate-400">
                   Confirm you turned up — it marks your attendance.
                 </p>
                 <div className="mt-2">
@@ -585,7 +585,7 @@ export default async function EventDetailPage({
               </div>
             )}
             {!session?.user && (
-              <p className="mt-3 font-mono text-[0.7rem] uppercase tracking-wide text-slate-500">
+              <p className="mt-3 font-mono text-[0.7rem] uppercase tracking-wide text-slate-400">
                 No account?{" "}
                 <Link href="/register" className="link">
                   Register

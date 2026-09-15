@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useId, useRef, useState } from "react";
 import { saveDiscordChannel } from "@/app/(site)/portal/actions";
 import { DiscordRolePicker } from "@/components/portal/discord-role-picker";
 import { slugifyChannelName, slugifyChannelNameFinal } from "@/lib/discord-slug";
@@ -39,6 +39,8 @@ export function DiscordChannelForm({
   const [kind, setKind] = useState(channel?.kind ?? "text");
   const [name, setName] = useState(channel?.name ?? "");
   const [targetCategoryId, setTargetCategoryId] = useState(channel?.categoryId ?? categoryId);
+  const uid = useId();
+  const fid = (name: string) => `${uid}-${name}`;
   useEffect(() => {
     if (state.ok && !channel) {
       ref.current?.reset();
@@ -55,8 +57,9 @@ export function DiscordChannelForm({
       {channel && <input type="hidden" name="id" value={channel.id} />}
       <div className="grid gap-3 sm:grid-cols-[1fr_8rem]">
         <div>
-          {!channel && <label className="label">Channel name</label>}
+          {!channel && <label htmlFor={fid("name")} className="label">Channel name</label>}
           <input
+            id={fid("name")}
             name="name"
             required
             maxLength={90}
@@ -74,8 +77,8 @@ export function DiscordChannelForm({
         </div>
         {!channel && (
           <div>
-            <label className="label">Type</label>
-            <select name="kind" className="input" value={kind} onChange={(e) => setKind(e.target.value)}>
+            <label htmlFor={fid("kind")} className="label">Type</label>
+            <select id={fid("kind")} name="kind" className="input" value={kind} onChange={(e) => setKind(e.target.value)}>
               <option value="text">Text</option>
               <option value="voice">Voice</option>
             </select>
@@ -85,8 +88,9 @@ export function DiscordChannelForm({
 
       {channel && categories.length > 1 ? (
         <div>
-          <label className="label">Category</label>
+          <label htmlFor={fid("categoryId")} className="label">Category</label>
           <select
+            id={fid("categoryId")}
             name="categoryId"
             className="input"
             value={targetCategoryId}
@@ -121,7 +125,7 @@ export function DiscordChannelForm({
           disabled={synced}
           counts={roleCounts}
         />
-        <p className="mt-1.5 text-xs text-slate-500">
+        <p className="mt-1.5 text-xs text-slate-400">
           {synced
             ? "Following the category's roles — untick “sync” to set its own instead."
             : "Leave every box unchecked for a staff/bot-only channel — nobody else can see it, even without picking a role."}
@@ -130,8 +134,9 @@ export function DiscordChannelForm({
 
       {kind === "text" && (
         <div>
-          <label className="label">Topic (optional)</label>
+          <label htmlFor={fid("topic")} className="label">Topic (optional)</label>
           <input
+            id={fid("topic")}
             name="topic"
             maxLength={200}
             className="input text-sm"
@@ -143,8 +148,8 @@ export function DiscordChannelForm({
 
       {!channel && kind === "text" && (
         <div>
-          <label className="label">Welcome message (optional)</label>
-          <textarea name="seedMessage" rows={2} className="input text-sm" />
+          <label htmlFor={fid("seedMessage")} className="label">Welcome message (optional)</label>
+          <textarea id={fid("seedMessage")} name="seedMessage" rows={2} className="input text-sm" />
           <label className="mt-1.5 flex items-center gap-1.5 text-xs text-slate-300">
             <input type="checkbox" name="pinSeed" />
             Pin it

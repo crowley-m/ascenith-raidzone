@@ -106,7 +106,7 @@ export default async function PublicTeamPage({
                 <Link href={`/players/${m.player.id}`} className="text-slate-100 hover:text-teal">
                   {nameFor(m.playerId, m.player.characterName)}
                 </Link>
-                <span className="text-xs text-slate-500">{m.player.region ?? ""}</span>
+                <span className="text-xs text-slate-400">{m.player.region ?? ""}</span>
               </li>
             ))}
           </ul>
@@ -133,7 +133,7 @@ export default async function PublicTeamPage({
         </div>
       </section>
 
-      <p className="mt-12 text-xs text-slate-600">Formed {fmtDate(team.createdAt)}</p>
+      <p className="mt-12 text-xs text-slate-400">Formed {fmtDate(team.createdAt)}</p>
     </div>
   );
 }

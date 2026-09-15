@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useId, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   addEventChannel,
@@ -63,6 +63,7 @@ export function EventChannelsManager({
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const addChannelId = useId();
   const seededSet = new Set(seeded);
   const pendingSet = new Set(pending);
 
@@ -149,7 +150,7 @@ export function EventChannelsManager({
           </div>
         )}
       </div>
-      <p className="mt-1.5 border-b border-edge pb-4 text-xs text-slate-500">
+      <p className="mt-1.5 border-b border-edge pb-4 text-xs text-slate-400">
         Every channel this event&apos;s space actually has right now, and what to do with each
         one. This only affects this event — the default set new events start with lives in
         Settings.
@@ -171,7 +172,7 @@ export function EventChannelsManager({
                     {!isSeeded ? "not posted" : isPending ? "changed, not pushed" : "up to date"}
                   </span>
                 ) : (
-                  <span className="text-xs text-slate-600">plain channel, no content</span>
+                  <span className="text-xs text-slate-400">plain channel, no content</span>
                 )}
               </div>
               {pushMsg[name] && <p className="mt-1.5 text-xs text-slate-400">{pushMsg[name]}</p>}
@@ -230,7 +231,7 @@ export function EventChannelsManager({
                     </a>
                   )}
                   <button
-                    className="ml-auto text-slate-500 hover:text-red-300 disabled:opacity-50"
+                    className="ml-auto text-slate-400 hover:text-red-300 disabled:opacity-50"
                     disabled={pendingTx && busy === name}
                     onClick={() => remove(name)}
                   >
@@ -247,9 +248,10 @@ export function EventChannelsManager({
       </ul>
 
       <div className="mt-5 border-t border-edge pt-4">
-        <label className="label">Add a channel</label>
+        <label htmlFor={addChannelId} className="label">Add a channel</label>
         <div className="flex flex-wrap gap-2">
           <input
+            id={addChannelId}
             ref={inputRef}
             className="input flex-1 font-mono text-xs"
             placeholder="new-channel-name"
@@ -269,14 +271,14 @@ export function EventChannelsManager({
             {pendingTx && busy === "__add__" ? "Adding…" : "Add channel"}
           </button>
         </div>
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 text-xs text-slate-400">
           Use a name like <code>rules</code>, <code>gameplay</code>, <code>schedule</code>,{" "}
           <code>wipe-info</code> or <code>rewards</code> to have its content seeded automatically
           from that field below — anything else is created as a plain empty channel.
         </p>
       </div>
 
-      <p className="mt-4 border-t border-edge pt-4 text-xs text-slate-500">
+      <p className="mt-4 border-t border-edge pt-4 text-xs text-slate-400">
         Edit a channel&apos;s content above and hit Save — it saves and pushes to Discord in one
         step. Saving the whole event form further down also re-pushes anything that changed there,
         and &ldquo;Repost announcement&rdquo; is different again — it deletes and reposts so the{" "}

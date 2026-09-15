@@ -51,12 +51,12 @@ export default async function SeasonsPage() {
             {/* series masthead line */}
             <div className="flex items-end justify-between gap-6 border-b-2 border-white/20 pb-3">
               <div className="flex items-baseline gap-4">
-                <span className="font-mono text-sm text-slate-600">{ROMAN[i + 1] ?? i + 1}</span>
+                <span className="font-mono text-sm text-slate-400">{ROMAN[i + 1] ?? i + 1}</span>
                 <h2 className="font-poster text-3xl uppercase leading-none text-white sm:text-5xl">
                   {name}
                 </h2>
               </div>
-              <span className="shrink-0 pb-1 font-mono text-[0.62rem] uppercase tracking-[0.2em] text-slate-500">
+              <span className="shrink-0 pb-1 font-mono text-[0.62rem] uppercase tracking-[0.2em] text-slate-400">
                 {list.length} season{list.length === 1 ? "" : "s"}
               </span>
             </div>
@@ -70,7 +70,7 @@ export default async function SeasonsPage() {
                     className="group grid grid-cols-[2.5rem_1fr] items-baseline gap-x-4 gap-y-1 py-5 sm:grid-cols-[3.5rem_1fr_minmax(0,14rem)_2rem]"
                   >
                     {/* season no. */}
-                    <span className="font-poster text-2xl leading-none text-slate-500 group-hover:text-teal sm:text-3xl">
+                    <span className="font-poster text-2xl leading-none text-slate-400 group-hover:text-teal sm:text-3xl">
                       S{s.number}
                     </span>
 
@@ -78,7 +78,7 @@ export default async function SeasonsPage() {
                     <span className="min-w-0">
                       <span className="block truncate font-display text-lg font-bold text-white sm:text-xl">
                         {s.championName ?? (
-                          <span className="text-slate-600">— no champion —</span>
+                          <span className="text-slate-400">— no champion —</span>
                         )}
                         {s.status === "ACTIVE" && (
                           <span className="ml-3 align-middle font-mono text-[0.6rem] uppercase tracking-widest text-teal">
@@ -86,7 +86,7 @@ export default async function SeasonsPage() {
                           </span>
                         )}
                       </span>
-                      <span className="mt-0.5 block font-mono text-[0.62rem] uppercase tracking-[0.16em] text-slate-500">
+                      <span className="mt-0.5 block font-mono text-[0.62rem] uppercase tracking-[0.16em] text-slate-400">
                         {s._count.events} event{s._count.events === 1 ? "" : "s"} ·{" "}
                         {s._count.videos} video{s._count.videos === 1 ? "" : "s"}
                         <span className="ml-2 sm:hidden">
@@ -100,7 +100,7 @@ export default async function SeasonsPage() {
                       {s.prizePoolText ?? ""}
                     </span>
 
-                    <span className="hidden text-right font-mono text-slate-600 transition group-hover:translate-x-1 group-hover:text-teal sm:block">
+                    <span className="hidden text-right font-mono text-slate-400 transition group-hover:translate-x-1 group-hover:text-teal sm:block">
                       →
                     </span>
                   </Link>

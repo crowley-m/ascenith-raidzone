@@ -89,7 +89,7 @@ export function SiteFooter() {
           </ul>
         </div>
       </div>
-      <div className="container-x flex flex-wrap items-center justify-between gap-3 border-t border-edge py-5 font-mono text-[0.66rem] uppercase tracking-[0.14em] text-slate-500">
+      <div className="container-x flex flex-wrap items-center justify-between gap-3 border-t border-edge py-5 font-mono text-[0.66rem] uppercase tracking-[0.14em] text-slate-400">
         <span>&copy; {new Date().getFullYear()} ASCENITH RAIDZONE</span>
         <span>Made by Crowley</span>
       </div>

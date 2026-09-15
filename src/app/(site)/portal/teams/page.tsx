@@ -53,7 +53,7 @@ export default async function PortalTeamsPage({
     <div>
       <div className="flex flex-wrap items-center gap-3">
         <h2 className="font-display text-xl font-bold text-white">Teams</h2>
-        <span className="text-sm text-slate-500">
+        <span className="text-sm text-slate-400">
           {matched > take
             ? `${(pageN - 1) * take + 1}–${(pageN - 1) * take + teams.length} of ${matched}`
             : `${teams.length} shown`}
@@ -84,14 +84,14 @@ export default async function PortalTeamsPage({
 
       <div className="mt-6 overflow-x-auto">
         <table className="w-full min-w-[560px] text-sm">
-          <thead className="text-left text-xs uppercase text-slate-500">
+          <thead className="text-left text-xs uppercase text-slate-400">
             <tr>
-              <th className="py-2">Team</th>
-              <th className="py-2">For event</th>
-              <th className="py-2">Leader</th>
-              <th className="py-2">Members</th>
-              <th className="py-2">Placements</th>
-              <th className="py-2">Created</th>
+              <th scope="col" className="py-2">Team</th>
+              <th scope="col" className="py-2">For event</th>
+              <th scope="col" className="py-2">Leader</th>
+              <th scope="col" className="py-2">Members</th>
+              <th scope="col" className="py-2">Placements</th>
+              <th scope="col" className="py-2">Created</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-edge/60">
@@ -114,7 +114,7 @@ export default async function PortalTeamsPage({
                 <td className="py-2 text-slate-400">{t.leader.characterName ?? "—"}</td>
                 <td className="py-2 text-slate-400">{t._count.members}</td>
                 <td className="py-2 text-slate-400">{t._count.placements}</td>
-                <td className="py-2 text-slate-500">{fmtDate(t.createdAt)}</td>
+                <td className="py-2 text-slate-400">{fmtDate(t.createdAt)}</td>
               </tr>
               );
             })}
@@ -134,7 +134,7 @@ export default async function PortalTeamsPage({
           {pageN > 1 && (
             <Link href={pageHref(pageN - 1)} className="link">← Newer</Link>
           )}
-          <span className="text-slate-500">Page {pageN} / {pages}</span>
+          <span className="text-slate-400">Page {pageN} / {pages}</span>
           {pageN < pages && (
             <Link href={pageHref(pageN + 1)} className="link">Older →</Link>
           )}

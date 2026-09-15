@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useId, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   generateBracket,
@@ -21,6 +21,8 @@ export function BracketEditor({
   const router = useRouter();
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<string | null>(null);
+  const uid = useId();
+  const fid = (name: string) => `${uid}-${name}`;
   const run = (fn: () => Promise<{ error?: string } | void>) => {
     setMsg(null);
     start(async () => {
@@ -55,8 +57,8 @@ export function BracketEditor({
             }
           >
             <div>
-              <label className="label">Size</label>
-              <select name="size" defaultValue={suggested} className="input h-9 py-0 text-sm">
+              <label htmlFor={fid("size")} className="label">Size</label>
+              <select id={fid("size")} name="size" defaultValue={suggested} className="input h-9 py-0 text-sm">
                 {BRACKET_SIZES.map((s) => (
                   <option key={s} value={s}>
                     {s}
@@ -65,8 +67,8 @@ export function BracketEditor({
               </select>
             </div>
             <div>
-              <label className="label">Seeding</label>
-              <select name="seed" defaultValue="signup" className="input h-9 py-0 text-sm">
+              <label htmlFor={fid("seed")} className="label">Seeding</label>
+              <select id={fid("seed")} name="seed" defaultValue="signup" className="input h-9 py-0 text-sm">
                 <option value="signup">Registration order</option>
                 <option value="random">Random draw</option>
               </select>
@@ -74,7 +76,7 @@ export function BracketEditor({
             <button className="btn-primary text-xs" disabled={pending}>
               {pending ? "Drawing…" : "Draw bracket"}
             </button>
-            <span className="text-xs text-slate-500">{entrantCount} entrants registered</span>
+            <span className="text-xs text-slate-400">{entrantCount} entrants registered</span>
           </form>
         )}
         {msg && <p className="text-xs text-ember">{msg}</p>}
@@ -86,10 +88,10 @@ export function BracketEditor({
     <div className="card space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="font-display font-bold text-white">
-          Bracket <span className="text-slate-500">· {bracket.size}</span>
+          Bracket <span className="text-slate-400">· {bracket.size}</span>
         </h3>
         <button
-          className="text-xs text-slate-500 hover:text-red-300"
+          className="text-xs text-slate-400 hover:text-red-300"
           disabled={pending}
           onClick={() => {
             if (window.confirm("Clear this bracket? All match results are lost.")) {
@@ -111,7 +113,7 @@ export function BracketEditor({
         <div className="flex min-w-max gap-5">
           {bracket.rounds.map((r) => (
             <div key={r.round} className="flex w-56 flex-col">
-              <div className="mb-3 font-mono text-[0.64rem] font-bold uppercase tracking-[0.16em] text-slate-500">
+              <div className="mb-3 font-mono text-[0.64rem] font-bold uppercase tracking-[0.16em] text-slate-400">
                 {r.name}
               </div>
               <div className="flex flex-1 flex-col justify-around gap-3">
@@ -179,7 +181,7 @@ function EditRow({
         aria-label="winner"
       />
       <span className={`flex-1 truncate ${won ? "text-white" : "text-slate-300"}`}>
-        {label ?? <span className="text-slate-600">—</span>}
+        {label ?? <span className="text-slate-400">—</span>}
       </span>
       <input
         type="number"

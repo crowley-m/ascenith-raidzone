@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useRef, useState } from "react";
+import { useActionState, useEffect, useId, useMemo, useRef, useState } from "react";
 import { saveDiscordCategory } from "@/app/(site)/portal/actions";
 import { DiscordRolePicker } from "@/components/portal/discord-role-picker";
 import { slugifyChannelName, slugifyChannelNameFinal } from "@/lib/discord-slug";
@@ -33,14 +33,14 @@ function ChannelCard({
   return (
     <div className={`border p-2.5 ${duplicate ? "border-ember/50 bg-ember/5" : "border-edge/60 bg-void/40"}`}>
       <div className="flex items-center gap-2">
-        <span className="font-mono text-xs text-slate-600">{row.kind === "voice" ? "🔊" : "#"}</span>
+        <span className="font-mono text-xs text-slate-400">{row.kind === "voice" ? "🔊" : "#"}</span>
         <input
           name="channelNames"
           value={row.name}
           onChange={(e) => onChange({ name: slugifyChannelName(e.target.value) })}
           onBlur={(e) => onChange({ name: slugifyChannelNameFinal(e.target.value) })}
           maxLength={90}
-          className="flex-1 bg-transparent text-sm text-slate-200 outline-none placeholder:text-slate-600"
+          className="flex-1 bg-transparent text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-teal/50"
           placeholder="channel-name"
         />
         <input type="hidden" name="channelKinds" value={row.kind} />
@@ -48,14 +48,14 @@ function ChannelCard({
           <button
             type="button"
             onClick={() => onChange({ kind: "text" })}
-            className={`px-2 py-0.5 ${row.kind === "text" ? "bg-teal/10 text-teal" : "text-slate-500"}`}
+            className={`px-2 py-0.5 ${row.kind === "text" ? "bg-teal/10 text-teal" : "text-slate-400"}`}
           >
             Text
           </button>
           <button
             type="button"
             onClick={() => onChange({ kind: "voice", showDetails: false, topic: "", message: "", pin: false })}
-            className={`px-2 py-0.5 ${row.kind === "voice" ? "bg-teal/10 text-teal" : "text-slate-500"}`}
+            className={`px-2 py-0.5 ${row.kind === "voice" ? "bg-teal/10 text-teal" : "text-slate-400"}`}
           >
             Voice
           </button>
@@ -63,7 +63,7 @@ function ChannelCard({
         <button
           type="button"
           onClick={onRemove}
-          className="px-1 text-slate-500 hover:text-ember"
+          className="px-1 text-slate-400 hover:text-ember"
           aria-label="Remove channel"
         >
           ×
@@ -103,7 +103,7 @@ function ChannelCard({
               <button
                 type="button"
                 onClick={() => onChange({ showDetails: false, topic: "", message: "", pin: false })}
-                className="text-xs text-slate-500 hover:text-ember"
+                className="text-xs text-slate-400 hover:text-ember"
               >
                 Remove details
               </button>
@@ -140,8 +140,8 @@ function ChannelListBuilder() {
   }, [rows]);
 
   return (
-    <div>
-      <label className="label">Channels to create (optional)</label>
+    <fieldset>
+      <legend className="label">Channels to create (optional)</legend>
       <div className="space-y-2">
         {rows.map((row) => (
           <ChannelCard
@@ -175,11 +175,11 @@ function ChannelListBuilder() {
           + Add channel
         </button>
       </div>
-      <p className="mt-1.5 text-xs text-slate-500">
+      <p className="mt-1.5 text-xs text-slate-400">
         Synced to the roles picked above. Give one its own roles afterward with &ldquo;Add
         channel.&rdquo;
       </p>
-    </div>
+    </fieldset>
   );
 }
 
@@ -194,6 +194,8 @@ export function DiscordCategoryForm({
 }) {
   const [state, action, pending] = useActionState(saveDiscordCategory, {});
   const ref = useRef<HTMLFormElement>(null);
+  const uid = useId();
+  const fid = (name: string) => `${uid}-${name}`;
   useEffect(() => {
     if (state.ok && !category) ref.current?.reset();
   }, [state.ok, category]);
@@ -203,8 +205,9 @@ export function DiscordCategoryForm({
       {category && <input type="hidden" name="id" value={category.id} />}
       <div className="flex flex-wrap items-end gap-3">
         <div className="flex-1">
-          {!category && <label className="label">Category name</label>}
+          {!category && <label htmlFor={fid("name")} className="label">Category name</label>}
           <input
+            id={fid("name")}
             name="name"
             required
             maxLength={90}
@@ -221,15 +224,16 @@ export function DiscordCategoryForm({
       <div>
         <p className="label mb-1.5">Who can see it</p>
         <DiscordRolePicker roles={roles} defaultRoleIds={category?.roleIds ?? []} counts={roleCounts} />
-        <p className="mt-1.5 text-xs text-slate-500">
+        <p className="mt-1.5 text-xs text-slate-400">
           Only the category header itself — each channel underneath still needs its own roles set
           (unless it&apos;s marked &ldquo;sync to category&rdquo;).
         </p>
       </div>
 
       <div>
-        <label className="label">Staff note (optional)</label>
+        <label htmlFor={fid("note")} className="label">Staff note (optional)</label>
         <input
+          id={fid("note")}
           name="note"
           maxLength={200}
           className="input text-sm"

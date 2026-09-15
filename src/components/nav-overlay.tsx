@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
+
+const FOCUSABLE = 'a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
 type Item = { href: string; label: string; external?: boolean };
 
@@ -24,19 +26,47 @@ export function NavOverlay({
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const closeBtnRef = useRef<HTMLButtonElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => setMounted(true), []);
   useEffect(() => setOpen(false), [pathname]);
 
+  // Move focus in on open, trap Tab/Shift+Tab within the overlay while it's
+  // open (it's a full-screen portal appended at the end of <body>, so
+  // without this Tab would walk through the covered page behind it instead
+  // of the menu), and return focus to the trigger button on close.
   useEffect(() => {
     if (!open) return;
     const prev = document.body.style.overflow;
+    const trigger = triggerRef.current;
     document.body.style.overflow = "hidden";
-    const onEsc = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
-    window.addEventListener("keydown", onEsc);
+    closeBtnRef.current?.focus();
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setOpen(false);
+        return;
+      }
+      if (e.key !== "Tab" || !overlayRef.current) return;
+      const focusables = overlayRef.current.querySelectorAll<HTMLElement>(FOCUSABLE);
+      if (focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
     return () => {
       document.body.style.overflow = prev;
-      window.removeEventListener("keydown", onEsc);
+      window.removeEventListener("keydown", onKeyDown);
+      trigger?.focus();
     };
   }, [open]);
 
@@ -45,6 +75,10 @@ export function NavOverlay({
 
   const overlay = (
     <div
+      ref={overlayRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Site menu"
       style={{
         position: "fixed",
         inset: 0,
@@ -64,6 +98,7 @@ export function NavOverlay({
         </span>
         <button
           type="button"
+          ref={closeBtnRef}
           onClick={() => setOpen(false)}
           aria-label="Close menu"
           className="font-mono text-xs uppercase tracking-widest text-slate-400 hover:text-white"
@@ -74,7 +109,7 @@ export function NavOverlay({
 
       <div className="mx-auto grid w-full max-w-[1360px] flex-1 content-start gap-10 px-[max(18px,4.5vw)] py-10 md:grid-cols-2 md:gap-16 md:py-16">
         <nav>
-          <p className="font-mono text-[0.6rem] uppercase tracking-[0.24em] text-slate-500">
+          <p className="font-mono text-[0.6rem] uppercase tracking-[0.24em] text-slate-400">
             Pages
           </p>
           <ul className="mt-4">
@@ -103,7 +138,7 @@ export function NavOverlay({
 
         {sections.length > 0 && (
           <nav>
-            <p className="font-mono text-[0.6rem] uppercase tracking-[0.24em] text-slate-500">
+            <p className="font-mono text-[0.6rem] uppercase tracking-[0.24em] text-slate-400">
               On this page
             </p>
             <ul className="mt-4">
@@ -126,7 +161,7 @@ export function NavOverlay({
       <div className="mx-auto flex w-full max-w-[1360px] flex-none flex-wrap items-center gap-3 border-t border-[rgba(233,225,209,0.18)] px-[max(18px,4.5vw)] py-6">
         {account ? (
           <>
-            <span className="mr-auto font-mono text-xs uppercase tracking-widest text-slate-500">
+            <span className="mr-auto font-mono text-xs uppercase tracking-widest text-slate-400">
               {account.name}
             </span>
             <Link href="/me" className="btn-ghost">
@@ -166,6 +201,7 @@ export function NavOverlay({
     <>
       <button
         type="button"
+        ref={triggerRef}
         onClick={() => setOpen(true)}
         aria-label="Open menu"
         aria-expanded={open}

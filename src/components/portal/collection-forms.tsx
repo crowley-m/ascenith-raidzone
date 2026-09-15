@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState, useTransition } from "react";
+import { useActionState, useEffect, useId, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   createMediaCollection,
@@ -11,6 +11,7 @@ import {
 export function NewCollectionForm() {
   const [state, action, pending] = useActionState(createMediaCollection, {});
   const ref = useRef<HTMLFormElement>(null);
+  const uid = useId();
   useEffect(() => {
     if (state.ok) ref.current?.reset();
   }, [state.ok]);
@@ -18,8 +19,8 @@ export function NewCollectionForm() {
   return (
     <form ref={ref} action={action} className="card flex flex-wrap items-end gap-3">
       <div className="flex-1">
-        <label className="label">Section title</label>
-        <input name="title" required maxLength={60} className="input" placeholder="Base tours" />
+        <label htmlFor={`${uid}-title`} className="label">Section title</label>
+        <input id={`${uid}-title`} name="title" required maxLength={60} className="input" placeholder="Base tours" />
       </div>
       <button className="btn-primary" disabled={pending}>
         {pending ? "Adding…" : "Add section"}
@@ -76,7 +77,7 @@ export function CollectionHeader({
     <div className="flex flex-wrap items-center gap-3">
       <h2 className="font-display text-xl font-bold text-white">{title}</h2>
       <button
-        className="text-xs text-slate-500 hover:text-teal"
+        className="text-xs text-slate-400 hover:text-teal"
         onClick={() => {
           setValue(title);
           setEditing(true);
@@ -85,7 +86,7 @@ export function CollectionHeader({
         rename
       </button>
       <button
-        className="text-xs text-slate-500 hover:text-red-300"
+        className="text-xs text-slate-400 hover:text-red-300"
         disabled={pending}
         onClick={() => {
           if (
@@ -102,7 +103,7 @@ export function CollectionHeader({
       >
         delete section
       </button>
-      <span className="font-mono text-[0.66rem] text-slate-600">/winners/{slug}</span>
+      <span className="font-mono text-[0.66rem] text-slate-400">/winners/{slug}</span>
     </div>
   );
 }

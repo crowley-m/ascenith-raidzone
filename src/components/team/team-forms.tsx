@@ -32,7 +32,7 @@ export function CreateTeamForm({ events = [] }: { events?: TeamEvent[] }) {
       </div>
       <div>
         <label className="label" htmlFor="eventId">
-          For which event? <span className="text-slate-500">(registers your team for it)</span>
+          For which event? <span className="text-slate-400">(registers your team for it)</span>
         </label>
         <select id="eventId" name="eventId" required className="input" defaultValue="">
           <option value="" disabled>
@@ -73,7 +73,7 @@ export function JoinTeamForm() {
           className="input py-1.5 text-sm"
           placeholder="Display name for this event (optional)"
         />
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 text-xs text-slate-400">
           Only affects this event, not your real profile name — only matters if the team&apos;s
           already registered (otherwise set it later from the roster).
         </p>
@@ -137,7 +137,7 @@ export function TeamPanel({
     <div className="card space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="font-mono text-[0.62rem] uppercase tracking-[0.2em] text-slate-500">
+          <p className="font-mono text-[0.62rem] uppercase tracking-[0.2em] text-slate-400">
             <Link href={`/events/${team.eventId}`} className="hover:text-teal">
               {team.eventLabel}
             </Link>
@@ -146,7 +146,7 @@ export function TeamPanel({
             {team.tag && <span className="text-teal">[{team.tag}] </span>}
             {team.name}
           </h3>
-          <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-slate-500">
+          <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-slate-400">
             <span>
               {team.members.length} member{team.members.length === 1 ? "" : "s"} ·{" "}
               {isLeader ? "you lead this team" : "you're a member"}
@@ -203,7 +203,7 @@ export function TeamPanel({
             </button>
           )}
         </div>
-        <p className="mt-2 text-xs text-slate-500">
+        <p className="mt-2 text-xs text-slate-400">
           Anyone with this code joins the team for this event.
         </p>
       </div>
@@ -223,7 +223,7 @@ export function TeamPanel({
                 {m.playerId === team.leaderId && (
                   <span className="badge ml-2 border-teal/40 text-teal">Leader</span>
                 )}
-                <span className="block text-xs text-slate-500">
+                <span className="block text-xs text-slate-400">
                   {m.gameUid ? `UID ${m.gameUid}` : "no UID"} {m.region ? `· ${m.region}` : ""}
                 </span>
                 {m.playerId === me && (

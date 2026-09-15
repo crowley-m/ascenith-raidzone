@@ -46,11 +46,11 @@ export default async function FactionsPage() {
                 />
                 <span className="font-medium text-slate-100">{f.name}</span>
                 {f.tag && <span className="badge">{f.tag}</span>}
-                <span className="text-xs text-slate-500">{f._count.players} players</span>
+                <span className="text-xs text-slate-400">{f._count.players} players</span>
                 {f.discordRoleId ? (
                   <span className="badge border-teal/40 text-teal">Discord role linked</span>
                 ) : (
-                  <span className="text-xs text-slate-600">no Discord role</span>
+                  <span className="text-xs text-slate-400">no Discord role</span>
                 )}
               </summary>
               <div className="mt-4 border-t border-edge pt-4">

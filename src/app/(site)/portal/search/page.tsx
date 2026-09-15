@@ -63,7 +63,7 @@ export default async function PortalSearchPage({
     <div className="space-y-8">
       <div>
         <h2 className="font-display text-xl font-bold text-white">
-          Search <span className="text-slate-500">&ldquo;{query}&rdquo;</span>
+          Search <span className="text-slate-400">&ldquo;{query}&rdquo;</span>
         </h2>
         {nothing && <p className="mt-2 text-sm text-slate-400">No matches.</p>}
       </div>
@@ -77,7 +77,7 @@ export default async function PortalSearchPage({
                 <Link href={`/portal/players/${p.id}`} className="text-slate-100 hover:text-teal">
                   {p.characterName ?? "Unnamed"}
                 </Link>
-                <span className="text-xs text-slate-500">
+                <span className="text-xs text-slate-400">
                   {p.gameUid ? `UID ${p.gameUid}` : "no UID"}
                   {p.user.discordUsername ? ` · @${p.user.discordUsername}` : ""}
                 </span>
@@ -97,7 +97,7 @@ export default async function PortalSearchPage({
                   {t.tag && <span className="text-teal">[{t.tag}] </span>}
                   {t.name}
                 </Link>
-                <span className="text-xs text-slate-500">
+                <span className="text-xs text-slate-400">
                   {t.event.mode ? `RAIDZONE ${t.event.mode}` : t.event.title}
                 </span>
               </li>
@@ -115,7 +115,7 @@ export default async function PortalSearchPage({
                 <Link href={`/portal/events/${e.id}`} className="text-slate-100 hover:text-teal">
                   {e.mode ? `RAIDZONE ${e.mode}` : e.title}
                 </Link>
-                <span className="text-xs text-slate-500">
+                <span className="text-xs text-slate-400">
                   {e.status} · {fmtDate(e.startsAt)}
                 </span>
               </li>

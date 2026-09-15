@@ -102,7 +102,7 @@ export default async function MyTeamPage() {
 
       <div className="card">
         <h3 className="font-display font-bold text-white">Create a team</h3>
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 text-xs text-slate-400">
           Picking an event here registers your team for it — you don&apos;t need a separate
           sign-up step.
         </p>
@@ -125,7 +125,7 @@ export default async function MyTeamPage() {
 
       <div className="card">
         <h3 className="font-display font-bold text-white">Join a team</h3>
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 text-xs text-slate-400">
           Paste an invite code — it&apos;ll add you to that team for its event.
         </p>
         <JoinTeamForm />

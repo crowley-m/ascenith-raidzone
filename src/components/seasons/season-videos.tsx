@@ -87,7 +87,7 @@ export function SeasonVideos({ videos }: { videos: Video[] }) {
                   rel="noreferrer"
                   className="flex items-center gap-4 py-3 transition hover:text-teal"
                 >
-                  <span className="grid h-10 w-16 shrink-0 place-items-center border border-edge bg-black text-xs text-slate-500">
+                  <span className="grid h-10 w-16 shrink-0 place-items-center border border-edge bg-black text-xs text-slate-400">
                     {v.thumb ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={v.thumb} alt="" className="h-full w-full object-cover" />
@@ -98,7 +98,7 @@ export function SeasonVideos({ videos }: { videos: Video[] }) {
                   <span className="flex-1 text-sm text-slate-200">
                     {vid.title ?? `${v.host} clip`}
                   </span>
-                  <span className="font-mono text-[0.62rem] uppercase tracking-widest text-slate-500">
+                  <span className="font-mono text-[0.62rem] uppercase tracking-widest text-slate-400">
                     {v.host} ↗
                   </span>
                 </a>

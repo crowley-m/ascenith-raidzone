@@ -16,7 +16,7 @@ export default function RegisterPage() {
 
         <div className="mt-6 border border-edge bg-panel/70 p-5">
           <DiscordButton callbackUrl="/me/profile?new=1" />
-          <p className="mt-3 text-xs text-slate-500">
+          <p className="mt-3 text-xs text-slate-400">
             Sign in with the Discord account you use in the ASCENITH RAIDZONE server. Your
             profile links automatically — then fill in your in-game details.
           </p>

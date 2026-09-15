@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+
+const FOCUSABLE = 'a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
 export type GalleryItem = {
   key: string;
@@ -35,19 +37,45 @@ export function GalleryGrid({
     (d: number) => setOpen((i) => (i === null ? i : (i + d + shown.length) % shown.length)),
     [shown.length],
   );
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeBtnRef = useRef<HTMLButtonElement>(null);
+  const triggerElRef = useRef<HTMLElement | null>(null);
 
+  // Move focus into the dialog on open, trap Tab within it, and restore
+  // focus to whichever thumbnail opened it on close — otherwise a keyboard
+  // user tabbing from the trigger walks through the (now-covered) grid
+  // behind the lightbox instead of Close/Prev/Next.
   useEffect(() => {
     if (open === null) return;
+    triggerElRef.current = document.activeElement as HTMLElement | null;
+    closeBtnRef.current?.focus();
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") close();
-      else if (e.key === "ArrowRight") step(1);
+      if (e.key === "Escape") {
+        close();
+        return;
+      }
+      if (e.key === "ArrowRight") step(1);
       else if (e.key === "ArrowLeft") step(-1);
+      else if (e.key === "Tab" && dialogRef.current) {
+        const focusables = dialogRef.current.querySelectorAll<HTMLElement>(FOCUSABLE);
+        if (focusables.length === 0) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
     };
     document.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
     return () => {
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
+      triggerElRef.current?.focus();
     };
   }, [open, close, step]);
 
@@ -92,13 +120,16 @@ export function GalleryGrid({
 
       {open !== null && shown[open] && (
         <div
+          ref={dialogRef}
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm"
           onClick={close}
           role="dialog"
           aria-modal="true"
+          aria-label={shown[open]?.alt || "Image preview"}
         >
           <button
             type="button"
+            ref={closeBtnRef}
             onClick={close}
             className="absolute right-4 top-4 font-mono text-xs uppercase tracking-widest text-slate-300 hover:text-white"
           >

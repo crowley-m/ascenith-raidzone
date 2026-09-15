@@ -44,14 +44,14 @@ export function PlayerRewardList({
             <span>
               <span className="text-teal">{r.item}{r.amount ? ` ×${r.amount}` : ""}</span>
               <span className="text-slate-400"> — {r.reason}</span>
-              {r.eventTitle && <span className="text-slate-600"> ({r.eventTitle})</span>}
+              {r.eventTitle && <span className="text-slate-400"> ({r.eventTitle})</span>}
               {r.isPublic && <span className="badge ml-2">public</span>}
             </span>
             {canGrant && (
               <span className="flex shrink-0 items-center gap-3">
                 <button
                   type="button"
-                  className="text-xs text-slate-500 hover:text-teal"
+                  className="text-xs text-slate-400 hover:text-teal"
                   onClick={() => setEditingId(r.id)}
                 >
                   Edit

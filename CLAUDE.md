@@ -1021,6 +1021,88 @@ fixes, the first a real permission-bypass:
   is a bigger change than this app's scale warrants right now), just a
   tighter version of the existing trade-off.
 
+## Accessibility pass
+
+A dedicated a11y audit (distinct from the two density/layout UI/UX passes and
+the three correctness passes above) covered keyboard navigation, focus
+management, color contrast, and form labeling across the portal and public
+pages (landing page exempt, own design system). Nine fixes:
+
+- **Skip links** — `(site)/layout.tsx` and `portal/layout.tsx` each get a
+  `sr-only focus:not-sr-only` "Skip to content" link as the first focusable
+  element, jumping past `SiteHeader`'s 7 links (and, on portal pages,
+  `PortalNav`'s 14 more) straight to `#main-content` / `#portal-content`
+  (`tabIndex={-1}` so the target itself is programmatically focusable
+  without joining the normal tab order).
+- **Mobile nav overlay gets a real focus trap** — `NavOverlay`
+  (`src/components/nav-overlay.tsx`), a full-screen `createPortal` menu,
+  previously only handled Escape; a keyboard user tabbing from the trigger
+  walked straight through the covered page behind it. Now moves focus to
+  the Close button on open, traps Tab/Shift+Tab within the overlay
+  (`role="dialog"` `aria-modal="true"`, a `FOCUSABLE` selector constant
+  used to find the wrap-around endpoints), and returns focus to the
+  trigger button on close.
+- **Gallery lightbox gets the same focus trap** — `GalleryGrid`
+  (`src/components/winners/gallery-grid.tsx`) was already marked
+  `role="dialog"` but had no focus management at all; same pattern as the
+  nav overlay (focus in on open, Tab-trap, focus back to whichever
+  thumbnail opened it on close via a `triggerElRef` captured from
+  `document.activeElement`).
+- **Contrast swept from `slate-500`/`slate-600` to `slate-400`** — both
+  measured under WCAG AA's 4.5:1 minimum against the `void`/`panel`
+  backgrounds (500 ≈4.1:1 marginal fail, 600 ≈2.57:1 badly failing) and
+  were carrying real content app-wide (labels, timestamps, legends,
+  `.eyebrow` section kickers) — 272 + 36 occurrences across 71 files, swept
+  via `sed` (protecting the two genuine `placeholder:text-slate-*` uses,
+  which are exempt). `.eyebrow` in `globals.css` updated the same way.
+- **`<th>` cells get `scope="col"`** — the 8 data tables across the portal
+  (rewards log, players, teams, events, event roster, audit, analytics,
+  `/me/rewards`) had bare unscoped headers; a screen reader moving
+  cell-by-cell through a data-heavy table didn't get the column name
+  announced. The rewards log's one genuinely empty action-column header
+  gets a `sr-only` "Actions" label instead of staying silent.
+- **Uncaptioned gallery/proof photos no longer get `alt=""`** —
+  `proofItems()`/`collectionItems()` in `src/lib/gallery.ts` fell back to
+  an empty (decorative-only) alt whenever staff skipped the optional
+  caption, even though the photo is the actual content of that grid item.
+  Now falls back to a real description ("Reward proof photo" / `"${title}
+  photo"`) instead.
+- **One input had its focus outline removed with no replacement** — the
+  Discord bulk-builder's channel-name field (`discord-category-form.tsx`)
+  used a bare `outline-none`, unlike every other input's `.input` class
+  (which pairs `focus:outline-none` with a `focus:ring`) — now gets the
+  same `focus:ring-1 focus:ring-teal/50`.
+- **`PlayerPicker` gets real combobox ARIA** — `role="combobox"` +
+  `aria-expanded`/`aria-controls`/`aria-autocomplete` on the input,
+  `role="listbox"`/`option` + `aria-activedescendant` tracking `highlight`
+  on the popup — previously a screen reader had no indication a dropdown
+  existed at all, despite full sighted-keyboard support already working.
+  Takes an optional `inputId` prop so a `<label htmlFor>` outside the
+  component can point at its internal input.
+- **~85 form labels across 16 files weren't programmatically associated
+  with their inputs** — the pattern was a sibling `<label className="label">`
+  immediately before its input/select/textarea, with no `id`/`htmlFor`
+  pairing at all (95 uses of the `.label` class app-wide, only 10 already
+  correct — `profile-form.tsx` and `team-forms.tsx` were the reference
+  pattern). Every affected component now calls `useId()` once and builds
+  `id`/`htmlFor` pairs from it (collision-safe regardless of how many times
+  the component renders per page — several of these, like
+  `DiscordCategoryForm`/`DiscordChannelForm`/`SeasonForm`/`FactionForm`,
+  render once per row in an accordion). A `<label>` that was really
+  describing a *group* of checkboxes rather than one field (event form's
+  "Other channels", the Discord category form's "Channels to create", the
+  season form's "Match videos", settings' "Social links") became a proper
+  `<fieldset>`/`<legend>` instead of a dangling label with nothing to
+  point at. Two files' matches (`events/[id]/page.tsx`'s `<dt>`,
+  `me/page.tsx`'s plain `<div>`) turned out to be false positives from the
+  audit's string-based grep — real `.label`-styled elements that were
+  never `<label>` tags to begin with, so nothing to fix there. Caught and
+  fixed one related pre-existing bug while in this code: `SeasonForm`'s
+  video-source `<datalist id="season-series">` used a static id, which
+  breaks (duplicate ids, `list` pointing at the wrong element) the moment
+  more than one season's edit form is open in the same accordion page —
+  now derived from the same per-instance `useId()`.
+
 ## Migrations
 
 Hand-write the SQL. `prisma migrate deploy` runs on web container boot (then

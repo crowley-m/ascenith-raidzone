@@ -18,7 +18,7 @@ function LoginForm() {
 
       <div className="mt-6 border border-edge bg-panel/70 p-5">
         <DiscordButton callbackUrl={callbackUrl} />
-        <p className="mt-3 text-xs text-slate-500">
+        <p className="mt-3 text-xs text-slate-400">
           ASCENITH RAIDZONE uses your Discord account — no separate password.
         </p>
       </div>

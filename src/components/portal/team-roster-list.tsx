@@ -37,7 +37,7 @@ export function TeamRosterList({
               </Link>
               {s.nickname && <span className="ml-1.5 text-xs text-teal">as {s.nickname}</span>}
               {s.player.gameUid && (
-                <span className="block text-xs text-slate-500">UID {s.player.gameUid}</span>
+                <span className="block text-xs text-slate-400">UID {s.player.gameUid}</span>
               )}
             </td>
             {canMark && (
@@ -58,7 +58,7 @@ export function TeamRosterList({
   return (
     <div className="space-y-4">
       {(groups.length > 1 || freeAgents.length > 0) && (
-        <div className="flex justify-end gap-3 font-mono text-[0.66rem] uppercase tracking-widest text-slate-500">
+        <div className="flex justify-end gap-3 font-mono text-[0.66rem] uppercase tracking-widest text-slate-400">
           <button type="button" onClick={() => setAllOpen(true)} className="hover:text-teal">
             Expand all
           </button>
@@ -77,7 +77,7 @@ export function TeamRosterList({
               {g.tag && <span className="text-teal">[{g.tag}] </span>}
               {g.name}
             </span>
-            <span className="text-xs font-normal text-slate-500">
+            <span className="text-xs font-normal text-slate-400">
               {g.members.length} player{g.members.length === 1 ? "" : "s"}
             </span>
           </summary>
@@ -89,7 +89,7 @@ export function TeamRosterList({
         <details className="border border-edge" open={allOpen}>
           <summary className="cursor-pointer list-none border-b border-edge bg-panel/50 px-3 py-2 text-sm font-bold text-white">
             Free agents — looking for a team
-            <span className="ml-2 text-xs font-normal text-slate-500">{freeAgents.length}</span>
+            <span className="ml-2 text-xs font-normal text-slate-400">{freeAgents.length}</span>
           </summary>
           {rows(freeAgents)}
         </details>

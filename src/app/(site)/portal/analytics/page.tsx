@@ -96,7 +96,7 @@ export default async function AnalyticsPage() {
         ].map((s) => (
           <div key={s.k} className="border border-edge bg-panel/40 py-3 text-center">
             <div className="font-display text-2xl font-bold text-white">{s.v}</div>
-            <div className="text-[0.6rem] uppercase tracking-wide text-slate-500">{s.k}</div>
+            <div className="text-[0.6rem] uppercase tracking-wide text-slate-400">{s.k}</div>
           </div>
         ))}
       </div>
@@ -106,7 +106,7 @@ export default async function AnalyticsPage() {
         <ul className="mt-3 space-y-1.5">
           {months.map(([m, n]) => (
             <li key={m} className="flex items-center gap-3 text-xs">
-              <span className="w-16 font-mono text-slate-500">{m}</span>
+              <span className="w-16 font-mono text-slate-400">{m}</span>
               <span
                 className="h-3 bg-teal/60"
                 style={{ width: `${(n / maxMonth) * 100}%`, minWidth: "6px" }}
@@ -122,12 +122,12 @@ export default async function AnalyticsPage() {
         <h3 className="font-display font-bold text-white">Attendance — last events</h3>
         <div className="mt-3 overflow-x-auto">
           <table className="w-full min-w-[420px] text-sm">
-            <thead className="text-left text-xs uppercase text-slate-500">
+            <thead className="text-left text-xs uppercase text-slate-400">
               <tr>
-                <th className="py-2">Event</th>
-                <th className="py-2">Signed up</th>
-                <th className="py-2">Attended</th>
-                <th className="py-2">Rate</th>
+                <th scope="col" className="py-2">Event</th>
+                <th scope="col" className="py-2">Signed up</th>
+                <th scope="col" className="py-2">Attended</th>
+                <th scope="col" className="py-2">Rate</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-edge/60">
@@ -144,7 +144,7 @@ export default async function AnalyticsPage() {
                       >
                         {e.title}
                       </Link>
-                      <span className="block text-xs text-slate-600">{fmtDate(e.startsAt)}</span>
+                      <span className="block text-xs text-slate-400">{fmtDate(e.startsAt)}</span>
                     </td>
                     <td className="py-2 text-slate-400">{e.signups.length}</td>
                     <td className="py-2 text-slate-400">{e.attendance.length}</td>
@@ -179,7 +179,7 @@ export default async function AnalyticsPage() {
             <ol className="mt-3 divide-y divide-edge/60 text-sm">
               {teamBoard.map((t, i) => (
                 <li key={t.id} className="flex items-center gap-3 py-2">
-                  <span className="w-5 text-right font-mono text-xs text-slate-500">{i + 1}</span>
+                  <span className="w-5 text-right font-mono text-xs text-slate-400">{i + 1}</span>
                   <Link href={`/portal/teams/${t.id}`} className="flex-1 text-slate-100 hover:text-teal">
                     {t.name}
                   </Link>
@@ -195,7 +195,7 @@ export default async function AnalyticsPage() {
 
       <section>
         <h3 className="font-display font-bold text-white">No-shows</h3>
-        <p className="mt-1 text-xs text-slate-500">Players marked absent after signing up.</p>
+        <p className="mt-1 text-xs text-slate-400">Players marked absent after signing up.</p>
         {noShows.length === 0 ? (
           <p className="mt-3 text-sm text-slate-400">None recorded.</p>
         ) : (

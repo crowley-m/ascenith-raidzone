@@ -31,15 +31,17 @@ async function proofItems(): Promise<GalleryItem[]> {
       select: { id: true, caption: true },
     })
     .catch(() => []);
+  // alt is real content here, not decoration — an uncaptioned proof photo
+  // still needs a non-empty description or a screen reader gets nothing
   return rows.map((r) => ({
     key: r.id,
     src: `/api/media/${r.id}`,
-    alt: r.caption ?? "",
+    alt: r.caption || "Reward proof photo",
     caption: r.caption ?? null,
   }));
 }
 
-async function collectionItems(slug: string): Promise<GalleryItem[]> {
+async function collectionItems(slug: string, title: string): Promise<GalleryItem[]> {
   const rows = await db.mediaAsset
     .findMany({
       where: { kind: slug },
@@ -50,7 +52,7 @@ async function collectionItems(slug: string): Promise<GalleryItem[]> {
   return rows.map((r) => ({
     key: r.id,
     src: `/api/media/${r.id}`,
-    alt: r.caption ?? "",
+    alt: r.caption || `${title} photo`,
     caption: r.caption ?? null,
   }));
 }
@@ -64,7 +66,7 @@ export async function winnersSections(): Promise<WinnersSection[]> {
   const [champions, proof, ...cols] = await Promise.all([
     championItems(),
     proofItems(),
-    ...collections.map((c) => collectionItems(c.slug)),
+    ...collections.map((c) => collectionItems(c.slug, c.title)),
   ]);
 
   const sections: WinnersSection[] = [

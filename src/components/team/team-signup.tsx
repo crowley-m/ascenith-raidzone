@@ -86,7 +86,7 @@ export function TeamSignup({
           </div>
         ) : (
           <>
-            <p className="font-mono text-[0.7rem] uppercase tracking-wide text-slate-500">
+            <p className="font-mono text-[0.7rem] uppercase tracking-wide text-slate-400">
               No team yet? Register as a free agent and a leader can pick you up.
             </p>
             <input
@@ -127,7 +127,7 @@ export function TeamSignup({
             <span className="ml-1 font-normal text-slate-400">as {nickname}</span>
           )}
         </span>
-        <p className="font-mono text-[0.7rem] uppercase tracking-wide text-slate-500">
+        <p className="font-mono text-[0.7rem] uppercase tracking-wide text-slate-400">
           Your team leader registers the team.
         </p>
         {state.registered && <NicknameEditor eventId={eventId} nickname={nickname} />}

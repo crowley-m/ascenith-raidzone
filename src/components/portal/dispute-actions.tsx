@@ -28,7 +28,7 @@ export function DisputeActions({
         Re-sent it
       </button>
       <button
-        className="font-mono text-[0.62rem] uppercase tracking-widest text-slate-500 hover:text-slate-300 disabled:opacity-50"
+        className="font-mono text-[0.62rem] uppercase tracking-widest text-slate-400 hover:text-slate-300 disabled:opacity-50"
         disabled={pending}
         onClick={() => run(false)}
       >

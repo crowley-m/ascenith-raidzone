@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useId, useRef, useState } from "react";
 import { grantReward } from "@/app/(site)/portal/actions";
 import { PlayerPicker } from "@/components/portal/player-picker";
 import { guessEventForReason } from "@/lib/reward-match";
@@ -21,6 +21,8 @@ export function RewardForm({
   const [resetKey, setResetKey] = useState(0);
   const [reason, setReason] = useState("");
   const [eventId, setEventId] = useState("");
+  const uid = useId();
+  const fid = (name: string) => `${uid}-${name}`;
 
   useEffect(() => {
     if (state.ok) {
@@ -42,25 +44,26 @@ export function RewardForm({
         <input type="hidden" name="playerId" value={fixedPlayerId} />
       ) : (
         <div>
-          <label className="label">Player</label>
-          <PlayerPicker key={resetKey} name="playerId" players={players ?? []} required />
+          <label htmlFor={fid("playerId")} className="label">Player</label>
+          <PlayerPicker key={resetKey} inputId={fid("playerId")} name="playerId" players={players ?? []} required />
         </div>
       )}
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
-          <label className="label">Item</label>
-          <input name="item" required className="input" placeholder="e.g. Energy Link" />
+          <label htmlFor={fid("item")} className="label">Item</label>
+          <input id={fid("item")} name="item" required className="input" placeholder="e.g. Energy Link" />
         </div>
         <div>
-          <label className="label">Amount</label>
-          <input name="amount" className="input" placeholder="e.g. 500" />
+          <label htmlFor={fid("amount")} className="label">Amount</label>
+          <input id={fid("amount")} name="amount" className="input" placeholder="e.g. 500" />
         </div>
       </div>
 
       <div>
-        <label className="label">Reason</label>
+        <label htmlFor={fid("reason")} className="label">Reason</label>
         <input
+          id={fid("reason")}
           name="reason"
           required
           className="input"
@@ -75,8 +78,9 @@ export function RewardForm({
       ) : (
         events && (
           <div>
-            <label className="label">Which event was this for?</label>
+            <label htmlFor={fid("eventId")} className="label">Which event was this for?</label>
             <select
+              id={fid("eventId")}
               name="eventId"
               className="input"
               value={eventId}
@@ -87,7 +91,7 @@ export function RewardForm({
                 <option key={e.id} value={e.id}>{e.label}</option>
               ))}
             </select>
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-1 text-xs text-slate-400">
               Leave it on &ldquo;Not tied to a specific event&rdquo; only if that&apos;s true —
               otherwise this reward won&apos;t show up on that event&apos;s payout sheet.
             </p>
@@ -108,14 +112,17 @@ export function RewardForm({
       )}
 
       <div>
-        <label className="label">Proof image (optional)</label>
+        <label htmlFor={fid("proofImage")} className="label">Proof image (optional)</label>
         <input
+          id={fid("proofImage")}
           type="file"
           name="proofImage"
           accept="image/png,image/jpeg,image/webp,image/gif"
           className="block w-full text-sm text-slate-300 file:mr-3 file:border file:border-edge file:bg-void file:px-3 file:py-1.5 file:text-xs file:uppercase file:tracking-wide file:text-slate-200"
         />
+        <label htmlFor={fid("proofImageUrl")} className="sr-only">Proof image URL</label>
         <input
+          id={fid("proofImageUrl")}
           name="proofImageUrl"
           className="input mt-2"
           placeholder="…or paste an image URL"

@@ -89,7 +89,7 @@ export default async function WinnersPage() {
               {s.items.length > WINNERS_SECTION_LIMIT && (
                 <Link
                   href={`/winners/${s.slug}`}
-                  className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-slate-500 hover:text-teal"
+                  className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-slate-400 hover:text-teal"
                 >
                   View all {s.items.length} →
                 </Link>
@@ -115,7 +115,7 @@ export default async function WinnersPage() {
               {eventResultCount > events.length && (
                 <Link
                   href="/events"
-                  className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-slate-500 hover:text-teal"
+                  className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-slate-400 hover:text-teal"
                 >
                   View all events →
                 </Link>
@@ -139,7 +139,7 @@ export default async function WinnersPage() {
                         {e.mode ? `RAIDZONE ${e.mode}` : e.title}
                       </Link>
                     </h3>
-                    <span className="text-xs text-slate-500">{fmtDate(e.startsAt)}</span>
+                    <span className="text-xs text-slate-400">{fmtDate(e.startsAt)}</span>
                   </div>
                   <ol className="mt-4 grid gap-3 sm:grid-cols-3">
                     {ev.placements.map((p) => (
@@ -162,7 +162,7 @@ export default async function WinnersPage() {
                     ))}
                   </ol>
                   {e.bonusText && (
-                    <p className="mt-3 text-xs text-slate-500">Bonus pool: {e.bonusText}</p>
+                    <p className="mt-3 text-xs text-slate-400">Bonus pool: {e.bonusText}</p>
                   )}
                 </section>
               );
@@ -180,7 +180,7 @@ export default async function WinnersPage() {
                           {rr.player.characterName ?? "A player"} — {r.item}
                           {r.amount ? ` ×${r.amount}` : ""}
                         </span>
-                        <span className="text-slate-500">{r.reason}</span>
+                        <span className="text-slate-400">{r.reason}</span>
                       </li>
                     );
                   })}

@@ -59,13 +59,13 @@ export default async function FactionsPage() {
                   ].map(([k, v]) => (
                     <div key={k as string} className="border border-edge bg-void/50 py-2">
                       <div className="font-poster text-2xl text-white">{v as number}</div>
-                      <div className="text-[0.6rem] uppercase tracking-wide text-slate-500">
+                      <div className="text-[0.6rem] uppercase tracking-wide text-slate-400">
                         {k as string}
                       </div>
                     </div>
                   ))}
                 </dl>
-                <p className="mt-3 font-mono text-[0.66rem] uppercase tracking-wide text-slate-500">
+                <p className="mt-3 font-mono text-[0.66rem] uppercase tracking-wide text-slate-400">
                   {f.hasRole ? "Discord role linked" : "no Discord role"}
                 </p>
               </div>
@@ -83,7 +83,7 @@ export default async function FactionsPage() {
                   key={s.slug}
                   className="grid grid-cols-[2.5rem_1fr_auto] items-center gap-4 py-3"
                 >
-                  <span className="font-poster text-2xl text-slate-600">S{s.number}</span>
+                  <span className="font-poster text-2xl text-slate-400">S{s.number}</span>
                   <div className="min-w-0">
                     <Link
                       href={`/seasons/${s.slug}`}
@@ -91,7 +91,7 @@ export default async function FactionsPage() {
                     >
                       {s.name ?? `Faction War — Season ${s.number}`}
                     </Link>
-                    <p className="mt-0.5 font-mono text-[0.68rem] uppercase tracking-wide text-slate-500">
+                    <p className="mt-0.5 font-mono text-[0.68rem] uppercase tracking-wide text-slate-400">
                       {s.championName ? (
                         <>
                           🏆 {s.championName}
@@ -118,12 +118,12 @@ export default async function FactionsPage() {
           <section key={f.id} data-reveal className="mt-16">
             <div className="flex items-end justify-between gap-6 border-b-2 border-white/20 pb-3">
               <div className="flex items-baseline gap-4">
-                <span className="font-mono text-sm text-slate-600">{ROMAN[i + 1] ?? i + 1}</span>
+                <span className="font-mono text-sm text-slate-400">{ROMAN[i + 1] ?? i + 1}</span>
                 <h2 className="font-poster text-3xl uppercase leading-none text-white sm:text-5xl">
                   {f.name}
                 </h2>
               </div>
-              <span className="shrink-0 pb-1 font-mono text-[0.62rem] uppercase tracking-[0.2em] text-slate-500">
+              <span className="shrink-0 pb-1 font-mono text-[0.62rem] uppercase tracking-[0.2em] text-slate-400">
                 {f.memberCount} raider{f.memberCount === 1 ? "" : "s"}
               </span>
             </div>
@@ -137,7 +137,7 @@ export default async function FactionsPage() {
                     <Link href={`/players/${m.id}`} className="text-slate-100 hover:text-teal">
                       {m.name}
                     </Link>
-                    <span className="font-mono text-xs text-slate-500">{m.attended} attended</span>
+                    <span className="font-mono text-xs text-slate-400">{m.attended} attended</span>
                   </li>
                 ))}
               </CappedList>

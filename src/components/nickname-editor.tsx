@@ -61,7 +61,7 @@ export function NicknameEditor({
       </button>
       <button
         type="button"
-        className="font-mono text-[0.66rem] uppercase text-slate-500 hover:text-cream"
+        className="font-mono text-[0.66rem] uppercase text-slate-400 hover:text-cream"
         onClick={() => setEditing(false)}
         disabled={pending}
       >

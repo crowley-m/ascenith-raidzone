@@ -115,7 +115,7 @@ export function DiscordPreview({ event, signupCount = 0 }: { event: Event; signu
 
   return (
     <div className="space-y-4">
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-slate-400">
         Exactly what the bot posts to each channel. Build the space, or use{" "}
         <span className="text-slate-300">Sync channels</span> after edits.
       </p>
@@ -172,7 +172,7 @@ export function DiscordPreview({ event, signupCount = 0 }: { event: Event; signu
                       />
                     )}
                     {e.footer?.text && (
-                      <div className="mt-2 text-[0.7rem] text-slate-500">{e.footer.text}</div>
+                      <div className="mt-2 text-[0.7rem] text-slate-400">{e.footer.text}</div>
                     )}
                   </div>
                 ) : (

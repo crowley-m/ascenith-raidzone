@@ -57,7 +57,7 @@ export function RewardReceipt({
         {pending ? "…" : "Mark received"}
       </button>
       <button
-        className="font-mono text-[0.62rem] uppercase tracking-widest text-slate-500 hover:text-ember disabled:opacity-50"
+        className="font-mono text-[0.62rem] uppercase tracking-widest text-slate-400 hover:text-ember disabled:opacity-50"
         disabled={pending}
         onClick={() => run(() => disputeReward(rewardId, true))}
         title="Tell staff this never arrived in-game"

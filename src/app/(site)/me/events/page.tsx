@@ -32,7 +32,7 @@ export default async function MyEventsPage() {
                 <Link href={`/events/${s.eventId}`} className="font-medium text-slate-100 hover:text-teal">
                   {s.event.title}
                 </Link>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-slate-400">
                   {fmtInZone(s.event.startsAt, s.event.timezone ?? DEFAULT_EVENT_TZ)}
                   {s.state === "WAITLIST" && <span className="ml-2 text-ember">waitlist</span>}
                   {s.nickname && <span className="ml-2 text-teal">as {s.nickname}</span>}
@@ -59,7 +59,7 @@ export default async function MyEventsPage() {
                 <Link href={`/events/${s.eventId}`} className="text-slate-300 hover:text-teal">
                   {s.event.title}
                 </Link>
-                <span className="text-slate-500">{fmtInZone(s.event.startsAt, s.event.timezone ?? DEFAULT_EVENT_TZ)}</span>
+                <span className="text-slate-400">{fmtInZone(s.event.startsAt, s.event.timezone ?? DEFAULT_EVENT_TZ)}</span>
               </li>
             ))}
           </ul>

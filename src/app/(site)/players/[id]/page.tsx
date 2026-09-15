@@ -116,7 +116,7 @@ export default async function PublicPlayerPage({
           ].map((s) => (
             <div key={s.k} className="border border-edge bg-panel/40 py-4 text-center">
               <div className="font-poster text-3xl text-white tabular-nums">{s.v}</div>
-              <div className="mt-1 text-[0.6rem] uppercase tracking-wide text-slate-500">{s.k}</div>
+              <div className="mt-1 text-[0.6rem] uppercase tracking-wide text-slate-400">{s.k}</div>
             </div>
           ))}
         </div>
@@ -132,7 +132,7 @@ export default async function PublicPlayerPage({
                     {t.name}
                     {t.lead && <span className="badge ml-2 border-teal/40 text-teal">Leader</span>}
                   </Link>
-                  <span className="text-slate-500">
+                  <span className="text-slate-400">
                     {t.event.mode ? `RAIDZONE ${t.event.mode}` : t.event.title}
                   </span>
                 </li>

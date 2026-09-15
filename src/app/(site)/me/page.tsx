@@ -172,7 +172,7 @@ export default async function MeOverviewPage() {
                 <Link href={`/events/${s.eventId}`} className="text-slate-200 hover:text-teal">
                   {s.event.title}
                 </Link>
-                <span className="text-slate-500">
+                <span className="text-slate-400">
                   {fmtInZone(s.event.startsAt, s.event.timezone ?? DEFAULT_EVENT_TZ)}
                   {s.state === "WAITLIST" && (
                     <span className="ml-2 text-ember">waitlist #{waitlistPos.get(s.id) ?? "?"}</span>
@@ -199,7 +199,7 @@ export default async function MeOverviewPage() {
                       <span className="badge ml-2 border-teal/40 text-teal">Leader</span>
                     )}
                   </span>
-                  <span className="text-slate-500">
+                  <span className="text-slate-400">
                     {t.event.mode ? `RAIDZONE ${t.event.mode}` : t.event.title} · {t.members.length}p
                   </span>
                 </li>
@@ -220,7 +220,7 @@ export default async function MeOverviewPage() {
             {player.rewards.map((r) => (
               <li key={r.id} className="py-3 text-sm">
                 <span className="text-teal">{r.item}{r.amount ? ` ×${r.amount}` : ""}</span>
-                <span className="text-slate-500"> — {r.reason}</span>
+                <span className="text-slate-400"> — {r.reason}</span>
                 {r.receivedAt && <span className="ml-2 text-xs text-teal">✓ received</span>}
                 {!r.receivedAt && r.disputedAt && (
                   <span className="ml-2 text-xs text-ember">⚠ reported missing</span>
@@ -243,7 +243,7 @@ export default async function MeOverviewPage() {
           <dl className="mt-3 space-y-2 text-sm">
             {fields.map(([k, v]) => (
               <div key={k as string} className="flex justify-between gap-4">
-                <dt className="text-slate-500">{k}</dt>
+                <dt className="text-slate-400">{k}</dt>
                 <dd className="text-right text-slate-200">{v as string}</dd>
               </div>
             ))}
@@ -253,11 +253,11 @@ export default async function MeOverviewPage() {
           <dl className="grid grid-cols-2 gap-3 text-center">
             <div>
               <dd className="font-display text-2xl font-bold text-white">{player._count.attendance}</dd>
-              <dt className="text-xs text-slate-500">events attended</dt>
+              <dt className="text-xs text-slate-400">events attended</dt>
             </div>
             <div>
               <dd className="font-display text-2xl font-bold text-white">{player._count.rewards}</dd>
-              <dt className="text-xs text-slate-500">rewards</dt>
+              <dt className="text-xs text-slate-400">rewards</dt>
             </div>
           </dl>
         </div>
@@ -267,7 +267,7 @@ export default async function MeOverviewPage() {
         <div className="card">
           <div className="label mb-3">Notifications</div>
           <DmToggle initial={player.dmNotifications} />
-          <p className="mt-2 text-xs text-slate-500">
+          <p className="mt-2 text-xs text-slate-400">
             Waitlist promotions, event reminders and reward confirmations, sent to your Discord DMs.
           </p>
         </div>

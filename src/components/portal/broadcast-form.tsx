@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useEffect, useId, useRef } from "react";
 import { postBroadcast } from "@/app/(site)/portal/actions";
 
 type Channel = { id: string; name: string };
@@ -14,6 +14,8 @@ export function BroadcastForm({
 }) {
   const [state, action, pending] = useActionState(postBroadcast, {});
   const ref = useRef<HTMLFormElement>(null);
+  const uid = useId();
+  const fid = (name: string) => `${uid}-${name}`;
   useEffect(() => {
     if (state.ok) ref.current?.reset();
   }, [state.ok]);
@@ -21,9 +23,9 @@ export function BroadcastForm({
   return (
     <form ref={ref} action={action} className="grid gap-4">
       <div>
-        <label className="label">Channel</label>
+        <label htmlFor={fid("channelId")} className="label">Channel</label>
         {channels.length > 0 ? (
-          <select name="channelId" className="input" defaultValue={defaultChannelId}>
+          <select id={fid("channelId")} name="channelId" className="input" defaultValue={defaultChannelId}>
             {channels.map((c) => (
               <option key={c.id} value={c.id}>
                 #{c.name}
@@ -32,6 +34,7 @@ export function BroadcastForm({
           </select>
         ) : (
           <input
+            id={fid("channelId")}
             name="channelId"
             className="input font-mono text-xs"
             placeholder="Channel ID"
@@ -39,7 +42,7 @@ export function BroadcastForm({
           />
         )}
         {channels.length === 0 && (
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-1 text-xs text-slate-400">
             Couldn&apos;t list channels — paste a channel ID (Developer Mode → right-click channel →
             Copy Channel ID).
           </p>
@@ -47,35 +50,39 @@ export function BroadcastForm({
       </div>
 
       <div>
-        <label className="label">Title (optional)</label>
-        <input name="title" className="input" maxLength={200} placeholder="Server maintenance" />
+        <label htmlFor={fid("title")} className="label">Title (optional)</label>
+        <input id={fid("title")} name="title" className="input" maxLength={200} placeholder="Server maintenance" />
       </div>
 
       <div>
-        <label className="label">Message</label>
+        <label htmlFor={fid("body")} className="label">Message</label>
         <textarea
+          id={fid("body")}
           name="body"
           rows={6}
           className="input"
           maxLength={4000}
           placeholder="What's happening…"
         />
-        <p className="mt-1 text-xs text-slate-500">Discord markdown works. Up to 4000 characters.</p>
+        <p className="mt-1 text-xs text-slate-400">Discord markdown works. Up to 4000 characters.</p>
       </div>
 
       <div>
-        <label className="label">Image (optional)</label>
+        <label htmlFor={fid("imageFile")} className="label">Image (optional)</label>
         <input
+          id={fid("imageFile")}
           name="imageFile"
           type="file"
           accept="image/png,image/jpeg,image/webp,image/gif"
           className="input text-xs file:mr-3 file:border-0 file:bg-edge file:px-3 file:py-1.5 file:text-slate-200"
         />
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 text-xs text-slate-400">
           Upload an image, or paste a URL below — uploading replaces the URL. Attaches even without
           &ldquo;Post as an embed&rdquo;.
         </p>
+        <label htmlFor={fid("imageUrl")} className="sr-only">Image URL</label>
         <input
+          id={fid("imageUrl")}
           name="imageUrl"
           type="url"
           className="input mt-2 font-mono text-xs"

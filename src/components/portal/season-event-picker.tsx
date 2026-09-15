@@ -31,7 +31,7 @@ export function SeasonEventPicker({
     <div className="mt-4 border-t border-edge pt-4">
       <p className="label mb-2">Events in this season</p>
       {events.length === 0 ? (
-        <p className="text-xs text-slate-500">No events created yet.</p>
+        <p className="text-xs text-slate-400">No events created yet.</p>
       ) : (
         <ul className="space-y-1.5">
           {events.map((e) => {
@@ -47,7 +47,7 @@ export function SeasonEventPicker({
                   />
                   <span>{e.label}</span>
                   {otherSeason && !checked.has(e.id) && (
-                    <span className="text-[0.65rem] uppercase tracking-wide text-slate-600">
+                    <span className="text-[0.65rem] uppercase tracking-wide text-slate-400">
                       in another season
                     </span>
                   )}

@@ -60,7 +60,7 @@ export function BracketBoard({ eventId, bracket: initial }: { eventId: string; b
   return (
     <div className="overflow-x-auto pb-2">
       {!bracket.champion && (
-        <div className="mb-3 flex items-center gap-1.5 font-mono text-[0.65rem] uppercase tracking-[0.14em] text-slate-500">
+        <div className="mb-3 flex items-center gap-1.5 font-mono text-[0.65rem] uppercase tracking-[0.14em] text-slate-400">
           <span className="relative flex h-1.5 w-1.5">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-teal/60" />
             <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-teal" />
@@ -74,7 +74,7 @@ export function BracketBoard({ eventId, bracket: initial }: { eventId: string; b
           <div
             key={r.round}
             style={{ width: COL, marginLeft: i === 0 ? 0 : CONN }}
-            className="font-mono text-[0.66rem] font-bold uppercase tracking-[0.18em] text-slate-500"
+            className="font-mono text-[0.66rem] font-bold uppercase tracking-[0.18em] text-slate-400"
           >
             {r.name}
           </div>
@@ -151,12 +151,12 @@ function Side({
   return (
     <div
       className={`flex items-center justify-between gap-2 px-3 py-2 ${
-        won ? "text-white" : decided ? "text-slate-500" : "text-slate-300"
+        won ? "text-white" : decided ? "text-slate-400" : "text-slate-300"
       }`}
     >
       <span className="flex items-center gap-1.5 truncate">
         {won && <span className="text-teal">▸</span>}
-        {label ?? <span className="text-slate-600">—</span>}
+        {label ?? <span className="text-slate-400">—</span>}
       </span>
       {score !== null && <span className="font-mono tabular-nums text-slate-400">{score}</span>}
     </div>

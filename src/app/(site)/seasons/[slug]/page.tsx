@@ -63,7 +63,7 @@ export default async function SeasonPage({
           <p className="eyebrow">{season.series}</p>
           <h1 className="mt-2 font-poster text-5xl uppercase leading-[0.95] text-white sm:text-6xl">
             Season {season.number}
-            {season.name ? <span className="text-slate-500"> · {season.name}</span> : null}
+            {season.name ? <span className="text-slate-400"> · {season.name}</span> : null}
           </h1>
         </div>
 
@@ -134,7 +134,7 @@ export default async function SeasonPage({
                           {e.mode ? `RAIDZONE ${e.mode}` : e.title}
                         </Link>
                       </h3>
-                      <span className="text-xs text-slate-500">{fmtDate(e.startsAt)}</span>
+                      <span className="text-xs text-slate-400">{fmtDate(e.startsAt)}</span>
                     </div>
                     {ev.placements.length > 0 && (
                       <ol className="mt-3 grid gap-3 sm:grid-cols-3">

@@ -38,7 +38,7 @@ export function RewardEditForm({
   return (
     <form action={action} className="grid gap-2 border border-edge bg-panel-2 p-3">
       <input type="hidden" name="id" value={reward.id} />
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-slate-400">
         {note ?? "No notification is re-sent to the player."}
       </p>
       <div className="grid gap-2 sm:grid-cols-2">

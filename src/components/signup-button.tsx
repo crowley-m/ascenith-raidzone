@@ -59,7 +59,7 @@ export function SignupButton({
   return (
     <div className="flex flex-col items-start gap-2">
       <div>
-        <label className="mb-1 block font-mono text-[0.66rem] uppercase tracking-widest text-slate-500">
+        <label className="mb-1 block font-mono text-[0.66rem] uppercase tracking-widest text-slate-400">
           Display name (optional — blank uses your profile name)
         </label>
         <input

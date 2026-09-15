@@ -92,7 +92,7 @@ export function FreeAgentBoard({ agents }: { agents: FreeAgent[] }) {
           <li key={a.id} className="border border-edge bg-panel/40 px-3 py-2 text-sm">
             <div className="flex flex-wrap items-baseline gap-x-2">
               <span className="font-bold text-white">{a.name}</span>
-              <span className="font-mono text-[0.65rem] uppercase tracking-wide text-slate-500">
+              <span className="font-mono text-[0.65rem] uppercase tracking-wide text-slate-400">
                 {[a.region, a.timezone, a.platform ? (PLATFORM_LABEL[a.platform] ?? a.platform) : null]
                   .filter(Boolean)
                   .join(" · ")}
@@ -102,7 +102,7 @@ export function FreeAgentBoard({ agents }: { agents: FreeAgent[] }) {
           </li>
         ))}
         {filtered.length === 0 && (
-          <li className="font-mono text-xs uppercase text-slate-500">
+          <li className="font-mono text-xs uppercase text-slate-400">
             {active ? "No free agents match those filters." : "No free agents right now."}
           </li>
         )}

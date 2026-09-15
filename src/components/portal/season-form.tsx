@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useId, useRef, useState } from "react";
 import { saveSeason } from "@/app/(site)/portal/actions";
 
 export type SeasonInit = {
@@ -27,15 +27,17 @@ function VideoListBuilder({ initial }: { initial: { url: string; title: string |
   const [rows, setRows] = useState<VideoRow[]>(() =>
     initial.map((v) => ({ id: nextVideoRowId++, url: v.url, title: v.title ?? "" })),
   );
-
+  const uid = useId();
   return (
-    <div>
-      <label className="label">Match videos (optional)</label>
+    <fieldset>
+      <legend className="label">Match videos (optional)</legend>
       <div className="space-y-2">
         {rows.map((row, i) => (
           <div key={row.id} className="flex flex-wrap items-center gap-2 border border-edge/60 bg-void/40 p-2.5">
-            <span className="text-xs text-slate-600">{i === 0 ? "★" : "#" + (i + 1)}</span>
+            <span className="text-xs text-slate-400">{i === 0 ? "★" : "#" + (i + 1)}</span>
+            <label htmlFor={`${uid}-url-${row.id}`} className="sr-only">Video URL</label>
             <input
+              id={`${uid}-url-${row.id}`}
               name="videoUrls"
               value={row.url}
               onChange={(e) => {
@@ -45,7 +47,9 @@ function VideoListBuilder({ initial }: { initial: { url: string; title: string |
               className="input min-w-[14rem] flex-1 font-mono text-xs"
               placeholder="https://youtu.be/…"
             />
+            <label htmlFor={`${uid}-title-${row.id}`} className="sr-only">Video title</label>
             <input
+              id={`${uid}-title-${row.id}`}
               name="videoTitles"
               value={row.title}
               onChange={(e) => {
@@ -58,7 +62,7 @@ function VideoListBuilder({ initial }: { initial: { url: string; title: string |
             <button
               type="button"
               onClick={() => setRows((rs) => rs.filter((r) => r.id !== row.id))}
-              className="px-1 text-slate-500 hover:text-ember"
+              className="px-1 text-slate-400 hover:text-ember"
               aria-label="Remove video"
             >
               ×
@@ -73,11 +77,11 @@ function VideoListBuilder({ initial }: { initial: { url: string; title: string |
           + Add video
         </button>
       </div>
-      <p className="mt-1.5 text-xs text-slate-500">
+      <p className="mt-1.5 text-xs text-slate-400">
         YouTube plays inline on the season page; TikTok / Twitch link out. First one (★) is
         featured.
       </p>
-    </div>
+    </fieldset>
   );
 }
 
@@ -95,6 +99,8 @@ export function SeasonForm({
   const [state, action, pending] = useActionState(saveSeason, {});
   const ref = useRef<HTMLFormElement>(null);
   const [videoBuilderKey, setVideoBuilderKey] = useState(0);
+  const uid = useId();
+  const fid = (name: string) => `${uid}-${name}`;
 
   useEffect(() => {
     if (state.ok && !season) {
@@ -110,24 +116,26 @@ export function SeasonForm({
 
       <div className="grid gap-3 sm:grid-cols-[1fr_5rem_1fr]">
         <div>
-          <label className="label">Series</label>
+          <label htmlFor={fid("series")} className="label">Series</label>
           <input
+            id={fid("series")}
             name="series"
             required
-            list="season-series"
+            list={fid("series-list")}
             className="input"
             defaultValue={season?.series ?? ""}
             placeholder="Duo-Squad Tournament"
           />
-          <datalist id="season-series">
+          <datalist id={fid("series-list")}>
             {seriesList.map((sr) => (
               <option key={sr} value={sr} />
             ))}
           </datalist>
         </div>
         <div>
-          <label className="label">Season #</label>
+          <label htmlFor={fid("number")} className="label">Season #</label>
           <input
+            id={fid("number")}
             name="number"
             type="number"
             min={1}
@@ -137,8 +145,9 @@ export function SeasonForm({
           />
         </div>
         <div>
-          <label className="label">URL slug</label>
+          <label htmlFor={fid("slug")} className="label">URL slug</label>
           <input
+            id={fid("slug")}
             name="slug"
             required
             className="input font-mono text-xs"
@@ -150,12 +159,12 @@ export function SeasonForm({
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
-          <label className="label">Name (optional)</label>
-          <input name="name" className="input" defaultValue={season?.name ?? ""} placeholder="Ascension" />
+          <label htmlFor={fid("name")} className="label">Name (optional)</label>
+          <input id={fid("name")} name="name" className="input" defaultValue={season?.name ?? ""} placeholder="Ascension" />
         </div>
         <div>
-          <label className="label">Status</label>
-          <select name="status" className="input" defaultValue={season?.status ?? "UPCOMING"}>
+          <label htmlFor={fid("status")} className="label">Status</label>
+          <select id={fid("status")} name="status" className="input" defaultValue={season?.status ?? "UPCOMING"}>
             <option value="UPCOMING">Upcoming</option>
             <option value="ACTIVE">Active</option>
             <option value="ENDED">Ended</option>
@@ -165,19 +174,20 @@ export function SeasonForm({
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
-          <label className="label">Starts</label>
-          <input name="startsAt" type="date" className="input" defaultValue={season?.startsAt ?? ""} />
+          <label htmlFor={fid("startsAt")} className="label">Starts</label>
+          <input id={fid("startsAt")} name="startsAt" type="date" className="input" defaultValue={season?.startsAt ?? ""} />
         </div>
         <div>
-          <label className="label">Ends</label>
-          <input name="endsAt" type="date" className="input" defaultValue={season?.endsAt ?? ""} />
+          <label htmlFor={fid("endsAt")} className="label">Ends</label>
+          <input id={fid("endsAt")} name="endsAt" type="date" className="input" defaultValue={season?.endsAt ?? ""} />
         </div>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
-          <label className="label">Prize pool</label>
+          <label htmlFor={fid("prizePoolText")} className="label">Prize pool</label>
           <input
+            id={fid("prizePoolText")}
             name="prizePoolText"
             className="input"
             defaultValue={season?.prizePoolText ?? ""}
@@ -185,8 +195,9 @@ export function SeasonForm({
           />
         </div>
         <div>
-          <label className="label">Champion</label>
+          <label htmlFor={fid("championName")} className="label">Champion</label>
           <input
+            id={fid("championName")}
             name="championName"
             className="input"
             defaultValue={season?.championName ?? ""}
@@ -196,27 +207,28 @@ export function SeasonForm({
       </div>
 
       <div>
-        <label className="label">Champion note (optional line under the name)</label>
-        <input name="championNote" className="input" defaultValue={season?.championNote ?? ""} />
+        <label htmlFor={fid("championNote")} className="label">Champion note (optional line under the name)</label>
+        <input id={fid("championNote")} name="championNote" className="input" defaultValue={season?.championNote ?? ""} />
       </div>
 
       <div>
-        <label className="label">Poster URL</label>
+        <label htmlFor={fid("posterUrl")} className="label">Poster URL</label>
         <input
+          id={fid("posterUrl")}
           name="posterUrl"
           className="input font-mono text-xs"
           defaultValue={season?.posterUrl ?? ""}
           placeholder="/media/champion-season-3.webp"
         />
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 text-xs text-slate-400">
           Drop the file in <code>public/media</code> and use <code>/media/name.webp</code>, or paste a{" "}
           <code>/api/media/&lt;id&gt;</code> URL from an upload.
         </p>
       </div>
 
       <div>
-        <label className="label">Blurb (optional)</label>
-        <textarea name="blurb" rows={2} className="input" defaultValue={season?.blurb ?? ""} />
+        <label htmlFor={fid("blurb")} className="label">Blurb (optional)</label>
+        <textarea id={fid("blurb")} name="blurb" rows={2} className="input" defaultValue={season?.blurb ?? ""} />
       </div>
 
       <VideoListBuilder key={videoBuilderKey} initial={season?.videos ?? []} />

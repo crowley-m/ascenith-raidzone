@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 /**
  * Searchable + scrollable player combobox. A plain <select> with 100+ players
@@ -12,11 +12,14 @@ export function PlayerPicker({
   players,
   required,
   defaultValue,
+  inputId,
 }: {
   name: string;
   players: { id: string; label: string }[];
   required?: boolean;
   defaultValue?: string;
+  /** DOM id for the visible text input, so a <label htmlFor> outside can point to it. */
+  inputId?: string;
 }) {
   const [id, setId] = useState(defaultValue ?? "");
   const [query, setQuery] = useState("");
@@ -24,6 +27,9 @@ export function PlayerPicker({
   const [highlight, setHighlight] = useState(0);
   const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const uid = useId();
+  const listboxId = `${uid}-listbox`;
+  const optionId = (pid: string) => `${uid}-opt-${pid}`;
 
   const selected = useMemo(() => players.find((p) => p.id === id), [players, id]);
 
@@ -72,8 +78,14 @@ export function PlayerPicker({
     <div ref={rootRef} className="relative">
       <input type="hidden" name={name} value={id} required={required} />
       <input
+        id={inputId}
         ref={inputRef}
         className="input"
+        role="combobox"
+        aria-expanded={open}
+        aria-controls={listboxId}
+        aria-autocomplete="list"
+        aria-activedescendant={open && filtered[highlight] ? optionId(filtered[highlight].id) : undefined}
         placeholder="Type to search, or click to browse…"
         value={open ? query : selected?.label ?? ""}
         onFocus={() => {
@@ -89,14 +101,19 @@ export function PlayerPicker({
         onKeyDown={onKeyDown}
       />
       {open && (
-        <ul className="absolute z-20 mt-1 max-h-64 w-full overflow-y-auto border border-edge bg-panel text-sm shadow-lg">
+        <ul
+          id={listboxId}
+          role="listbox"
+          className="absolute z-20 mt-1 max-h-64 w-full overflow-y-auto border border-edge bg-panel text-sm shadow-lg"
+        >
           {filtered.length === 0 && (
-            <li className="px-3 py-2 text-slate-500">No players match.</li>
+            <li className="px-3 py-2 text-slate-400">No players match.</li>
           )}
           {filtered.map((p, i) => (
-            <li key={p.id}>
+            <li key={p.id} id={optionId(p.id)} role="option" aria-selected={i === highlight}>
               <button
                 type="button"
+                tabIndex={-1}
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => pick(p)}
                 className={`block w-full px-3 py-1.5 text-left ${

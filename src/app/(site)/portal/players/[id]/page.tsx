@@ -82,7 +82,7 @@ export default async function PlayerDetailPage({
 
   return (
     <div>
-      <Link href="/portal/players" className="text-sm text-slate-500 hover:text-white">← Players</Link>
+      <Link href="/portal/players" className="text-sm text-slate-400 hover:text-white">← Players</Link>
 
       <div className="mt-3 flex flex-wrap items-center justify-between gap-4">
         <h2 className="font-display text-2xl font-bold text-white">
@@ -101,7 +101,7 @@ export default async function PlayerDetailPage({
           <dl className="mt-3 space-y-2 text-sm">
             {info.map(([k, v]) => (
               <div key={k} className="flex justify-between gap-4">
-                <dt className="text-slate-500">{k}</dt>
+                <dt className="text-slate-400">{k}</dt>
                 <dd className="text-right text-slate-200">{v}</dd>
               </div>
             ))}
@@ -125,7 +125,7 @@ export default async function PlayerDetailPage({
                         <span className="ml-1.5 text-xs text-teal">as {s.nickname}</span>
                       )}
                     </span>
-                    <span className="text-slate-500">
+                    <span className="text-slate-400">
                       {fmtDate(s.event.startsAt)}
                       {" · "}
                       {s.state === "WITHDRAWN"
@@ -175,7 +175,7 @@ export default async function PlayerDetailPage({
               <CappedList>
                 {player.notes.map((n) => (
                   <li key={n.id} className="rounded-md border border-edge/60 bg-void/40 p-3">
-                    <div className="flex items-center justify-between text-xs text-slate-500">
+                    <div className="flex items-center justify-between text-xs text-slate-400">
                       <span>
                         {n.pinned && <span className="text-ember">📌 </span>}
                         {maskName(n.author.name ?? n.author.email, n.authorId, hidden)} ·{" "}
@@ -185,7 +185,7 @@ export default async function PlayerDetailPage({
                         <ConfirmButton
                           action={deleteNote.bind(null, n.id, player.id)}
                           confirm="Delete note?"
-                          className="text-xs text-slate-500 hover:text-red-300"
+                          className="text-xs text-slate-400 hover:text-red-300"
                         >
                           delete
                         </ConfirmButton>
@@ -221,7 +221,7 @@ export default async function PlayerDetailPage({
                       </span>{" "}
                       <span className="text-slate-200">{f.reason}</span>
                     </span>
-                    <span className="flex shrink-0 items-center gap-3 text-xs text-slate-500">
+                    <span className="flex shrink-0 items-center gap-3 text-xs text-slate-400">
                       {maskName(f.author.name ?? f.author.email, f.authorId, hidden)} ·{" "}
                       {fmtDate(f.createdAt)}
                       {can(user.role, "flag:write") && (
@@ -232,7 +232,7 @@ export default async function PlayerDetailPage({
                               ? "Delete this ban flag? The player's status stays BANNED until you change it above."
                               : "Delete this flag?"
                           }
-                          className="text-slate-500 hover:text-red-300"
+                          className="text-slate-400 hover:text-red-300"
                         >
                           delete
                         </ConfirmButton>

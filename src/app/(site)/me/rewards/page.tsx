@@ -30,13 +30,13 @@ export default async function MyRewardsPage() {
       ) : (
         <div className="mt-4 overflow-x-auto">
           <table className="w-full min-w-[520px] text-sm">
-            <thead className="text-left text-xs uppercase text-slate-500">
+            <thead className="text-left text-xs uppercase text-slate-400">
               <tr>
-                <th className="py-2">Item</th>
-                <th className="py-2">Reason</th>
-                <th className="py-2">Event</th>
-                <th className="py-2">Date</th>
-                <th className="py-2 text-right">Received</th>
+                <th scope="col" className="py-2">Item</th>
+                <th scope="col" className="py-2">Reason</th>
+                <th scope="col" className="py-2">Event</th>
+                <th scope="col" className="py-2">Date</th>
+                <th scope="col" className="py-2 text-right">Received</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-edge/60">
@@ -51,7 +51,7 @@ export default async function MyRewardsPage() {
                       "—"
                     )}
                   </td>
-                  <td className="py-3 text-slate-500">{fmtDate(r.grantedAt)}</td>
+                  <td className="py-3 text-slate-400">{fmtDate(r.grantedAt)}</td>
                   <td className="py-3 text-right">
                     <RewardReceipt
                       rewardId={r.id}

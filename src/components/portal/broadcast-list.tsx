@@ -36,13 +36,13 @@ export function BroadcastList({ broadcasts }: { broadcasts: Broadcast[] }) {
           </li>
         ) : (
           <li key={b.id} className="p-3 text-sm">
-            <div className="flex items-center justify-between gap-3 text-xs text-slate-500">
+            <div className="flex items-center justify-between gap-3 text-xs text-slate-400">
               <span>
                 #{b.channelName} · {b.postedBy}
               </span>
               <span>
                 {fmt(b.postedAt)}
-                {b.editedAt && <span className="text-slate-600"> · edited</span>}
+                {b.editedAt && <span className="text-slate-400"> · edited</span>}
               </span>
             </div>
             {b.title && <div className="mt-1 font-bold text-slate-200">{b.title}</div>}
@@ -85,7 +85,7 @@ function EditForm({ broadcast, onDone }: { broadcast: Broadcast; onDone: () => v
   return (
     <form action={action} className="grid gap-2">
       <input type="hidden" name="id" value={broadcast.id} />
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-slate-400">
         #{broadcast.channelName} — editing updates the message in place, no re-ping.
       </p>
       <input
@@ -161,7 +161,7 @@ function DeleteButton({ id }: { id: string }) {
   const [pending, start] = useTransition();
   return (
     <button
-      className="font-mono text-[0.66rem] uppercase tracking-widest text-slate-500 hover:text-red-300 disabled:opacity-50"
+      className="font-mono text-[0.66rem] uppercase tracking-widest text-slate-400 hover:text-red-300 disabled:opacity-50"
       disabled={pending}
       onClick={() => {
         if (!window.confirm("Delete this broadcast from Discord?")) return;

@@ -126,7 +126,7 @@ export default async function DiscordManagementPage() {
           <summary className="cursor-pointer text-sm font-medium text-slate-300">
             Recently deleted ({deletedCategories.length + deletedChannels.length})
           </summary>
-          <p className="mt-2 text-xs text-slate-500">
+          <p className="mt-2 text-xs text-slate-400">
             Kept for {RECENTLY_DELETED_DAYS} days. Restoring recreates it fresh on Discord — new
             channel, same name/roles — message history and the original channel are gone for
             good.
@@ -136,7 +136,7 @@ export default async function DiscordManagementPage() {
               <li key={c.id} className="flex flex-wrap items-center gap-2 border border-edge/60 bg-void/40 p-2.5 text-xs">
                 <span className="badge">category</span>
                 <span className="text-slate-200">{c.name}</span>
-                <span className="text-slate-600">deleted {c.deletedAt?.toLocaleDateString()}</span>
+                <span className="text-slate-400">deleted {c.deletedAt?.toLocaleDateString()}</span>
                 <ConfirmButton
                   action={restoreDiscordCategory.bind(null, c.id)}
                   confirm={`Restore "${c.name}" and its channels as new Discord channels?`}
@@ -150,8 +150,8 @@ export default async function DiscordManagementPage() {
               <li key={ch.id} className="flex flex-wrap items-center gap-2 border border-edge/60 bg-void/40 p-2.5 text-xs">
                 <span className="badge">{ch.kind === "voice" ? "voice" : "text"}</span>
                 <span className="text-slate-200">#{ch.name}</span>
-                <span className="text-slate-600">from {ch.category.name}</span>
-                <span className="text-slate-600">deleted {ch.deletedAt?.toLocaleDateString()}</span>
+                <span className="text-slate-400">from {ch.category.name}</span>
+                <span className="text-slate-400">deleted {ch.deletedAt?.toLocaleDateString()}</span>
                 <ConfirmButton
                   action={restoreDiscordChannel.bind(null, ch.id)}
                   confirm={`Restore #${ch.name} as a new channel in ${ch.category.name}?`}

@@ -76,11 +76,11 @@ export default async function TeamsPage() {
                     {t.tag && <span className="text-teal">[{t.tag}] </span>}
                     {t.name}
                   </h2>
-                  <span className="text-xs text-slate-500">
+                  <span className="text-xs text-slate-400">
                     {tt._count.members} member{tt._count.members === 1 ? "" : "s"}
                   </span>
                 </div>
-                <p className="mt-2 text-xs text-slate-500">
+                <p className="mt-2 text-xs text-slate-400">
                   Led by {tt.leader.characterName ?? "—"}
                 </p>
                 {forEvent && <p className="mt-1 text-xs text-teal">For {forEvent}</p>}

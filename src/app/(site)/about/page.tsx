@@ -98,8 +98,8 @@ export default function AboutPage() {
           </ul>
         </div>
         <div className="card">
-          <h2 className="font-display text-lg font-bold text-slate-500">RAIDZONE isn&rsquo;t</h2>
-          <ul className="mt-4 space-y-2 text-sm text-slate-500">
+          <h2 className="font-display text-lg font-bold text-slate-400">RAIDZONE isn&rsquo;t</h2>
+          <ul className="mt-4 space-y-2 text-sm text-slate-400">
             {ISNT.map((t) => (
               <li key={t} className="flex gap-2">
                 <span>&times;</span>
@@ -115,7 +115,7 @@ export default function AboutPage() {
         <ol className="mt-6 grid gap-6 md:grid-cols-3">
           {STEPS.map((s) => (
             <li key={s.n} className="card">
-              <span className="font-mono text-xs tracking-widest text-slate-500">{s.n}</span>
+              <span className="font-mono text-xs tracking-widest text-slate-400">{s.n}</span>
               <h3 className="mt-2 font-display font-bold text-white">{s.title}</h3>
               <p className="mt-2 text-sm text-slate-400">{s.body}</p>
             </li>

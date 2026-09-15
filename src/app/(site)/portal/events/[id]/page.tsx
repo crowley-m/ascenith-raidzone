@@ -204,7 +204,7 @@ export default async function PortalEventDetail({
 
   return (
     <div>
-      <Link href="/portal/events" className="text-sm text-slate-500 hover:text-white">← Events</Link>
+      <Link href="/portal/events" className="text-sm text-slate-400 hover:text-white">← Events</Link>
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
         <h2 className="font-display text-2xl font-bold text-white">{event.title}</h2>
         <div className="flex flex-wrap items-center gap-2">
@@ -224,7 +224,7 @@ export default async function PortalEventDetail({
           {canManage &&
             (event.discordCategoryId ? (
               event.discordArchivedAt ? (
-                <span className="badge border-edge text-slate-500">Discord archived</span>
+                <span className="badge border-edge text-slate-400">Discord archived</span>
               ) : (
                 <span className="badge border-teal/40 text-teal">
                   Discord:{" "}
@@ -240,7 +240,7 @@ export default async function PortalEventDetail({
             ))}
         </div>
       </div>
-      <p className="mt-1 text-sm text-slate-500">
+      <p className="mt-1 text-sm text-slate-400">
         {fmtInZone(event.startsAt, eventTz)}
         {event.discordMessageId && " · announced in Discord"}
       </p>
@@ -257,7 +257,7 @@ export default async function PortalEventDetail({
       )}
 
       {canManage && (
-        <nav className="sticky top-0 z-10 mt-6 -mx-1 flex flex-wrap gap-4 border-b border-edge bg-panel/95 px-1 py-2 font-mono text-[0.66rem] uppercase tracking-widest text-slate-500 backdrop-blur">
+        <nav className="sticky top-0 z-10 mt-6 -mx-1 flex flex-wrap gap-4 border-b border-edge bg-panel/95 px-1 py-2 font-mono text-[0.66rem] uppercase tracking-widest text-slate-400 backdrop-blur">
           <a href="#registrations" className="hover:text-teal">Registrations</a>
           <a href="#bracket" className="hover:text-teal">Bracket</a>
           {confirmed.length > 0 && <a href="#results" className="hover:text-teal">Results</a>}
@@ -274,7 +274,7 @@ export default async function PortalEventDetail({
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h3 className="font-display font-bold text-white">
               {isTeamEvent ? "Registered teams" : "Registrations"}{" "}
-              <span className="text-slate-500">
+              <span className="text-slate-400">
                 ({isTeamEvent ? teamCount : confirmed.length})
               </span>
             </h3>
@@ -310,7 +310,7 @@ export default async function PortalEventDetail({
             ].map((x) => (
               <div key={x.k} className="border border-edge bg-panel/40 py-2">
                 <div className="font-display text-lg font-bold text-white">{x.v}</div>
-                <div className="text-[0.6rem] uppercase tracking-wide text-slate-500">{x.k}</div>
+                <div className="text-[0.6rem] uppercase tracking-wide text-slate-400">{x.k}</div>
               </div>
             ))}
           </div>
@@ -325,11 +325,11 @@ export default async function PortalEventDetail({
                   <div className="bg-ember" style={{ width: `${(noShow.length / confirmed.length) * 100}%` }} />
                 )}
               </div>
-              <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 font-mono text-[0.6rem] uppercase tracking-wide text-slate-500">
+              <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 font-mono text-[0.6rem] uppercase tracking-wide text-slate-400">
                 <span><span className="text-teal">■</span> attended {attendedCount}</span>
                 <span><span className="text-ember">■</span> no-show {noShow.length}</span>
                 <span>
-                  <span className="text-slate-600">■</span> not marked{" "}
+                  <span className="text-slate-400">■</span> not marked{" "}
                   {confirmed.length - attendedCount - noShow.length}
                 </span>
               </div>
@@ -349,12 +349,12 @@ export default async function PortalEventDetail({
           ) : (
             <div className="mt-4 overflow-x-auto">
               <table className="w-full min-w-[460px] text-sm">
-                <thead className="text-left text-xs uppercase text-slate-500">
+                <thead className="text-left text-xs uppercase text-slate-400">
                   <tr>
-                    <th className="py-2">Player</th>
-                    <th className="py-2">UID</th>
-                    <th className="py-2">State</th>
-                    {canMark && <th className="py-2">Attendance</th>}
+                    <th scope="col" className="py-2">Player</th>
+                    <th scope="col" className="py-2">UID</th>
+                    <th scope="col" className="py-2">State</th>
+                    {canMark && <th scope="col" className="py-2">Attendance</th>}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-edge/60">
@@ -371,7 +371,7 @@ export default async function PortalEventDetail({
                           <span className="ml-1.5 text-xs text-teal">as {s.nickname}</span>
                         )}
                         {s.player.region && (
-                          <span className="text-slate-600"> · {s.player.region}</span>
+                          <span className="text-slate-400"> · {s.player.region}</span>
                         )}
                       </td>
                       <td className="py-2 font-mono text-xs text-slate-400">
@@ -419,7 +419,7 @@ export default async function PortalEventDetail({
           )}
 
           {waitlist.length > 0 && (
-            <p className="mt-3 text-xs text-slate-500">
+            <p className="mt-3 text-xs text-slate-400">
               + {waitlist.length} on the waitlist
             </p>
           )}
@@ -468,7 +468,7 @@ export default async function PortalEventDetail({
                 ))}
               </ol>
               {canReward && (
-                <p className="mt-2 text-xs text-slate-500">
+                <p className="mt-2 text-xs text-slate-400">
                   The Crystgin sheet (↓ up by Registrations) lists every reward already logged for
                   this event — Event / ID / Region / Crystgin, nothing else. Run &ldquo;Reward the
                   placements&rdquo; below first if you haven&apos;t yet.
@@ -499,7 +499,7 @@ export default async function PortalEventDetail({
             <details>
               <summary className="cursor-pointer font-display font-bold text-white">
                 Landing preview
-                <span className="ml-2 text-xs font-normal text-slate-500">
+                <span className="ml-2 text-xs font-normal text-slate-400">
                   how this event reads on the homepage
                 </span>
               </summary>
@@ -510,7 +510,7 @@ export default async function PortalEventDetail({
             <details>
               <summary className="cursor-pointer font-display font-bold text-white">
                 Discord preview
-                <span className="ml-2 text-xs font-normal text-slate-500">
+                <span className="ml-2 text-xs font-normal text-slate-400">
                   what the bot posts to each channel
                 </span>
               </summary>
@@ -590,7 +590,7 @@ export default async function PortalEventDetail({
 
                 {event.discordCategoryId && (
                   <div className="mt-3 border-b border-edge/60 pb-4">
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-slate-400">
                       {event.discordArchivedAt
                         ? "This space is archived — renamed, sunk to the bottom, and locked private. Re-lock it if the bot's permissions changed and something didn't take."
                         : "Renames the category, sinks it to the bottom, and locks every channel private. Nothing is deleted — reversible by rebuilding permissions manually if ever needed."}
@@ -601,7 +601,7 @@ export default async function PortalEventDetail({
                   </div>
                 )}
 
-                <p className="mt-3 text-xs text-slate-500">
+                <p className="mt-3 text-xs text-slate-400">
                   Deletes the event, its roster, attendance and placements. Player rewards and
                   teams are kept. Any Discord space is archived first.
                 </p>

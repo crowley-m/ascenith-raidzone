@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useEffect, useId, useRef } from "react";
 import { saveFaction } from "@/app/(site)/portal/actions";
 
 type FactionInit = {
@@ -23,6 +23,8 @@ export function FactionForm({
 }) {
   const [state, action, pending] = useActionState(saveFaction, {});
   const ref = useRef<HTMLFormElement>(null);
+  const uid = useId();
+  const fid = (name: string) => `${uid}-${name}`;
   useEffect(() => {
     if (state.ok && !faction) ref.current?.reset();
   }, [state.ok, faction]);
@@ -32,16 +34,17 @@ export function FactionForm({
       {faction && <input type="hidden" name="id" value={faction.id} />}
       <div className="grid gap-3 sm:grid-cols-[1fr_6rem_5rem]">
         <div>
-          <label className="label">Name</label>
-          <input name="name" required className="input" defaultValue={faction?.name ?? ""} />
+          <label htmlFor={fid("name")} className="label">Name</label>
+          <input id={fid("name")} name="name" required className="input" defaultValue={faction?.name ?? ""} />
         </div>
         <div>
-          <label className="label">Tag</label>
-          <input name="tag" className="input" maxLength={12} defaultValue={faction?.tag ?? ""} />
+          <label htmlFor={fid("tag")} className="label">Tag</label>
+          <input id={fid("tag")} name="tag" className="input" maxLength={12} defaultValue={faction?.tag ?? ""} />
         </div>
         <div>
-          <label className="label">Color</label>
+          <label htmlFor={fid("color")} className="label">Color</label>
           <input
+            id={fid("color")}
             name="color"
             type="color"
             defaultValue={faction?.color ?? "#2fd4c7"}
@@ -50,8 +53,9 @@ export function FactionForm({
         </div>
       </div>
       <div>
-        <label className="label">Description (shown on the public Factions page)</label>
+        <label htmlFor={fid("description")} className="label">Description (shown on the public Factions page)</label>
         <textarea
+          id={fid("description")}
           name="description"
           rows={2}
           className="input"
@@ -61,9 +65,10 @@ export function FactionForm({
         />
       </div>
       <div>
-        <label className="label">Discord role (optional)</label>
+        <label htmlFor={fid("discordRoleId")} className="label">Discord role (optional)</label>
         {roles.length > 0 ? (
           <select
+            id={fid("discordRoleId")}
             name="discordRoleId"
             className="input"
             defaultValue={faction?.discordRoleId ?? ""}
@@ -83,6 +88,7 @@ export function FactionForm({
           </select>
         ) : (
           <input
+            id={fid("discordRoleId")}
             name="discordRoleId"
             className="input font-mono text-xs"
             inputMode="numeric"
@@ -90,7 +96,7 @@ export function FactionForm({
             defaultValue={faction?.discordRoleId ?? ""}
           />
         )}
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 text-xs text-slate-400">
           Members of this faction get this role automatically; leaving or switching faction
           removes it.
         </p>

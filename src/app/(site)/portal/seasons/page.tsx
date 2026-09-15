@@ -60,15 +60,15 @@ export default async function SeasonsPage() {
                 {s.championName ? (
                   <span className="text-sm text-teal">🏆 {s.championName}</span>
                 ) : (
-                  <span className="text-xs text-slate-500">no champion yet</span>
+                  <span className="text-xs text-slate-400">no champion yet</span>
                 )}
-                <span className="text-xs text-slate-500">
+                <span className="text-xs text-slate-400">
                   {s._count.events} event{s._count.events === 1 ? "" : "s"} · {s.videos.length} video
                   {s.videos.length === 1 ? "" : "s"}
                 </span>
                 <Link
                   href={`/seasons/${s.slug}`}
-                  className="text-xs text-slate-500 underline hover:text-teal"
+                  className="text-xs text-slate-400 underline hover:text-teal"
                 >
                   /seasons/{s.slug}
                 </Link>

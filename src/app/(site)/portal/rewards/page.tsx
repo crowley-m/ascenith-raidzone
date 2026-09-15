@@ -105,14 +105,14 @@ export default async function PortalRewardsPage({
                       {r.player.characterName ?? "Unnamed"}
                     </Link>
                     {r.player.gameUid && (
-                      <span className="text-slate-500"> · UID {r.player.gameUid}</span>
+                      <span className="text-slate-400"> · UID {r.player.gameUid}</span>
                     )}
                     <span className="text-teal">
                       {" "}
                       — {r.item}
                       {r.amount ? ` ×${r.amount}` : ""}
                     </span>
-                    <span className="block text-xs text-slate-500">
+                    <span className="block text-xs text-slate-400">
                       {r.reason}
                       {r.event ? ` · ${r.event.title}` : ""} · flagged {fmtDate(r.disputedAt!)}
                     </span>
@@ -126,7 +126,7 @@ export default async function PortalRewardsPage({
 
         <div className="flex flex-wrap items-center gap-3">
           <h2 className="font-display text-xl font-bold text-white">Reward log</h2>
-          <span className="text-sm text-slate-500">
+          <span className="text-sm text-slate-400">
             {matched > take
               ? `${(pageN - 1) * take + 1}–${(pageN - 1) * take + rewards.length} of ${matched}`
               : `${rewards.length} shown`}
@@ -149,7 +149,7 @@ export default async function PortalRewardsPage({
           </Link>
         </div>
         {eventId && (
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-1 text-xs text-slate-400">
             Showing only {events.find((e) => e.id === eventId)?.title ?? "this event"} —{" "}
             <Link href="/portal/rewards" className="text-teal hover:text-cream">clear filter</Link>
           </p>
@@ -172,7 +172,7 @@ export default async function PortalRewardsPage({
                 ← Newer
               </Link>
             )}
-            <span className="text-slate-500">Page {pageN} / {Math.ceil(matched / take)}</span>
+            <span className="text-slate-400">Page {pageN} / {Math.ceil(matched / take)}</span>
             {pageN * take < matched && (
               <Link
                 href={`/portal/rewards?${new URLSearchParams({ ...(eventId ? { eventId } : {}), page: String(pageN + 1) })}`}

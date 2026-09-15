@@ -56,7 +56,7 @@ export default async function PortalTeamDetail({
 
   return (
     <div className="max-w-2xl">
-      <Link href="/portal/teams" className="text-sm text-slate-500 hover:text-white">
+      <Link href="/portal/teams" className="text-sm text-slate-400 hover:text-white">
         ← Teams
       </Link>
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
@@ -73,7 +73,7 @@ export default async function PortalTeamDetail({
           </ConfirmButton>
         )}
       </div>
-      <p className="mt-1 text-sm text-slate-500">
+      <p className="mt-1 text-sm text-slate-400">
         Invite code <code className="font-mono text-teal">{team.inviteCode}</code> · created{" "}
         {fmtDate(team.createdAt)}
         {team.event && (
@@ -104,7 +104,7 @@ export default async function PortalTeamDetail({
                 {m.playerId === team.leaderId && (
                   <span className="badge ml-2 border-teal/40 text-teal">Leader</span>
                 )}
-                <span className="block text-xs text-slate-500">
+                <span className="block text-xs text-slate-400">
                   {m.player.gameUid ? `UID ${m.player.gameUid}` : "no UID"}
                   {m.player.region ? ` · ${m.player.region}` : ""}
                 </span>
@@ -113,7 +113,7 @@ export default async function PortalTeamDetail({
                 <ConfirmButton
                   action={staffKickTeamMember.bind(null, team.id, m.playerId)}
                   confirm={`Remove ${m.player.characterName ?? "this member"} from ${team.name}?`}
-                  className="text-xs text-slate-500 hover:text-red-300"
+                  className="text-xs text-slate-400 hover:text-red-300"
                 >
                   remove
                 </ConfirmButton>

@@ -99,7 +99,7 @@ export function RewardLogTable({
           </button>
           <button
             type="button"
-            className="font-mono text-[0.66rem] uppercase tracking-widest text-slate-500 hover:text-cream"
+            className="font-mono text-[0.66rem] uppercase tracking-widest text-slate-400 hover:text-cream"
             onClick={() => setSelected(new Set())}
           >
             Clear
@@ -110,10 +110,10 @@ export function RewardLogTable({
 
       <div className="overflow-x-auto">
         <table className="w-full min-w-[640px] text-sm">
-          <thead className="text-left text-xs uppercase text-slate-500">
+          <thead className="text-left text-xs uppercase text-slate-400">
             <tr>
               {canGrant && unlinkedIds.length > 0 && (
-                <th className="w-6 py-2">
+                <th scope="col" className="w-6 py-2">
                   <input
                     type="checkbox"
                     checked={allUnlinkedSelected}
@@ -122,13 +122,15 @@ export function RewardLogTable({
                   />
                 </th>
               )}
-              <th className="py-2">Player</th>
-              <th className="py-2">Item</th>
-              <th className="py-2">Reason</th>
-              <th className="py-2">Event</th>
-              <th className="py-2">By</th>
-              <th className="py-2">Date</th>
-              <th className="py-2"></th>
+              <th scope="col" className="py-2">Player</th>
+              <th scope="col" className="py-2">Item</th>
+              <th scope="col" className="py-2">Reason</th>
+              <th scope="col" className="py-2">Event</th>
+              <th scope="col" className="py-2">By</th>
+              <th scope="col" className="py-2">Date</th>
+              <th scope="col" className="py-2">
+                <span className="sr-only">Actions</span>
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-edge/60">
@@ -173,7 +175,7 @@ export function RewardLogTable({
                     {r.reason}
                     {r.isPublic && <span className="badge ml-2">public</span>}
                   </td>
-                  <td className="py-2 text-slate-500">
+                  <td className="py-2 text-slate-400">
                     {r.eventTitle ?? (
                       r.guessedEventTitle ? (
                         <span
@@ -187,14 +189,14 @@ export function RewardLogTable({
                       )
                     )}
                   </td>
-                  <td className="py-2 text-slate-500">{r.grantedByName}</td>
-                  <td className="py-2 text-slate-500">{r.grantedAtLabel}</td>
+                  <td className="py-2 text-slate-400">{r.grantedByName}</td>
+                  <td className="py-2 text-slate-400">{r.grantedAtLabel}</td>
                   <td className="py-2">
                     {canGrant && (
                       <div className="flex items-center gap-2">
                         <button
                           type="button"
-                          className="text-xs text-slate-500 hover:text-teal"
+                          className="text-xs text-slate-400 hover:text-teal"
                           onClick={() => setEditingId(r.id)}
                         >
                           edit
@@ -202,7 +204,7 @@ export function RewardLogTable({
                         <ConfirmButton
                           action={deleteReward.bind(null, r.id, r.playerId)}
                           confirm="Delete this reward?"
-                          className="text-xs text-slate-500 hover:text-red-300"
+                          className="text-xs text-slate-400 hover:text-red-300"
                         >
                           delete
                         </ConfirmButton>
