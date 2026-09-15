@@ -35,13 +35,21 @@ export function PageWipe() {
   const [status, setStatus] = useState<Status>("idle");
   const failsafe = useRef<number | undefined>(undefined);
   const elRef = useRef<HTMLDivElement>(null);
+  // Back/forward nav feels laggy if the curtain lingers through a whole
+  // reveal animation on the way out — that direction snaps clear instantly
+  // instead of playing the 300ms slide-off.
+  const isBackNav = useRef(false);
 
-  // navigation landed — if we were covering, start the reveal
+  // navigation landed — if we were covering, start the reveal (or snap
+  // straight to idle for a back/forward nav)
   useEffect(() => {
     if (prevKey.current === key) return;
     prevKey.current = key;
     if (failsafe.current) window.clearTimeout(failsafe.current);
-    setStatus((s) => (s === "covering" ? "revealing" : s));
+    setStatus((s) => {
+      if (s !== "covering") return s;
+      return isBackNav.current ? "idle" : "revealing";
+    });
   }, [key]);
 
   // apply the right animation class pre-paint, restarting it reliably each time
@@ -83,6 +91,7 @@ export function PageWipe() {
       }
       if (url.origin !== window.location.origin) return;
       if (url.pathname === window.location.pathname && url.search === window.location.search) return;
+      isBackNav.current = false;
       startCovering();
     }
 
@@ -92,6 +101,7 @@ export function PageWipe() {
     function onPopState() {
       if (!window.matchMedia(DESKTOP_QUERY).matches) return;
       if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      isBackNav.current = true;
       startCovering();
     }
 

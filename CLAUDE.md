@@ -480,7 +480,12 @@ scoped to that event's roster, short enough that scrolling alone is fine).
   under `prefers-reduced-motion`. Also listens for `popstate` (browser
   back/forward, including a mobile edge-swipe-back gesture) and triggers
   the same wipe — that doesn't fire a click on an `<a>`, so without this it
-  would just snap to the previous page with no transition. The edge-glow
+  would just snap to the previous page with no transition. A back/forward
+  nav still covers, but skips the 300ms reveal-out animation and snaps
+  straight to idle the instant the previous page's data lands — an
+  `isBackNav` ref (set `true` in the `popstate` handler, `false` in the
+  click handler) is read once, at the point the covering→revealing
+  decision gets made. The edge-glow
   strip (`.page-wipe-edge`) is only rendered while `status !== "idle"` —
   its `box-shadow` blur bleeds ~16px past the element's own bounds, so
   always rendering it (even "off-screen") left a persistent thin glow
