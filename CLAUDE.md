@@ -874,6 +874,63 @@ its own separate design system per the Stack notes). Five fixes:
   else, with a `min-w-[520px]` floor so columns don't crush before the
   scroll container kicks in.
 
+## Correctness pass on this session's newer code
+
+A bug-hunting audit (distinct from the two UI/UX passes above) targeted the
+code added this session that hadn't had a correctness review yet — the
+`/portal/discord` manager and the event content-hash sync system. Five
+fixes:
+
+- **Announcement embed's slot count was permanently stuck at 0** —
+  `eventChannelPayloads()` hardcoded `signupCount: 0` for the `#announcement`
+  embed; nothing on the channel-space push path (`pushEventChannelContent`)
+  ever supplied the real count (only the legacy no-space-yet announcement
+  path did, calling `eventEmbed()` directly). `eventChannelPayloads(ev,
+  signupCount)` now takes it as a parameter — pure function, no DB access of
+  its own, so every caller supplies its own live count:
+  `pushEventChannelContent` queries `db.eventSignup.count(...)` fresh,
+  `discord/[id]/page.tsx` passes `confirmed.length` to both `DiscordPreview`
+  and the `pendingChannels` hash comparison (moved `confirmed`'s
+  declaration earlier in the file so it's available before that
+  computation — it must use the *exact* same count `pushEventChannelContent`
+  will use, or the announcement channel would never hash-match even right
+  after a push).
+- **A failed channel-topic update still got written to the DB** —
+  `saveDiscordChannel` fired `setManagedChannelTopic()` without awaiting it,
+  unlike the same function's rename/roles handling (both awaited, both
+  block the DB write on failure). Now awaited and blocking, same as those.
+- **Deleting a category could resurrect an unrelated channel deleted days
+  earlier** — the cascade-delete's `updateMany` stamped `deletedAt` on
+  *every* channel under the category with no `deletedAt: null` guard,
+  overwriting an already-tombstoned channel's original timestamp; combined
+  with `restoreDiscordCategory`'s child-filter (`c.deletedAt` truthy, no
+  further check), restoring the category later would recreate that
+  long-forgotten channel too. Fixed both ends: the `updateMany` now only
+  touches still-live channels, and the restore filter only recreates
+  children whose `deletedAt` lands within 60s of the category's own (i.e.
+  actually tombstoned in the same cascade-delete, not independently).
+- **A failed "sync to category" role push reported success** —
+  `cascadeSyncedChannelRoles()` silently skipped the DB update for any
+  synced channel whose Discord role PATCH failed, and `saveDiscordCategory`
+  returned `{ ok: true }` regardless. Now returns which channels failed;
+  `saveDiscordCategory` surfaces that as an error (category itself still
+  saved — the message says so) instead of hiding the drift.
+- **Position numbering could collide under concurrent writes** — several
+  call sites (`saveDiscordCategory`/`saveDiscordChannel` create,
+  `bulkMoveDiscordChannels`, `restoreDiscordCategory`,
+  `restoreDiscordChannel`, `duplicateDiscordCategory`) read
+  `count(...)` then inserted/updated with that value outside a transaction
+  — two near-simultaneous actions on the same category could both land on
+  the same position (harmless — no unique constraint — but breaks the
+  intended order until a manual reorder). Each now wraps the count + write
+  in `db.$transaction(...)`; `bulkMoveDiscordChannels` specifically does
+  the Discord API calls first, then a single transaction for all the
+  position writes together, so the transaction isn't held open across
+  network round-trips. Narrows the race window rather than fully
+  eliminating it (Postgres's default Read Committed isolation doesn't
+  guarantee serializability) — proportionate given how rarely two staff
+  members touch the same category within the same second.
+
 ## Migrations
 
 Hand-write the SQL. `prisma migrate deploy` runs on web container boot (then

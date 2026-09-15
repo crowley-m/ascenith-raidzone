@@ -105,8 +105,8 @@ function Body({
   );
 }
 
-export function DiscordPreview({ event }: { event: Event }) {
-  const payloads = eventChannelPayloads(event);
+export function DiscordPreview({ event, signupCount = 0 }: { event: Event; signupCount?: number }) {
+  const payloads = eventChannelPayloads(event, signupCount);
   const channels = (event.discordChannels as Record<string, string>) ?? {};
   const channelNames = new Map(
     Object.entries(channels).map(([name, id]) => [id, `#${name}`]),

@@ -74,11 +74,16 @@ export default async function PortalEventDetail({
   const canMark = can(user.role, "attendance:mark");
   const canReward = can(user.role, "reward:grant");
 
+  const confirmed = event.signups.filter((s) => s.state === "SIGNED_UP");
+
   // channels whose freshly-computed content no longer matches what was
   // actually last pushed to Discord — surfaced in the Channels panel so
-  // staff know what still needs a push, instead of re-syncing everything
+  // staff know what still needs a push, instead of re-syncing everything.
+  // Must use the same signupCount as pushEventChannelContent (actions.ts)
+  // does, or the announcement's embed will never hash-match even right
+  // after a push.
   const contentHashes = (event.discordContentHashes as Record<string, string>) ?? {};
-  const pendingChannels = Object.entries(eventChannelPayloads(event))
+  const pendingChannels = Object.entries(eventChannelPayloads(event, confirmed.length))
     .filter(([, payload]) => payload.content || payload.embed)
     .filter(([name, payload]) => contentHashes[name] !== JSON.stringify(payload))
     .map(([name]) => name);
@@ -97,7 +102,6 @@ export default async function PortalEventDetail({
   };
 
   const isTeamEvent = event.format === "TEAM";
-  const confirmed = event.signups.filter((s) => s.state === "SIGNED_UP");
   const waitlist = event.signups.filter((s) => s.state === "WAITLIST");
   const attendedCount = confirmed.filter((s) => attMap.get(s.player.id)).length;
   const noShow = confirmed.filter((s) => attMap.get(s.player.id) === false);
@@ -511,7 +515,7 @@ export default async function PortalEventDetail({
                 </span>
               </summary>
               <div className="mt-4">
-                <DiscordPreview event={event} />
+                <DiscordPreview event={event} signupCount={confirmed.length} />
               </div>
             </details>
           </div>

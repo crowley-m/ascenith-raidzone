@@ -35,8 +35,14 @@ const lineList = (s: string | null | undefined) =>
     .map((l) => l.trim())
     .filter(Boolean);
 
-/** What goes in each of the event's Discord channels. Pure — safe to call from a page. */
-export function eventChannelPayloads(ev: Event): Record<string, ChannelPayload> {
+/**
+ * What goes in each of the event's Discord channels. Pure — safe to call
+ * from a page. `signupCount` (confirmed sign-ups, not counted on `Event`
+ * itself) feeds the announcement embed's slot-count field — pass the real
+ * live count, since a stale/omitted one silently freezes that field at
+ * whatever it defaults to.
+ */
+export function eventChannelPayloads(ev: Event, signupCount = 0): Record<string, ChannelPayload> {
   const url = `${APP_URL}/events/${ev.id}`;
   const tiers = Array.isArray(ev.rewardTiers)
     ? (ev.rewardTiers as Array<{ place: string; reward: string }>)
@@ -49,7 +55,7 @@ export function eventChannelPayloads(ev: Event): Record<string, ChannelPayload> 
     embed: eventEmbed({
       ...ev,
       summary: bulletize(ev.announcementMd) || ev.summary,
-      signupCount: 0,
+      signupCount,
       url,
     }),
     components: [signupButtonRow(url, "Sign up on the website")],
