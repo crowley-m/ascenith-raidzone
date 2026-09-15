@@ -39,6 +39,7 @@ import {
   setCategoryRoles,
   createManagedChannel,
   setManagedChannelRoles,
+  setManagedChannelTopic,
   renameGuildChannel,
   setChannelParent,
   setChannelPosition,
@@ -1651,7 +1652,7 @@ async function seedChannelMessage(discordId: string, message: string, pin: boole
 /** Push a category's current roleIds onto every channel under it that has "sync to category" on. */
 async function cascadeSyncedChannelRoles(categoryDbId: string, roleIds: string[]) {
   const synced = await db.discordManagedChannel.findMany({
-    where: { categoryId: categoryDbId, synced: true },
+    where: { categoryId: categoryDbId, synced: true, deletedAt: null },
   });
   for (const ch of synced) {
     const ok = await setManagedChannelRoles(ch.discordId, ch.kind as "text" | "voice", roleIds);
@@ -1667,12 +1668,13 @@ export async function saveDiscordCategory(_prev: FormState, formData: FormData):
   const actor = await assertPermission("discord:manage");
   const id = (formData.get("id") as string) || null;
   const name = ((formData.get("name") as string) || "").trim();
+  const note = ((formData.get("note") as string) || "").trim() || null;
   const roleIds = formData.getAll("roleIds").map(String).filter(Boolean);
   if (!name) return { error: "Name is required." };
 
   if (id) {
     const existing = await db.discordCategory.findUnique({ where: { id } });
-    if (!existing) return { error: "That category is gone." };
+    if (!existing || existing.deletedAt) return { error: "That category is gone." };
     if (name !== existing.name) {
       const ok = await renameGuildChannel(existing.discordId, name);
       if (!ok) return { error: "Discord: couldn't rename that category — check the bot's permissions." };
@@ -1681,7 +1683,7 @@ export async function saveDiscordCategory(_prev: FormState, formData: FormData):
     if (!rolesOk) return { error: "Discord: couldn't update who can see that category." };
     await db.discordCategory.update({
       where: { id },
-      data: { name, roleIds: roleIds as Prisma.InputJsonValue },
+      data: { name, note, roleIds: roleIds as Prisma.InputJsonValue },
     });
     await cascadeSyncedChannelRoles(id, roleIds);
     await logAudit({
@@ -1694,9 +1696,16 @@ export async function saveDiscordCategory(_prev: FormState, formData: FormData):
   } else {
     const discordId = await createGuildCategory(name, roleIds);
     if (!discordId) return { error: "Discord: couldn't create that category — check the bot's permissions." };
-    const count = await db.discordCategory.count();
+    const count = await db.discordCategory.count({ where: { deletedAt: null } });
     const created = await db.discordCategory.create({
-      data: { discordId, name, position: count, roleIds: roleIds as Prisma.InputJsonValue, createdById: actor.id },
+      data: {
+        discordId,
+        name,
+        note,
+        position: count,
+        roleIds: roleIds as Prisma.InputJsonValue,
+        createdById: actor.id,
+      },
     });
     await logAudit({
       actorId: actor.id,
@@ -1707,14 +1716,19 @@ export async function saveDiscordCategory(_prev: FormState, formData: FormData):
     });
 
     // optional starter channels — one card per channel, each with its own
-    // post box; the three arrays are index-aligned by DOM order (one triplet
-    // of inputs per card, so getAll(...) on each name lines up positionally).
+    // kind/topic/post box; the five arrays are index-aligned by DOM order
+    // (one same-order tuple of inputs per card, so getAll(...) on each name
+    // lines up positionally with the others).
     const rawNames = formData.getAll("channelNames").map(String);
+    const rawKinds = formData.getAll("channelKinds").map(String);
+    const rawTopics = formData.getAll("channelTopics").map(String);
     const rawMessages = formData.getAll("channelSeedMessages").map(String);
     const rawPins = formData.getAll("channelPinSeeds").map(String);
     const channelRows = rawNames
       .map((n, i) => ({
         name: n.trim(),
+        kind: (rawKinds[i] === "voice" ? "voice" : "text") as "text" | "voice",
+        topic: (rawTopics[i] || "").trim(),
         message: (rawMessages[i] || "").trim(),
         pin: rawPins[i] === "1",
       }))
@@ -1725,15 +1739,17 @@ export async function saveDiscordCategory(_prev: FormState, formData: FormData):
       const chDiscordId = await createManagedChannel({
         name: row.name,
         categoryId: discordId,
-        kind: "text",
+        kind: row.kind,
         roleIds,
+        topic: row.kind === "text" ? row.topic : undefined,
       });
       if (!chDiscordId) continue; // one failing shouldn't block the rest
       await db.discordManagedChannel.create({
         data: {
           discordId: chDiscordId,
           name: row.name,
-          kind: "text",
+          kind: row.kind,
+          topic: row.kind === "text" ? row.topic || null : null,
           categoryId: created.id,
           position: i,
           roleIds: roleIds as Prisma.InputJsonValue,
@@ -1741,7 +1757,7 @@ export async function saveDiscordCategory(_prev: FormState, formData: FormData):
           createdById: actor.id,
         },
       });
-      if (row.message) void seedChannelMessage(chDiscordId, row.message, row.pin);
+      if (row.kind === "text" && row.message) void seedChannelMessage(chDiscordId, row.message, row.pin);
     }
   }
 
@@ -1750,15 +1766,19 @@ export async function saveDiscordCategory(_prev: FormState, formData: FormData):
 }
 
 /**
- * Deletes on Discord first and only drops DB tracking for what's actually
- * confirmed gone — a failed Discord delete (missing bot perms, rate limit)
- * leaves the row in place so staff can see it and retry, rather than
- * silently losing track of a channel that still exists.
+ * Deletes on Discord first and only tombstones DB tracking (`deletedAt`) for
+ * what's actually confirmed gone — a failed Discord delete (missing bot
+ * perms, rate limit) leaves the row untouched so staff can see it and retry,
+ * rather than silently losing track of a channel that still exists. The
+ * tombstone (not a hard delete) is what "Recently deleted" restores from.
  */
 export async function deleteDiscordCategory(id: string): Promise<FormState> {
   const actor = await assertPermission("discord:manage");
-  const category = await db.discordCategory.findUnique({ where: { id }, include: { channels: true } });
-  if (!category) return { ok: true };
+  const category = await db.discordCategory.findUnique({
+    where: { id },
+    include: { channels: { where: { deletedAt: null } } },
+  });
+  if (!category || category.deletedAt) return { ok: true };
 
   // categories don't cascade-delete their children on Discord — drop each first
   const results = await Promise.all(category.channels.map((ch) => deleteChannel(ch.discordId)));
@@ -1769,7 +1789,10 @@ export async function deleteDiscordCategory(id: string): Promise<FormState> {
     };
   }
   // every channel is confirmed gone on Discord even if the category itself fails below
-  await db.discordManagedChannel.deleteMany({ where: { categoryId: id } });
+  await db.discordManagedChannel.updateMany({
+    where: { categoryId: id },
+    data: { deletedAt: new Date() },
+  });
 
   const categoryOk = await deleteChannel(category.discordId);
   if (!categoryOk) {
@@ -1777,7 +1800,7 @@ export async function deleteDiscordCategory(id: string): Promise<FormState> {
     return { error: "Discord: deleted its channels, but couldn't delete the category itself — try again." };
   }
 
-  await db.discordCategory.delete({ where: { id } });
+  await db.discordCategory.update({ where: { id }, data: { deletedAt: new Date() } });
   await logAudit({
     actorId: actor.id,
     action: "discord.category_delete",
@@ -1795,16 +1818,20 @@ export async function saveDiscordChannel(_prev: FormState, formData: FormData): 
   const categoryId = (formData.get("categoryId") as string) || "";
   const name = ((formData.get("name") as string) || "").trim();
   const kind = formData.get("kind") === "voice" ? "voice" : "text";
+  const topic = ((formData.get("topic") as string) || "").trim() || null;
   const synced = formData.get("synced") === "on";
   const submittedRoleIds = formData.getAll("roleIds").map(String).filter(Boolean);
   if (!name) return { error: "Name is required." };
 
   if (id) {
     const existing = await db.discordManagedChannel.findUnique({ where: { id } });
-    if (!existing) return { error: "That channel is gone." };
+    if (!existing || existing.deletedAt) return { error: "That channel is gone." };
     if (name !== existing.name) {
       const ok = await renameGuildChannel(existing.discordId, name);
       if (!ok) return { error: "Discord: couldn't rename that channel — check the bot's permissions." };
+    }
+    if (existing.kind === "text" && topic !== existing.topic) {
+      void setManagedChannelTopic(existing.discordId, topic ?? "");
     }
 
     let newCategoryId = existing.categoryId;
@@ -1812,11 +1839,11 @@ export async function saveDiscordChannel(_prev: FormState, formData: FormData): 
     let targetCategory = await db.discordCategory.findUnique({ where: { id: existing.categoryId } });
     if (categoryId && categoryId !== existing.categoryId) {
       const target = await db.discordCategory.findUnique({ where: { id: categoryId } });
-      if (!target) return { error: "That destination category is gone." };
+      if (!target || target.deletedAt) return { error: "That destination category is gone." };
       const moved = await setChannelParent(existing.discordId, target.discordId);
       if (!moved) return { error: "Discord: couldn't move that channel — check the bot's permissions." };
       newCategoryId = categoryId;
-      newPosition = await db.discordManagedChannel.count({ where: { categoryId } }); // append at the end
+      newPosition = await db.discordManagedChannel.count({ where: { categoryId, deletedAt: null } }); // append at the end
       targetCategory = target;
     }
 
@@ -1832,6 +1859,7 @@ export async function saveDiscordChannel(_prev: FormState, formData: FormData): 
       where: { id },
       data: {
         name,
+        topic: existing.kind === "text" ? topic : null,
         roleIds: roleIds as Prisma.InputJsonValue,
         synced,
         categoryId: newCategoryId,
@@ -1848,18 +1876,25 @@ export async function saveDiscordChannel(_prev: FormState, formData: FormData): 
   } else {
     if (!categoryId) return { error: "Pick a category." };
     const category = await db.discordCategory.findUnique({ where: { id: categoryId } });
-    if (!category) return { error: "That category is gone." };
+    if (!category || category.deletedAt) return { error: "That category is gone." };
     const categoryRoleIds = Array.isArray(category.roleIds) ? (category.roleIds as string[]) : [];
     const roleIds = synced ? categoryRoleIds : submittedRoleIds;
 
-    const discordId = await createManagedChannel({ name, categoryId: category.discordId, kind, roleIds });
+    const discordId = await createManagedChannel({
+      name,
+      categoryId: category.discordId,
+      kind,
+      roleIds,
+      topic: kind === "text" ? (topic ?? undefined) : undefined,
+    });
     if (!discordId) return { error: "Discord: couldn't create that channel — check the bot's permissions." };
-    const count = await db.discordManagedChannel.count({ where: { categoryId } });
+    const count = await db.discordManagedChannel.count({ where: { categoryId, deletedAt: null } });
     const created = await db.discordManagedChannel.create({
       data: {
         discordId,
         name,
         kind,
+        topic: kind === "text" ? topic : null,
         categoryId,
         position: count,
         roleIds: roleIds as Prisma.InputJsonValue,
@@ -1889,10 +1924,10 @@ export async function saveDiscordChannel(_prev: FormState, formData: FormData): 
 export async function deleteDiscordChannel(id: string): Promise<FormState> {
   const actor = await assertPermission("discord:manage");
   const channel = await db.discordManagedChannel.findUnique({ where: { id } });
-  if (!channel) return { ok: true };
+  if (!channel || channel.deletedAt) return { ok: true };
   const ok = await deleteChannel(channel.discordId);
   if (!ok) return { error: "Discord: couldn't delete that channel — check the bot's permissions and try again." };
-  await db.discordManagedChannel.delete({ where: { id } });
+  await db.discordManagedChannel.update({ where: { id }, data: { deletedAt: new Date() } });
   await logAudit({
     actorId: actor.id,
     action: "discord.channel_delete",
@@ -1904,10 +1939,190 @@ export async function deleteDiscordChannel(id: string): Promise<FormState> {
   return { ok: true };
 }
 
+/** Delete several channels at once — same honest-delete semantics as a single delete. */
+export async function bulkDeleteDiscordChannels(ids: string[]): Promise<FormState> {
+  const actor = await assertPermission("discord:manage");
+  const channels = await db.discordManagedChannel.findMany({ where: { id: { in: ids }, deletedAt: null } });
+  const failed: string[] = [];
+  for (const ch of channels) {
+    const ok = await deleteChannel(ch.discordId);
+    if (!ok) {
+      failed.push(ch.name);
+      continue;
+    }
+    await db.discordManagedChannel.update({ where: { id: ch.id }, data: { deletedAt: new Date() } });
+    await logAudit({
+      actorId: actor.id,
+      action: "discord.channel_delete",
+      targetType: "Discord",
+      targetId: ch.discordId,
+      meta: { name: ch.name, bulk: true },
+    });
+  }
+  revalidatePath("/portal/discord");
+  return failed.length
+    ? { error: `Discord: couldn't delete ${failed.join(", ")} — check the bot's permissions and try again.` }
+    : { ok: true };
+}
+
+/** Move several channels into a different category at once. */
+export async function bulkMoveDiscordChannels(ids: string[], targetCategoryId: string): Promise<FormState> {
+  const actor = await assertPermission("discord:manage");
+  const target = await db.discordCategory.findUnique({ where: { id: targetCategoryId } });
+  if (!target || target.deletedAt) return { error: "That destination category is gone." };
+  const targetRoleIds = Array.isArray(target.roleIds) ? (target.roleIds as string[]) : [];
+  const channels = await db.discordManagedChannel.findMany({ where: { id: { in: ids }, deletedAt: null } });
+  let position = await db.discordManagedChannel.count({ where: { categoryId: targetCategoryId, deletedAt: null } });
+  const failed: string[] = [];
+  for (const ch of channels) {
+    const moved = await setChannelParent(ch.discordId, target.discordId);
+    if (!moved) {
+      failed.push(ch.name);
+      continue;
+    }
+    const roleIds = ch.synced ? targetRoleIds : (Array.isArray(ch.roleIds) ? (ch.roleIds as string[]) : []);
+    if (ch.synced) await setManagedChannelRoles(ch.discordId, ch.kind as "text" | "voice", roleIds);
+    await db.discordManagedChannel.update({
+      where: { id: ch.id },
+      data: { categoryId: targetCategoryId, position: position++, roleIds: roleIds as Prisma.InputJsonValue },
+    });
+  }
+  await logAudit({
+    actorId: actor.id,
+    action: "discord.channel_move",
+    targetType: "Discord",
+    targetId: target.discordId,
+    meta: { count: channels.length - failed.length, bulk: true },
+  });
+  revalidatePath("/portal/discord");
+  return failed.length
+    ? { error: `Discord: couldn't move ${failed.join(", ")} — check the bot's permissions and try again.` }
+    : { ok: true };
+}
+
+/**
+ * Push a category's current roleIds onto every channel in it right now —
+ * a one-time bulk apply, distinct from "sync to category" (which keeps a
+ * channel following the category's roles going forward). Doesn't touch
+ * the `synced` flag either way.
+ */
+export async function applyCategoryRolesToChannels(categoryId: string): Promise<FormState> {
+  const actor = await assertPermission("discord:manage");
+  const category = await db.discordCategory.findUnique({
+    where: { id: categoryId },
+    include: { channels: { where: { deletedAt: null } } },
+  });
+  if (!category || category.deletedAt) return { error: "That category is gone." };
+  const roleIds = Array.isArray(category.roleIds) ? (category.roleIds as string[]) : [];
+  const failed: string[] = [];
+  for (const ch of category.channels) {
+    const ok = await setManagedChannelRoles(ch.discordId, ch.kind as "text" | "voice", roleIds);
+    if (!ok) {
+      failed.push(ch.name);
+      continue;
+    }
+    await db.discordManagedChannel.update({ where: { id: ch.id }, data: { roleIds: roleIds as Prisma.InputJsonValue } });
+  }
+  await logAudit({
+    actorId: actor.id,
+    action: "discord.category_apply_roles",
+    targetType: "Discord",
+    targetId: category.discordId,
+    meta: { roleIds, channels: category.channels.length },
+  });
+  revalidatePath("/portal/discord");
+  return failed.length
+    ? { error: `Discord: couldn't update ${failed.join(", ")} — check the bot's permissions and try again.` }
+    : { ok: true };
+}
+
+/**
+ * Recreate a deleted category (and every child channel that was deleted
+ * alongside it) fresh on Discord — new ids, same name/roles/kind/topic.
+ * Message history and the original ids are gone for good; this rebuilds
+ * the structure, not a true undo.
+ */
+export async function restoreDiscordCategory(id: string): Promise<FormState> {
+  const actor = await assertPermission("discord:manage");
+  const category = await db.discordCategory.findUnique({ where: { id }, include: { channels: true } });
+  if (!category || !category.deletedAt) return { error: "That category isn't deleted." };
+
+  const roleIds = Array.isArray(category.roleIds) ? (category.roleIds as string[]) : [];
+  const newDiscordId = await createGuildCategory(category.name, roleIds);
+  if (!newDiscordId) return { error: "Discord: couldn't recreate that category — check the bot's permissions." };
+
+  const count = await db.discordCategory.count({ where: { deletedAt: null } });
+  await db.discordCategory.update({
+    where: { id },
+    data: { discordId: newDiscordId, position: count, deletedAt: null },
+  });
+
+  const children = category.channels.filter((c) => c.deletedAt);
+  for (let i = 0; i < children.length; i++) {
+    const ch = children[i];
+    const chRoleIds = Array.isArray(ch.roleIds) ? (ch.roleIds as string[]) : [];
+    const chDiscordId = await createManagedChannel({
+      name: ch.name,
+      categoryId: newDiscordId,
+      kind: ch.kind as "text" | "voice",
+      roleIds: chRoleIds,
+      topic: ch.topic ?? undefined,
+    });
+    if (!chDiscordId) continue; // one failing channel shouldn't block restoring the rest
+    await db.discordManagedChannel.update({
+      where: { id: ch.id },
+      data: { discordId: chDiscordId, categoryId: id, position: i, deletedAt: null },
+    });
+  }
+
+  await logAudit({
+    actorId: actor.id,
+    action: "discord.category_restore",
+    targetType: "Discord",
+    targetId: newDiscordId,
+    meta: { name: category.name, channels: children.length },
+  });
+  revalidatePath("/portal/discord");
+  return { ok: true };
+}
+
+/** Recreate a single deleted channel fresh on Discord (its category must still exist). */
+export async function restoreDiscordChannel(id: string): Promise<FormState> {
+  const actor = await assertPermission("discord:manage");
+  const channel = await db.discordManagedChannel.findUnique({ where: { id }, include: { category: true } });
+  if (!channel || !channel.deletedAt) return { error: "That channel isn't deleted." };
+  if (channel.category.deletedAt) return { error: "Its category was deleted too — restore the category first." };
+
+  const roleIds = Array.isArray(channel.roleIds) ? (channel.roleIds as string[]) : [];
+  const discordId = await createManagedChannel({
+    name: channel.name,
+    categoryId: channel.category.discordId,
+    kind: channel.kind as "text" | "voice",
+    roleIds,
+    topic: channel.topic ?? undefined,
+  });
+  if (!discordId) return { error: "Discord: couldn't recreate that channel — check the bot's permissions." };
+
+  const count = await db.discordManagedChannel.count({ where: { categoryId: channel.categoryId, deletedAt: null } });
+  await db.discordManagedChannel.update({
+    where: { id },
+    data: { discordId, position: count, deletedAt: null },
+  });
+  await logAudit({
+    actorId: actor.id,
+    action: "discord.channel_restore",
+    targetType: "Discord",
+    targetId: discordId,
+    meta: { name: channel.name },
+  });
+  revalidatePath("/portal/discord");
+  return { ok: true };
+}
+
 /** Swap a category with its immediate neighbor (`dir` = -1 up, 1 down) — both on Discord and in our own order. */
 export async function moveDiscordCategory(id: string, dir: -1 | 1) {
   await assertPermission("discord:manage");
-  const categories = await db.discordCategory.findMany({ orderBy: { position: "asc" } });
+  const categories = await db.discordCategory.findMany({ where: { deletedAt: null }, orderBy: { position: "asc" } });
   const i = categories.findIndex((c) => c.id === id);
   const j = i + dir;
   if (i === -1 || j < 0 || j >= categories.length) return;
@@ -1930,19 +2145,23 @@ export async function moveDiscordCategory(id: string, dir: -1 | 1) {
  */
 export async function duplicateDiscordCategory(id: string): Promise<FormState> {
   const actor = await assertPermission("discord:manage");
-  const source = await db.discordCategory.findUnique({ where: { id }, include: { channels: true } });
-  if (!source) return { error: "That category is gone." };
+  const source = await db.discordCategory.findUnique({
+    where: { id },
+    include: { channels: { where: { deletedAt: null } } },
+  });
+  if (!source || source.deletedAt) return { error: "That category is gone." };
 
   const roleIds = Array.isArray(source.roleIds) ? (source.roleIds as string[]) : [];
   const newName = `${source.name} (copy)`.slice(0, 90);
   const newDiscordId = await createGuildCategory(newName, roleIds);
   if (!newDiscordId) return { error: "Discord: couldn't create the duplicate category." };
 
-  const count = await db.discordCategory.count();
+  const count = await db.discordCategory.count({ where: { deletedAt: null } });
   const created = await db.discordCategory.create({
     data: {
       discordId: newDiscordId,
       name: newName,
+      note: source.note,
       position: count,
       roleIds: roleIds as Prisma.InputJsonValue,
       createdById: actor.id,
@@ -1957,6 +2176,7 @@ export async function duplicateDiscordCategory(id: string): Promise<FormState> {
       categoryId: newDiscordId,
       kind: ch.kind as "text" | "voice",
       roleIds: chRoleIds,
+      topic: ch.topic ?? undefined,
     });
     if (!chDiscordId) continue; // one failing channel shouldn't abort the rest
     await db.discordManagedChannel.create({
@@ -1964,6 +2184,7 @@ export async function duplicateDiscordCategory(id: string): Promise<FormState> {
         discordId: chDiscordId,
         name: ch.name,
         kind: ch.kind,
+        topic: ch.topic,
         categoryId: created.id,
         position: i,
         roleIds: chRoleIds as Prisma.InputJsonValue,
@@ -1988,9 +2209,9 @@ export async function duplicateDiscordCategory(id: string): Promise<FormState> {
 export async function moveDiscordChannel(id: string, dir: -1 | 1) {
   await assertPermission("discord:manage");
   const channel = await db.discordManagedChannel.findUnique({ where: { id } });
-  if (!channel) return;
+  if (!channel || channel.deletedAt) return;
   const siblings = await db.discordManagedChannel.findMany({
-    where: { categoryId: channel.categoryId },
+    where: { categoryId: channel.categoryId, deletedAt: null },
     orderBy: { position: "asc" },
   });
   const i = siblings.findIndex((c) => c.id === id);

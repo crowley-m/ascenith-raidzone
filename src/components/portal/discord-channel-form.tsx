@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useRef, useState } from "react";
 import { saveDiscordChannel } from "@/app/(site)/portal/actions";
 import { DiscordRolePicker } from "@/components/portal/discord-role-picker";
+import { slugifyChannelName, slugifyChannelNameFinal } from "@/lib/discord-slug";
 
 type Role = { id: string; name: string };
 type Category = { id: string; name: string };
@@ -11,6 +12,7 @@ type ChannelInit = {
   id: string;
   name: string;
   kind: string;
+  topic: string | null;
   categoryId: string;
   roleIds: string[];
   synced: boolean;
@@ -21,19 +23,32 @@ export function DiscordChannelForm({
   roles,
   categories = [],
   channel,
+  existingNamesByCategory = {},
+  roleCounts,
 }: {
   categoryId: string;
   roles: Role[];
   categories?: Category[];
   channel?: ChannelInit;
+  existingNamesByCategory?: Record<string, string[]>;
+  roleCounts?: Record<string, number> | null;
 }) {
   const [state, action, pending] = useActionState(saveDiscordChannel, {});
   const ref = useRef<HTMLFormElement>(null);
   const [synced, setSynced] = useState(channel?.synced ?? false);
   const [kind, setKind] = useState(channel?.kind ?? "text");
+  const [name, setName] = useState(channel?.name ?? "");
+  const [targetCategoryId, setTargetCategoryId] = useState(channel?.categoryId ?? categoryId);
   useEffect(() => {
-    if (state.ok && !channel) ref.current?.reset();
+    if (state.ok && !channel) {
+      ref.current?.reset();
+      setName("");
+    }
   }, [state.ok, channel]);
+
+  const duplicate =
+    !!name.trim() &&
+    (existingNamesByCategory[targetCategoryId] ?? []).includes(name.trim().toLowerCase());
 
   return (
     <form ref={ref} action={action} className="grid gap-4">
@@ -46,9 +61,16 @@ export function DiscordChannelForm({
             required
             maxLength={90}
             className="input"
-            defaultValue={channel?.name ?? ""}
+            value={name}
+            onChange={(e) => setName(slugifyChannelName(e.target.value))}
+            onBlur={(e) => setName(slugifyChannelNameFinal(e.target.value))}
             placeholder="e.g. general-chat"
           />
+          {duplicate && (
+            <p className="mt-1 text-xs text-ember">
+              A channel named #{name.trim()} already exists in this category.
+            </p>
+          )}
         </div>
         {!channel && (
           <div>
@@ -64,7 +86,12 @@ export function DiscordChannelForm({
       {channel && categories.length > 1 ? (
         <div>
           <label className="label">Category</label>
-          <select name="categoryId" className="input" defaultValue={channel.categoryId}>
+          <select
+            name="categoryId"
+            className="input"
+            value={targetCategoryId}
+            onChange={(e) => setTargetCategoryId(e.target.value)}
+          >
             {categories.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
@@ -88,13 +115,31 @@ export function DiscordChannelForm({
 
       <div>
         <p className="label mb-1.5">Who can see it</p>
-        <DiscordRolePicker roles={roles} defaultRoleIds={channel?.roleIds ?? []} disabled={synced} />
+        <DiscordRolePicker
+          roles={roles}
+          defaultRoleIds={channel?.roleIds ?? []}
+          disabled={synced}
+          counts={roleCounts}
+        />
         <p className="mt-1.5 text-xs text-slate-500">
           {synced
             ? "Following the category's roles — untick “sync” to set its own instead."
             : "Leave every box unchecked for a staff/bot-only channel — nobody else can see it, even without picking a role."}
         </p>
       </div>
+
+      {kind === "text" && (
+        <div>
+          <label className="label">Topic (optional)</label>
+          <input
+            name="topic"
+            maxLength={200}
+            className="input text-sm"
+            defaultValue={channel?.topic ?? ""}
+            placeholder="Shown under the channel name in Discord"
+          />
+        </div>
+      )}
 
       {!channel && kind === "text" && (
         <div>

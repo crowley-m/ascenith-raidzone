@@ -517,19 +517,78 @@ one place tracking never silently drifts from reality:
   content — `seedChannelMessage()` in `portal/actions.ts`. Fire-once, not
   stored anywhere — re-editing a channel later has no way to re-send it.
 - **Bulk channels on category creation** — `DiscordCategoryForm`'s create
-  mode has a "Channels to create" textarea (one name per line, same
-  free-typed-list convention as `Settings.eventChannels`) — each becomes a
-  text channel, synced to the roles just picked for the category, optionally
-  seeded with the shared welcome message above. For anything needing its own
-  roles, a voice channel, or no seed message, create it via "Add channel"
-  afterward instead — the bulk path is deliberately simple (uniform
-  synced+text+shared-message), not a fully custom per-row builder.
+  mode has a card-by-card channel builder (`ChannelListBuilder`/
+  `ChannelCard`, see "form UX" below) — each card becomes a text or voice
+  channel, synced to the roles just picked for the category. For anything
+  needing its own roles instead, create it via "Add channel" afterward.
 - **Duplicate a category** — `duplicateDiscordCategory` clones a category
-  (name suffixed " (copy)", same `roleIds`) and every one of its channels
-  (own roles and `synced` flag preserved — a duplicated synced channel
-  follows its *own* new category, not the original) into a fresh set on
-  Discord. For recurring setups (a seasonal category) without rebuilding by
-  hand each time. One channel failing to clone doesn't abort the rest.
+  (name suffixed " (copy)", same `roleIds`/note) and every one of its
+  channels (own roles, `synced` flag, and topic preserved — a duplicated
+  synced channel follows its *own* new category, not the original) into a
+  fresh set on Discord. For recurring setups (a seasonal category) without
+  rebuilding by hand each time. One channel failing to clone doesn't abort
+  the rest.
+- **Channel topic** — `DiscordManagedChannel.topic` (text channels only),
+  settable per card in the bulk builder and on the standalone add/edit form.
+  `setManagedChannelTopic()` (`src/lib/discord.ts`) patches it independently
+  of a rename.
+- **Staff-only category note** — `DiscordCategory.note`, a short free-typed
+  line shown only in the portal (never posted to Discord) — what a category
+  is *for*, useful once there are a dozen of them and an older one's purpose
+  isn't obvious anymore.
+- **Role-membership counts** — `roleMemberCounts()` (`src/lib/discord.ts`)
+  paginates the guild's member list and tallies role ids, shown as `· N`
+  next to each chip in `<DiscordRolePicker>`. Best-effort: the "List Guild
+  Members" REST endpoint needs the privileged Server Members intent enabled
+  for the bot application, which not every setup has — on any failure
+  (403 included) this returns `null` and the picker just renders without
+  counts rather than breaking the page.
+- **Duplicate-name guard** — client-side only, non-blocking. The bulk
+  builder flags cards whose (post-slugify) names collide with each other;
+  the single add/edit form flags a name that collides with another channel
+  already in the target category (`existingNamesByCategory`, computed
+  server-side in `discord/page.tsx` from each category's live channel list).
+- **Auto-slugify channel names** — `slugifyChannelName()`/
+  `slugifyChannelNameFinal()` (`src/lib/discord-slug.ts`) live-lowercase and
+  hyphenate as staff type a channel name (not a category name — those keep
+  spaces/emoji), mirroring what Discord's own client does. The live version
+  doesn't trim a trailing hyphen (would eat the separator the instant a
+  space is typed before the next word); the final trim runs on blur.
+- **Creator badge** — `createdById`/`createdAt` were already stored but
+  never shown; `discord/page.tsx` now formats "Created by X on <date>" per
+  category/channel (masked through `maskName`/`hiddenActorIds` from
+  `staff-mask.ts`, same owner-invisibility rule as everywhere else) as a
+  hover tooltip (`title` attribute on a small ⓘ) — no extra JS needed.
+- **Category-wide role bulk-apply** — `applyCategoryRolesToChannels`
+  pushes the category's *current* `roleIds` onto every channel in it right
+  now, once — distinct from "sync to category" (`synced`), which keeps a
+  channel following the category's roles going forward and doesn't touch
+  channels that don't have it on.
+- **Bulk-select channels** — `<DiscordManagementList>`/`<CategoryBlock>`
+  (`src/components/portal/discord-management-list.tsx`, a client component;
+  page.tsx now just fetches data and formats it into
+  `CategoryVM`/`ChannelVM` view-models) adds a checkbox per channel row; a
+  toolbar appears once ≥1 is selected with "Move to…" + Move
+  (`bulkMoveDiscordChannels`) and "Delete selected" (`bulkDeleteDiscordChannels`,
+  same honest-delete semantics as a single delete).
+- **Search/filter box** — appears once there are more than 6 categories;
+  plain client-side text filter over category and channel names
+  (`DiscordManagementList`'s `query` state) — matching categories show all
+  their channels, a non-matching category still shows if any one of its
+  channels matches.
+- **"Recently deleted" recovery** — `DiscordCategory.deletedAt`/
+  `DiscordManagedChannel.deletedAt`: a delete now tombstones the DB row
+  (sets `deletedAt`) instead of hard-deleting it, once the Discord side is
+  confirmed gone. The main listing query filters `deletedAt: null`;
+  `discord/page.tsx` separately queries tombstones from the last 3 days
+  into a "Recently deleted" section. `restoreDiscordCategory`/
+  `restoreDiscordChannel` recreate the category/channel **fresh** on
+  Discord (new id, same name/roles/kind/topic) and clear `deletedAt` —
+  restoring a category also restores every channel that was deleted
+  alongside it. This is a rebuild, not a true undo: message history and the
+  original Discord ids are gone for good either way. Restoring a
+  standalone-deleted channel refuses if its category was deleted too
+  ("restore the category first").
 
 ## Player picker
 
@@ -617,17 +676,17 @@ scoped to that event's roster, short enough that scrolling alone is fine).
 
 - **`/portal/discord` form UX** — `<DiscordRolePicker>` (`src/components/portal/discord-role-picker.tsx`)
   is the one role selector both `DiscordCategoryForm` and `DiscordChannelForm` use — checkbox-driven
-  pill/chip toggles (`peer` + `sr-only` input, visual state on the sibling `<span>`) instead of a
-  cramped flat-wrapped row of native checkboxes, same `name="roleIds"` multi-value convention. The
-  category form's "Channels to create" is a card-by-card list (`ChannelListBuilder`/`ChannelCard`,
-  client `useState` array of `{id, name, message, pin, showMessage}` rows) instead of a newline-split
-  textarea — each card has its own collapsible "+ Add welcome message" post box (own textarea + pin
-  checkbox), not one shared message for every bulk-created channel. Submitted as three
-  index-aligned arrays — one `channelNames`/`channelSeedMessages`/`channelPinSeeds` input triplet per
-  card, in DOM order — `saveDiscordCategory` zips them back into per-channel rows with
-  `formData.getAll(...)` on each name (a card with the message box collapsed still emits empty
-  hidden `channelSeedMessages`/`channelPinSeeds` inputs so the three arrays stay the same length and
-  positionally aligned).
+  pill/chip toggles (`peer` + `sr-only` input, visual state on the sibling `<span>`, optional `· N`
+  member count) instead of a cramped flat-wrapped row of native checkboxes, same `name="roleIds"`
+  multi-value convention. The category form's "Channels to create" is a card-by-card list
+  (`ChannelListBuilder`/`ChannelCard`, client `useState` array of `{id, name, kind, topic, message,
+  pin, showDetails}` rows) instead of a newline-split textarea — each card has a text/voice toggle
+  and, for text, a collapsible "+ Add topic / welcome message" section (own topic + message + pin,
+  not one shared message for every bulk-created channel). Submitted as five index-aligned arrays —
+  one `channelNames`/`channelKinds`/`channelTopics`/`channelSeedMessages`/`channelPinSeeds` input
+  tuple per card, in DOM order — `saveDiscordCategory` zips them back into per-channel rows with
+  `formData.getAll(...)` on each name (a collapsed/voice card still emits the empty hidden inputs so
+  every array stays the same length and positionally aligned).
 
 ## Migrations
 

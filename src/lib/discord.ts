@@ -771,6 +771,7 @@ export async function createManagedChannel(opts: {
   categoryId: string;
   kind: "text" | "voice";
   roleIds: string[];
+  topic?: string;
 }): Promise<string | null> {
   const gid = process.env.DISCORD_GUILD_ID;
   if (!gid || !process.env.DISCORD_BOT_TOKEN) return null;
@@ -783,12 +784,28 @@ export async function createManagedChannel(opts: {
         type: opts.kind === "voice" ? 2 : 0,
         parent_id: opts.categoryId,
         permission_overwrites: overwrites,
+        ...(opts.kind === "text" && opts.topic ? { topic: opts.topic.slice(0, 1024) } : {}),
       }),
     })) as { id?: string };
     return c.id ?? null;
   } catch (err) {
     console.error("createManagedChannel failed", err);
     return null;
+  }
+}
+
+/** Set a text channel's topic (blank clears it). Returns whether it stuck. */
+export async function setManagedChannelTopic(channelId: string, topic: string): Promise<boolean> {
+  if (!process.env.DISCORD_BOT_TOKEN) return false;
+  try {
+    await discordFetch(`/channels/${channelId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ topic: topic.slice(0, 1024) }),
+    });
+    return true;
+  } catch (err) {
+    console.error("setManagedChannelTopic failed", err);
+    return false;
   }
 }
 
@@ -975,6 +992,39 @@ export async function listGuildRoles(): Promise<{ id: string; name: string; colo
       .map((r) => ({ id: r.id, name: r.name, color: r.color }));
   } catch {
     return [];
+  }
+}
+
+/**
+ * How many members currently hold each guild role — for role pickers, so
+ * staff aren't choosing roles blind. Best-effort: the "List Guild Members"
+ * endpoint needs the privileged Server Members intent enabled for the bot
+ * application, which not every setup has turned on, so this returns null
+ * (rather than throwing) on any failure and callers just skip showing
+ * counts. Paginates up to 5000 members, which comfortably covers a
+ * community-sized guild.
+ */
+export async function roleMemberCounts(): Promise<Record<string, number> | null> {
+  const gid = process.env.DISCORD_GUILD_ID;
+  if (!gid || !process.env.DISCORD_BOT_TOKEN) return null;
+  const counts: Record<string, number> = {};
+  let after = "0";
+  try {
+    for (let page = 0; page < 5; page++) {
+      const batch = (await discordFetch(`/guilds/${gid}/members?limit=1000&after=${after}`, {
+        method: "GET",
+      })) as { user?: { id: string }; roles: string[] }[];
+      if (!batch.length) break;
+      for (const m of batch) for (const r of m.roles) counts[r] = (counts[r] ?? 0) + 1;
+      if (batch.length < 1000) break;
+      const last = batch[batch.length - 1].user?.id;
+      if (!last) break;
+      after = last;
+    }
+    return counts;
+  } catch (err) {
+    console.error("roleMemberCounts failed (privileged Server Members intent may be off)", err);
+    return null;
   }
 }
 

@@ -1,30 +1,39 @@
 import { requirePermission } from "@/lib/session";
 import { db } from "@/lib/db";
-import { listGuildRoles, botGuildPermissions, channelExists } from "@/lib/discord";
+import { listGuildRoles, botGuildPermissions, channelExists, roleMemberCounts } from "@/lib/discord";
+import { hiddenActorIds, maskName } from "@/lib/staff-mask";
 import { DiscordCategoryForm } from "@/components/portal/discord-category-form";
-import { DiscordChannelForm } from "@/components/portal/discord-channel-form";
-import { MoveButtons } from "@/components/portal/discord-move-buttons";
+import { DiscordManagementList, type CategoryVM } from "@/components/portal/discord-management-list";
 import { ConfirmButton } from "@/components/portal/confirm-button";
-import {
-  deleteDiscordCategory,
-  deleteDiscordChannel,
-  moveDiscordCategory,
-  moveDiscordChannel,
-  duplicateDiscordCategory,
-} from "@/app/(site)/portal/actions";
+import { restoreDiscordCategory, restoreDiscordChannel } from "@/app/(site)/portal/actions";
 
 export const dynamic = "force-dynamic";
 
-export default async function DiscordManagementPage() {
-  await requirePermission("discord:manage");
+const RECENTLY_DELETED_DAYS = 3;
 
-  const [categories, roles, botPerms] = await Promise.all([
+export default async function DiscordManagementPage() {
+  const me = await requirePermission("discord:manage");
+  const since = new Date(Date.now() - RECENTLY_DELETED_DAYS * 86400000);
+
+  const [categories, roles, botPerms, roleCounts, hidden, deletedCategories, deletedChannels] = await Promise.all([
     db.discordCategory.findMany({
-      include: { channels: { orderBy: { position: "asc" } } },
+      where: { deletedAt: null },
+      include: {
+        channels: { where: { deletedAt: null }, orderBy: { position: "asc" }, include: { createdBy: true } },
+        createdBy: true,
+      },
       orderBy: { position: "asc" },
     }),
     listGuildRoles(),
     botGuildPermissions(),
+    roleMemberCounts(),
+    hiddenActorIds(me.role),
+    db.discordCategory.findMany({ where: { deletedAt: { gte: since } }, orderBy: { deletedAt: "desc" } }),
+    db.discordManagedChannel.findMany({
+      where: { deletedAt: { gte: since }, category: { deletedAt: null } },
+      include: { category: true },
+      orderBy: { deletedAt: "desc" },
+    }),
   ]);
 
   // Live drift check — anything created here that's since been deleted
@@ -37,8 +46,33 @@ export default async function DiscordManagementPage() {
   const existsFlags = await Promise.all(allIds.map((did) => channelExists(did)));
   const exists = new Map(allIds.map((did, i) => [did, existsFlags[i]]));
 
-  const roleName = (id: string) => roles.find((r) => r.id === id)?.name ?? `(deleted role ${id})`;
   const categoryOptions = categories.map((c) => ({ id: c.id, name: c.name }));
+  const existingNamesByCategory: Record<string, string[]> = {};
+  for (const c of categories) {
+    existingNamesByCategory[c.id] = c.channels.map((ch) => ch.name.toLowerCase());
+  }
+
+  const creatorLabel = (createdBy: { name: string | null; email: string | null }, createdById: string, createdAt: Date) =>
+    `Created by ${maskName(createdBy.name ?? createdBy.email, createdById, hidden)} on ${createdAt.toLocaleDateString()}`;
+
+  const categoryVMs: CategoryVM[] = categories.map((c) => ({
+    id: c.id,
+    name: c.name,
+    note: c.note,
+    roleIds: Array.isArray(c.roleIds) ? (c.roleIds as string[]) : [],
+    missing: !exists.get(c.discordId),
+    creatorLabel: creatorLabel(c.createdBy, c.createdById, c.createdAt),
+    channels: c.channels.map((ch) => ({
+      id: ch.id,
+      name: ch.name,
+      kind: ch.kind,
+      topic: ch.topic,
+      synced: ch.synced,
+      roleIds: Array.isArray(ch.roleIds) ? (ch.roleIds as string[]) : [],
+      missing: !exists.get(ch.discordId),
+      creatorLabel: creatorLabel(ch.createdBy, ch.createdById, ch.createdAt),
+    })),
+  }));
 
   return (
     <div className="max-w-2xl">
@@ -74,148 +108,62 @@ export default async function DiscordManagementPage() {
 
       <div className="card mt-6">
         <p className="label mb-2">New category</p>
-        <DiscordCategoryForm roles={roles} />
+        <DiscordCategoryForm roles={roles} roleCounts={roleCounts} />
       </div>
 
-      <ul className="mt-6 space-y-3">
-        {categories.map((c, ci) => {
-          const catMissing = !exists.get(c.discordId);
-          const catRoleIds = Array.isArray(c.roleIds) ? (c.roleIds as string[]) : [];
-          return (
-            <li key={c.id} className="card">
-              <details>
-                <summary className="flex cursor-pointer list-none flex-wrap items-center gap-3">
-                  <MoveButtons
-                    onUp={() => moveDiscordCategory(c.id, -1)}
-                    onDown={() => moveDiscordCategory(c.id, 1)}
-                    disableUp={ci === 0}
-                    disableDown={ci === categories.length - 1}
-                  />
-                  <span className="font-medium text-slate-100">{c.name}</span>
-                  <span className="text-xs text-slate-500">
-                    {c.channels.length} channel{c.channels.length === 1 ? "" : "s"}
-                  </span>
-                  {catMissing && (
-                    <span className="badge border-ember/40 text-ember">Not found on Discord</span>
-                  )}
-                  {catRoleIds.length === 0 ? (
-                    <span className="text-xs text-slate-600">header: staff/bot only</span>
-                  ) : (
-                    catRoleIds.map((rid) => (
-                      <span key={rid} className="badge border-teal/40 text-teal">
-                        {roleName(rid)}
-                      </span>
-                    ))
-                  )}
-                </summary>
+      <div className="mt-6">
+        <DiscordManagementList
+          categories={categoryVMs}
+          roles={roles}
+          roleCounts={roleCounts}
+          existingNamesByCategory={existingNamesByCategory}
+          categoryOptions={categoryOptions}
+        />
+      </div>
 
-                <div className="mt-4 space-y-4 border-t border-edge pt-4">
-                  <div>
-                    <p className="label mb-1.5">Rename / edit category</p>
-                    <DiscordCategoryForm
-                      category={{ id: c.id, name: c.name, roleIds: catRoleIds }}
-                      roles={roles}
-                    />
-                  </div>
-
-                  <div>
-                    <p className="label mb-1.5">Channels</p>
-                    <ul className="space-y-2">
-                      {c.channels.map((ch, chi) => {
-                        const chRoleIds = Array.isArray(ch.roleIds) ? (ch.roleIds as string[]) : [];
-                        const chMissing = !exists.get(ch.discordId);
-                        return (
-                          <li key={ch.id} className="border border-edge/60 bg-void/40 p-3">
-                            <details>
-                              <summary className="flex cursor-pointer list-none flex-wrap items-center gap-2">
-                                <MoveButtons
-                                  onUp={() => moveDiscordChannel(ch.id, -1)}
-                                  onDown={() => moveDiscordChannel(ch.id, 1)}
-                                  disableUp={chi === 0}
-                                  disableDown={chi === c.channels.length - 1}
-                                />
-                                <span className="badge">{ch.kind === "voice" ? "voice" : "text"}</span>
-                                <span className="text-sm text-slate-100">{ch.name}</span>
-                                {ch.synced && (
-                                  <span className="badge border-teal/40 text-teal">synced</span>
-                                )}
-                                {chMissing && (
-                                  <span className="badge border-ember/40 text-ember">
-                                    Not found on Discord
-                                  </span>
-                                )}
-                                {chRoleIds.length === 0 ? (
-                                  <span className="text-xs text-slate-600">staff/bot only</span>
-                                ) : (
-                                  chRoleIds.map((rid) => (
-                                    <span key={rid} className="badge border-teal/40 text-teal">
-                                      {roleName(rid)}
-                                    </span>
-                                  ))
-                                )}
-                              </summary>
-                              <div className="mt-3 border-t border-edge/60 pt-3">
-                                <DiscordChannelForm
-                                  categoryId={c.id}
-                                  roles={roles}
-                                  categories={categoryOptions}
-                                  channel={{
-                                    id: ch.id,
-                                    name: ch.name,
-                                    kind: ch.kind,
-                                    categoryId: c.id,
-                                    roleIds: chRoleIds,
-                                    synced: ch.synced,
-                                  }}
-                                />
-                                <div className="mt-3">
-                                  <ConfirmButton
-                                    action={deleteDiscordChannel.bind(null, ch.id)}
-                                    confirm={`Delete #${ch.name}? This deletes the channel on Discord too.`}
-                                  >
-                                    Delete channel
-                                  </ConfirmButton>
-                                </div>
-                              </div>
-                            </details>
-                          </li>
-                        );
-                      })}
-                      {c.channels.length === 0 && (
-                        <li className="text-xs text-slate-500">No channels in this category yet.</li>
-                      )}
-                    </ul>
-                  </div>
-
-                  <div>
-                    <p className="label mb-1.5">Add channel</p>
-                    <DiscordChannelForm categoryId={c.id} roles={roles} />
-                  </div>
-
-                  <div className="flex flex-wrap gap-2 border-t border-edge/60 pt-3">
-                    <ConfirmButton
-                      action={duplicateDiscordCategory.bind(null, c.id)}
-                      confirm={`Duplicate "${c.name}" and its ${c.channels.length} channel${c.channels.length === 1 ? "" : "s"} into a new category?`}
-                      className="btn-ghost text-xs"
-                    >
-                      Duplicate category
-                    </ConfirmButton>
-                    <ConfirmButton
-                      action={deleteDiscordCategory.bind(null, c.id)}
-                      confirm={`Delete "${c.name}" and all ${c.channels.length} of its channels? This deletes them on Discord too.`}
-                    >
-                      Delete category
-                    </ConfirmButton>
-                  </div>
-                </div>
-              </details>
-            </li>
-          );
-        })}
-        {categories.length === 0 && (
-          <li className="text-sm text-slate-400">No categories yet — create one above.</li>
-        )}
-      </ul>
+      {(deletedCategories.length > 0 || deletedChannels.length > 0) && (
+        <details className="card mt-6">
+          <summary className="cursor-pointer text-sm font-medium text-slate-300">
+            Recently deleted ({deletedCategories.length + deletedChannels.length})
+          </summary>
+          <p className="mt-2 text-xs text-slate-500">
+            Kept for {RECENTLY_DELETED_DAYS} days. Restoring recreates it fresh on Discord — new
+            channel, same name/roles — message history and the original channel are gone for
+            good.
+          </p>
+          <ul className="mt-3 space-y-2">
+            {deletedCategories.map((c) => (
+              <li key={c.id} className="flex flex-wrap items-center gap-2 border border-edge/60 bg-void/40 p-2.5 text-xs">
+                <span className="badge">category</span>
+                <span className="text-slate-200">{c.name}</span>
+                <span className="text-slate-600">deleted {c.deletedAt?.toLocaleDateString()}</span>
+                <ConfirmButton
+                  action={restoreDiscordCategory.bind(null, c.id)}
+                  confirm={`Restore "${c.name}" and its channels as new Discord channels?`}
+                  className="btn-ghost ml-auto px-2 py-1 text-xs"
+                >
+                  Restore
+                </ConfirmButton>
+              </li>
+            ))}
+            {deletedChannels.map((ch) => (
+              <li key={ch.id} className="flex flex-wrap items-center gap-2 border border-edge/60 bg-void/40 p-2.5 text-xs">
+                <span className="badge">{ch.kind === "voice" ? "voice" : "text"}</span>
+                <span className="text-slate-200">#{ch.name}</span>
+                <span className="text-slate-600">from {ch.category.name}</span>
+                <span className="text-slate-600">deleted {ch.deletedAt?.toLocaleDateString()}</span>
+                <ConfirmButton
+                  action={restoreDiscordChannel.bind(null, ch.id)}
+                  confirm={`Restore #${ch.name} as a new channel in ${ch.category.name}?`}
+                  className="btn-ghost ml-auto px-2 py-1 text-xs"
+                >
+                  Restore
+                </ConfirmButton>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
     </div>
   );
 }
