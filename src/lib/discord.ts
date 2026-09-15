@@ -630,9 +630,59 @@ export async function createRoleVoiceChannel(
   }
 }
 
-export async function deleteChannel(channelId: string): Promise<void> {
-  if (!channelId || !process.env.DISCORD_BOT_TOKEN) return;
-  await discordFetch(`/channels/${channelId}`, { method: "DELETE" }).catch(() => {});
+/**
+ * Delete a channel or category. Returns whether it's actually gone —
+ * true both when the delete succeeds and when it was already gone (404),
+ * false on a real failure (missing bot perms, rate limit, network). Callers
+ * that need to know whether it's safe to drop their own tracking record
+ * should check this instead of firing-and-forgetting.
+ */
+export async function deleteChannel(channelId: string): Promise<boolean> {
+  if (!channelId || !process.env.DISCORD_BOT_TOKEN) return false;
+  try {
+    await discordFetch(`/channels/${channelId}`, { method: "DELETE" });
+    return true;
+  } catch (err) {
+    if (err instanceof Error && /-> 404:/.test(err.message)) return true;
+    console.error("deleteChannel failed", err);
+    return false;
+  }
+}
+
+/** Whether a channel or category still exists on Discord. */
+export async function channelExists(channelId: string): Promise<boolean> {
+  if (!channelId || !process.env.DISCORD_BOT_TOKEN) return true; // can't check — don't flag falsely
+  try {
+    await discordFetch(`/channels/${channelId}`, { method: "GET" });
+    return true;
+  } catch (err) {
+    if (err instanceof Error && /-> 404:/.test(err.message)) return false;
+    return true; // transient error — don't flag as missing on a guess
+  }
+}
+
+/** Move a channel to a different category (or to no category if `null`). */
+export async function setChannelParent(channelId: string, parentId: string | null): Promise<boolean> {
+  if (!process.env.DISCORD_BOT_TOKEN) return false;
+  try {
+    await discordFetch(`/channels/${channelId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ parent_id: parentId }),
+    });
+    return true;
+  } catch (err) {
+    console.error("setChannelParent failed", err);
+    return false;
+  }
+}
+
+/** Set a channel or category's position among its siblings. Best-effort. */
+export async function setChannelPosition(channelId: string, position: number): Promise<void> {
+  if (!process.env.DISCORD_BOT_TOKEN) return;
+  await discordFetch(`/channels/${channelId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ position }),
+  }).catch((err) => console.error("setChannelPosition failed", err));
 }
 
 // --------------------------------------------------------------------------

@@ -4,21 +4,25 @@ import { useActionState, useEffect, useRef } from "react";
 import { saveDiscordChannel } from "@/app/(site)/portal/actions";
 
 type Role = { id: string; name: string };
+type Category = { id: string; name: string };
 
 type ChannelInit = {
   id: string;
   name: string;
   kind: string;
+  categoryId: string;
   roleIds: string[];
 };
 
 export function DiscordChannelForm({
   categoryId,
   roles,
+  categories = [],
   channel,
 }: {
   categoryId: string;
   roles: Role[];
+  categories?: Category[];
   channel?: ChannelInit;
 }) {
   const [state, action, pending] = useActionState(saveDiscordChannel, {});
@@ -30,7 +34,6 @@ export function DiscordChannelForm({
   return (
     <form ref={ref} action={action} className="grid gap-3">
       {channel && <input type="hidden" name="id" value={channel.id} />}
-      {!channel && <input type="hidden" name="categoryId" value={categoryId} />}
       <div className="grid gap-3 sm:grid-cols-[1fr_8rem]">
         <div>
           {!channel && <label className="label">Channel name</label>}
@@ -53,6 +56,21 @@ export function DiscordChannelForm({
           </div>
         )}
       </div>
+
+      {channel && categories.length > 1 ? (
+        <div>
+          <label className="label">Category</label>
+          <select name="categoryId" className="input" defaultValue={channel.categoryId}>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      ) : (
+        !channel && <input type="hidden" name="categoryId" value={categoryId} />
+      )}
 
       <div>
         <p className="label mb-1.5">Who can see it</p>

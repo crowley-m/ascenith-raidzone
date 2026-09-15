@@ -462,6 +462,37 @@ follow the same create-or-update-by-optional-`id` shape as `saveFaction`,
 and the page itself mirrors `/portal/factions`' `<details>`-accordion
 layout (`ConfirmButton` for deletes).
 
+Four things added on top of the initial version, since it's meant to be the
+one place tracking never silently drifts from reality:
+
+- **Honest deletes** — `deleteChannel()` (`src/lib/discord.ts`) now returns
+  whether the thing is actually gone (`true` on success *or* an already-404,
+  `false` on a real failure) instead of firing-and-forgetting. The delete
+  actions only drop a DB row once that's confirmed — a failed Discord call
+  (missing bot perms, rate limit) leaves the row in place so staff see it
+  and can retry, rather than losing track of a channel that still exists.
+  `deleteDiscordCategory` deletes all its channels first and keeps whatever
+  succeeded even if the category deletion itself then fails.
+- **Drift detection** — the page live-checks every tracked `discordId`
+  against Discord on each load (`channelExists()`, parallel `Promise.all`,
+  no schema flag) and badges anything that's gone missing (deleted directly
+  in Discord, bypassing this page) as "Not found on Discord" rather than
+  just looking fine. Deleting an already-missing one succeeds instantly
+  (the 404-is-success case above), so it doubles as the cleanup path.
+- **Move a channel to a different category** — `DiscordChannelForm`'s edit
+  mode shows a category `<select>` when editing (only when there's more
+  than one category to move to); `saveDiscordChannel` calls
+  `setChannelParent()` and appends it at the end of the new category's
+  order.
+- **Reordering** — both models carry a swap-based `position` (new rows
+  append at the end of their siblings). `moveDiscordCategory`/
+  `moveDiscordChannel` swap one row with its immediate neighbor in a
+  transaction, then best-effort mirror the swap to Discord's own
+  `position` field via `setChannelPosition()`. `<MoveButtons>`
+  (`src/components/portal/discord-move-buttons.tsx`) is the shared ↑/↓
+  control, used inside a `<summary>` so it calls `stopPropagation` to avoid
+  also toggling the `<details>` open/closed.
+
 ## Player picker
 
 `src/components/portal/player-picker.tsx` — a searchable + scrollable

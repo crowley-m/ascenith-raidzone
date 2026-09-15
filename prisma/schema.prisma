@@ -556,6 +556,7 @@ model DiscordCategory {
   id          String   @id @default(cuid())
   discordId   String   @unique
   name        String
+  position    Int      @default(0) // display/Discord order among categories — swap-based reordering
   createdById String
   createdBy   User     @relation("DiscordCategoryCreator", fields: [createdById], references: [id])
   createdAt   DateTime @default(now())
@@ -568,6 +569,7 @@ model DiscordManagedChannel {
   discordId   String          @unique
   name        String
   kind        String          @default("text") // "text" | "voice"
+  position    Int             @default(0) // order within its category — swap-based reordering
   categoryId  String
   category    DiscordCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   roleIds     Json            @default("[]") // Discord role ids allowed to view this channel — empty = staff/bot only

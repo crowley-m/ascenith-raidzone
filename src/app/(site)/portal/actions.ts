@@ -39,6 +39,8 @@ import {
   createManagedChannel,
   setManagedChannelRoles,
   renameGuildChannel,
+  setChannelParent,
+  setChannelPosition,
 } from "@/lib/discord";
 import { eventChannelPayloads, EVENT_CHANNEL_ORDER } from "@/lib/event-channels";
 import { createMediaAsset, deleteMediaAssetFromUrl } from "@/lib/media";
@@ -1661,7 +1663,10 @@ export async function saveDiscordCategory(_prev: FormState, formData: FormData):
   } else {
     const discordId = await createGuildCategory(name);
     if (!discordId) return { error: "Discord: couldn't create that category — check the bot's permissions." };
-    const created = await db.discordCategory.create({ data: { discordId, name, createdById: actor.id } });
+    const count = await db.discordCategory.count();
+    const created = await db.discordCategory.create({
+      data: { discordId, name, position: count, createdById: actor.id },
+    });
     await logAudit({
       actorId: actor.id,
       action: "discord.category_create",
@@ -1675,13 +1680,34 @@ export async function saveDiscordCategory(_prev: FormState, formData: FormData):
   return { ok: true };
 }
 
-export async function deleteDiscordCategory(id: string) {
+/**
+ * Deletes on Discord first and only drops DB tracking for what's actually
+ * confirmed gone — a failed Discord delete (missing bot perms, rate limit)
+ * leaves the row in place so staff can see it and retry, rather than
+ * silently losing track of a channel that still exists.
+ */
+export async function deleteDiscordCategory(id: string): Promise<FormState> {
   const actor = await assertPermission("discord:manage");
   const category = await db.discordCategory.findUnique({ where: { id }, include: { channels: true } });
-  if (!category) return;
+  if (!category) return { ok: true };
+
   // categories don't cascade-delete their children on Discord — drop each first
-  for (const ch of category.channels) void deleteChannel(ch.discordId);
-  void deleteChannel(category.discordId);
+  const results = await Promise.all(category.channels.map((ch) => deleteChannel(ch.discordId)));
+  const failed = category.channels.filter((_, i) => !results[i]);
+  if (failed.length > 0) {
+    return {
+      error: `Discord: couldn't delete ${failed.map((c) => c.name).join(", ")} — check the bot's permissions and try again.`,
+    };
+  }
+  // every channel is confirmed gone on Discord even if the category itself fails below
+  await db.discordManagedChannel.deleteMany({ where: { categoryId: id } });
+
+  const categoryOk = await deleteChannel(category.discordId);
+  if (!categoryOk) {
+    revalidatePath("/portal/discord");
+    return { error: "Discord: deleted its channels, but couldn't delete the category itself — try again." };
+  }
+
   await db.discordCategory.delete({ where: { id } });
   await logAudit({
     actorId: actor.id,
@@ -1691,6 +1717,7 @@ export async function deleteDiscordCategory(id: string) {
     meta: { name: category.name },
   });
   revalidatePath("/portal/discord");
+  return { ok: true };
 }
 
 export async function saveDiscordChannel(_prev: FormState, formData: FormData): Promise<FormState> {
@@ -1711,16 +1738,33 @@ export async function saveDiscordChannel(_prev: FormState, formData: FormData): 
     }
     const rolesOk = await setManagedChannelRoles(existing.discordId, existing.kind as "text" | "voice", roleIds);
     if (!rolesOk) return { error: "Discord: couldn't update who can see that channel." };
+
+    let newCategoryId = existing.categoryId;
+    let newPosition = existing.position;
+    if (categoryId && categoryId !== existing.categoryId) {
+      const target = await db.discordCategory.findUnique({ where: { id: categoryId } });
+      if (!target) return { error: "That destination category is gone." };
+      const moved = await setChannelParent(existing.discordId, target.discordId);
+      if (!moved) return { error: "Discord: couldn't move that channel — check the bot's permissions." };
+      newCategoryId = categoryId;
+      newPosition = await db.discordManagedChannel.count({ where: { categoryId } }); // append at the end
+    }
+
     await db.discordManagedChannel.update({
       where: { id },
-      data: { name, roleIds: roleIds as Prisma.InputJsonValue },
+      data: {
+        name,
+        roleIds: roleIds as Prisma.InputJsonValue,
+        categoryId: newCategoryId,
+        position: newPosition,
+      },
     });
     await logAudit({
       actorId: actor.id,
       action: "discord.channel_update",
       targetType: "Discord",
       targetId: existing.discordId,
-      meta: { name, roleIds },
+      meta: { name, roleIds, categoryId: newCategoryId },
     });
   } else {
     if (!categoryId) return { error: "Pick a category." };
@@ -1728,8 +1772,17 @@ export async function saveDiscordChannel(_prev: FormState, formData: FormData): 
     if (!category) return { error: "That category is gone." };
     const discordId = await createManagedChannel({ name, categoryId: category.discordId, kind, roleIds });
     if (!discordId) return { error: "Discord: couldn't create that channel — check the bot's permissions." };
+    const count = await db.discordManagedChannel.count({ where: { categoryId } });
     const created = await db.discordManagedChannel.create({
-      data: { discordId, name, kind, categoryId, roleIds: roleIds as Prisma.InputJsonValue, createdById: actor.id },
+      data: {
+        discordId,
+        name,
+        kind,
+        categoryId,
+        position: count,
+        roleIds: roleIds as Prisma.InputJsonValue,
+        createdById: actor.id,
+      },
     });
     await logAudit({
       actorId: actor.id,
@@ -1744,11 +1797,12 @@ export async function saveDiscordChannel(_prev: FormState, formData: FormData): 
   return { ok: true };
 }
 
-export async function deleteDiscordChannel(id: string) {
+export async function deleteDiscordChannel(id: string): Promise<FormState> {
   const actor = await assertPermission("discord:manage");
   const channel = await db.discordManagedChannel.findUnique({ where: { id } });
-  if (!channel) return;
-  void deleteChannel(channel.discordId);
+  if (!channel) return { ok: true };
+  const ok = await deleteChannel(channel.discordId);
+  if (!ok) return { error: "Discord: couldn't delete that channel — check the bot's permissions and try again." };
   await db.discordManagedChannel.delete({ where: { id } });
   await logAudit({
     actorId: actor.id,
@@ -1757,6 +1811,46 @@ export async function deleteDiscordChannel(id: string) {
     targetId: channel.discordId,
     meta: { name: channel.name },
   });
+  revalidatePath("/portal/discord");
+  return { ok: true };
+}
+
+/** Swap a category with its immediate neighbor (`dir` = -1 up, 1 down) — both on Discord and in our own order. */
+export async function moveDiscordCategory(id: string, dir: -1 | 1) {
+  await assertPermission("discord:manage");
+  const categories = await db.discordCategory.findMany({ orderBy: { position: "asc" } });
+  const i = categories.findIndex((c) => c.id === id);
+  const j = i + dir;
+  if (i === -1 || j < 0 || j >= categories.length) return;
+  const [a, b] = [categories[i], categories[j]];
+  await db.$transaction([
+    db.discordCategory.update({ where: { id: a.id }, data: { position: b.position } }),
+    db.discordCategory.update({ where: { id: b.id }, data: { position: a.position } }),
+  ]);
+  void setChannelPosition(a.discordId, b.position);
+  void setChannelPosition(b.discordId, a.position);
+  revalidatePath("/portal/discord");
+}
+
+/** Swap a channel with its immediate neighbor within the same category. */
+export async function moveDiscordChannel(id: string, dir: -1 | 1) {
+  await assertPermission("discord:manage");
+  const channel = await db.discordManagedChannel.findUnique({ where: { id } });
+  if (!channel) return;
+  const siblings = await db.discordManagedChannel.findMany({
+    where: { categoryId: channel.categoryId },
+    orderBy: { position: "asc" },
+  });
+  const i = siblings.findIndex((c) => c.id === id);
+  const j = i + dir;
+  if (i === -1 || j < 0 || j >= siblings.length) return;
+  const [a, b] = [siblings[i], siblings[j]];
+  await db.$transaction([
+    db.discordManagedChannel.update({ where: { id: a.id }, data: { position: b.position } }),
+    db.discordManagedChannel.update({ where: { id: b.id }, data: { position: a.position } }),
+  ]);
+  void setChannelPosition(a.discordId, b.position);
+  void setChannelPosition(b.discordId, a.position);
   revalidatePath("/portal/discord");
 }
 
