@@ -133,20 +133,12 @@ export const seasonSchema = z.object({
   championNote: z.string().max(200).nullable().optional(),
   posterUrl: z.string().max(500).nullable().optional(),
   blurb: z.string().max(600).nullable().optional(),
-  videosText: z.string().max(5000).nullable().optional(),
 });
 
-/** "url | optional title" per line → [{ url, title }] */
-export function parseSeasonVideos(text: string | null | undefined) {
-  if (!text) return [];
-  return text
-    .split("\n")
-    .map((l) => l.trim())
-    .filter(Boolean)
-    .map((l) => {
-      const [url, ...rest] = l.split("|");
-      return { url: url.trim(), title: rest.join("|").trim() || null };
-    })
+/** Index-aligned url/title card rows (from the season form's video builder) → [{ url, title }], dropping any card whose url isn't http(s). */
+export function buildSeasonVideos(urls: string[], titles: string[]) {
+  return urls
+    .map((url, i) => ({ url: url.trim(), title: (titles[i] ?? "").trim() || null }))
     .filter((v) => /^https?:\/\//.test(v.url));
 }
 

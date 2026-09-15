@@ -11,7 +11,7 @@ import {
   flagSchema,
   noteSchema,
   parseRewardTiers,
-  parseSeasonVideos,
+  buildSeasonVideos,
   rewardSchema,
   seasonSchema,
 } from "@/lib/validation";
@@ -2358,7 +2358,6 @@ export async function saveSeason(_prev: FormState, formData: FormData): Promise<
     championNote: str("championNote"),
     posterUrl: str("posterUrl"),
     blurb: str("blurb"),
-    videosText: str("videosText"),
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Check the season fields." };
@@ -2378,7 +2377,10 @@ export async function saveSeason(_prev: FormState, formData: FormData): Promise<
     posterUrl: s.posterUrl ?? null,
     blurb: s.blurb ?? null,
   };
-  const videos = parseSeasonVideos(s.videosText);
+  const videos = buildSeasonVideos(
+    formData.getAll("videoUrls").map(String),
+    formData.getAll("videoTitles").map(String),
+  );
 
   let seasonId = id;
   try {

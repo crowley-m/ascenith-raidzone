@@ -9,10 +9,12 @@ export const dynamic = "force-dynamic";
 export default async function PortalTeamsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; eventId?: string }>;
+  searchParams: Promise<{ q?: string; eventId?: string; page?: string }>;
 }) {
   await requirePermission("player:view");
-  const { q, eventId } = await searchParams;
+  const { q, eventId, page } = await searchParams;
+  const pageN = Math.max(1, Number(page) || 1);
+  const take = 100;
 
   const where: Prisma.TeamWhereInput = {};
   if (eventId) where.eventId = eventId;
@@ -24,24 +26,39 @@ export default async function PortalTeamsPage({
     ];
   }
 
-  const [teams, events] = await Promise.all([
+  const [teams, matched, events] = await Promise.all([
     db.team.findMany({
       where,
       orderBy: { createdAt: "asc" },
+      skip: (pageN - 1) * take,
+      take,
       include: {
         leader: { select: { characterName: true } },
         event: { select: { title: true, mode: true } },
         _count: { select: { members: true, placements: true } },
       },
     }),
+    db.team.count({ where }),
     db.event.findMany({ orderBy: { startsAt: "desc" }, take: 50, select: { id: true, title: true } }),
   ]);
+  const pages = Math.ceil(matched / take);
+  const pageHref = (n: number) =>
+    `/portal/teams?${new URLSearchParams({
+      ...(q ? { q } : {}),
+      ...(eventId ? { eventId } : {}),
+      page: String(n),
+    })}`;
 
   return (
     <div>
-      <h2 className="font-display text-xl font-bold text-white">
-        Teams <span className="text-slate-500">({teams.length})</span>
-      </h2>
+      <div className="flex flex-wrap items-center gap-3">
+        <h2 className="font-display text-xl font-bold text-white">Teams</h2>
+        <span className="text-sm text-slate-500">
+          {matched > take
+            ? `${(pageN - 1) * take + 1}–${(pageN - 1) * take + teams.length} of ${matched}`
+            : `${teams.length} shown`}
+        </span>
+      </div>
       <p className="mt-1 text-sm text-slate-400">
         Player-made squads for team events. Members and event history per team.
       </p>
@@ -111,6 +128,18 @@ export default async function PortalTeamsPage({
           </tbody>
         </table>
       </div>
+
+      {pages > 1 && (
+        <div className="mt-4 flex items-center gap-3 text-sm">
+          {pageN > 1 && (
+            <Link href={pageHref(pageN - 1)} className="link">← Newer</Link>
+          )}
+          <span className="text-slate-500">Page {pageN} / {pages}</span>
+          {pageN < pages && (
+            <Link href={pageHref(pageN + 1)} className="link">Older →</Link>
+          )}
+        </div>
+      )}
     </div>
   );
 }

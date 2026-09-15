@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { saveSeason } from "@/app/(site)/portal/actions";
 
 export type SeasonInit = {
@@ -17,8 +17,69 @@ export type SeasonInit = {
   championNote: string | null;
   posterUrl: string | null;
   blurb: string | null;
-  videosText: string;
+  videos: { url: string; title: string | null }[];
 };
+
+let nextVideoRowId = 0;
+type VideoRow = { id: number; url: string; title: string };
+
+function VideoListBuilder({ initial }: { initial: { url: string; title: string | null }[] }) {
+  const [rows, setRows] = useState<VideoRow[]>(() =>
+    initial.map((v) => ({ id: nextVideoRowId++, url: v.url, title: v.title ?? "" })),
+  );
+
+  return (
+    <div>
+      <label className="label">Match videos (optional)</label>
+      <div className="space-y-2">
+        {rows.map((row, i) => (
+          <div key={row.id} className="flex flex-wrap items-center gap-2 border border-edge/60 bg-void/40 p-2.5">
+            <span className="text-xs text-slate-600">{i === 0 ? "★" : "#" + (i + 1)}</span>
+            <input
+              name="videoUrls"
+              value={row.url}
+              onChange={(e) => {
+                const v = e.target.value;
+                setRows((rs) => rs.map((r) => (r.id === row.id ? { ...r, url: v } : r)));
+              }}
+              className="input min-w-[14rem] flex-1 font-mono text-xs"
+              placeholder="https://youtu.be/…"
+            />
+            <input
+              name="videoTitles"
+              value={row.title}
+              onChange={(e) => {
+                const v = e.target.value;
+                setRows((rs) => rs.map((r) => (r.id === row.id ? { ...r, title: v } : r)));
+              }}
+              className="input min-w-[10rem] flex-1 text-xs"
+              placeholder="Title (optional)"
+            />
+            <button
+              type="button"
+              onClick={() => setRows((rs) => rs.filter((r) => r.id !== row.id))}
+              className="px-1 text-slate-500 hover:text-ember"
+              aria-label="Remove video"
+            >
+              ×
+            </button>
+          </div>
+        ))}
+        <button
+          type="button"
+          onClick={() => setRows((rs) => [...rs, { id: nextVideoRowId++, url: "", title: "" }])}
+          className="btn-ghost w-full text-xs"
+        >
+          + Add video
+        </button>
+      </div>
+      <p className="mt-1.5 text-xs text-slate-500">
+        YouTube plays inline on the season page; TikTok / Twitch link out. First one (★) is
+        featured.
+      </p>
+    </div>
+  );
+}
 
 export function SeasonForm({
   season,
@@ -33,9 +94,13 @@ export function SeasonForm({
 }) {
   const [state, action, pending] = useActionState(saveSeason, {});
   const ref = useRef<HTMLFormElement>(null);
+  const [videoBuilderKey, setVideoBuilderKey] = useState(0);
 
   useEffect(() => {
-    if (state.ok && !season) ref.current?.reset();
+    if (state.ok && !season) {
+      ref.current?.reset();
+      setVideoBuilderKey((k) => k + 1); // VideoListBuilder holds its own React state — a native reset() can't clear it
+    }
     if (state.ok) onSaved?.();
   }, [state.ok, season, onSaved]);
 
@@ -154,19 +219,7 @@ export function SeasonForm({
         <textarea name="blurb" rows={2} className="input" defaultValue={season?.blurb ?? ""} />
       </div>
 
-      <div>
-        <label className="label">Match videos — one per line, &ldquo;url | optional title&rdquo;</label>
-        <textarea
-          name="videosText"
-          rows={6}
-          className="input font-mono text-xs"
-          defaultValue={season?.videosText ?? ""}
-          placeholder={"https://youtu.be/abc123 | FSQ vs BS showdown\nhttps://www.tiktok.com/@user/video/123\nhttps://www.twitch.tv/videos/456"}
-        />
-        <p className="mt-1 text-xs text-slate-500">
-          YouTube plays inline on the season page; TikTok / Twitch link out. First one is featured.
-        </p>
-      </div>
+      <VideoListBuilder key={videoBuilderKey} initial={season?.videos ?? []} />
 
       {state.error && <p className="font-mono text-sm text-ember">{state.error}</p>}
 

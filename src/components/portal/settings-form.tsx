@@ -61,182 +61,205 @@ export function SettingsForm({
     );
 
   return (
-    <form action={action} className="grid gap-5">
-      <div>
-        <label className="label">Discord invite link</label>
-        <input
-          name="discordInvite"
-          className="input"
-          defaultValue={settings.discordInvite}
-          placeholder="https://discord.gg/…"
-        />
-        <p className="mt-1 text-xs text-slate-500">
-          Used for server-rendered links. Client-baked links still need a redeploy.
-        </p>
-      </div>
+    <form action={action}>
+      <nav className="sticky top-0 z-10 -mx-1 flex flex-wrap gap-4 border-b border-edge bg-panel/95 px-1 py-2 font-mono text-[0.66rem] uppercase tracking-widest text-slate-500 backdrop-blur">
+        <a href="#discord" className="hover:text-teal">Discord</a>
+        <a href="#events" className="hover:text-teal">Events</a>
+        <a href="#roles" className="hover:text-teal">Roles &amp; badges</a>
+        <a href="#social" className="hover:text-teal">Social</a>
+        <a href="#rules" className="hover:text-teal">Rules pages</a>
+      </nav>
 
-      <div>
-        <label className="label">Announcement channel</label>
-        {chanField("announceChannelId", settings.announceChannelId)}
-        <p className="mt-1 text-xs text-slate-500">
-          Where a published event announces if it has no Discord space of its own. Changing this
-          only affects the <em>next</em> announcement — messages already posted stay put.
-        </p>
-      </div>
-
-      <div>
-        <label className="label">Default channels for new events</label>
-        <textarea
-          name="eventChannels"
-          rows={5}
-          className="input font-mono text-sm"
-          defaultValue={settings.eventChannels.join("\n")}
-        />
-        <p className="mt-1 text-xs text-slate-500">
-          One per line (or comma-separated) — add or remove names to change what &ldquo;Build
-          Discord space&rdquo; creates for a <em>new</em> event. Spaces become dashes. To
-          add/remove a channel on an event that already has its space, use the
-          &ldquo;Channels&rdquo; panel on that event&apos;s page instead — this list only sets the
-          starting template.
-        </p>
-      </div>
-
-      <label className="flex items-center gap-2 text-sm text-slate-300">
-        <input type="checkbox" name="autoBuildSpace" defaultChecked={settings.autoBuildSpace} />{" "}
-        Build the Discord space automatically when an event is published
-      </label>
-
-      <div>
-        <label className="label">Reminder lead time (minutes)</label>
-        <input
-          type="number"
-          name="reminderLeadMinutes"
-          min={0}
-          className="input max-w-[10rem]"
-          defaultValue={settings.reminderLeadMinutes}
-        />
-        <p className="mt-1 text-xs text-slate-500">
-          How long before an event the bot posts a &ldquo;starts soon&rdquo; reminder. 0 = off;
-          the bot only checks every 5 minutes, so anything else rounds up to at least 5.
-        </p>
-      </div>
-
-      <div>
-        <label className="label">&ldquo;How to join&rdquo; video (YouTube URL)</label>
-        <input
-          name="howToJoinVideoUrl"
-          className="input"
-          defaultValue={settings.howToJoinVideoUrl}
-          placeholder="https://youtube.com/watch?v=…"
-        />
-        <p className="mt-1 text-xs text-slate-500">
-          Shown on the landing page just before &ldquo;How it works&rdquo;. Leave blank to hide it.
-        </p>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div id="discord" className="grid gap-5 pt-6">
+        <h3 className="font-display font-bold text-white">Discord</h3>
         <div>
-          <label className="label">&ldquo;Registered&rdquo; role</label>
-          {roleField("registeredRoleId", settings.registeredRoleId)}
+          <label className="label">Discord invite link</label>
+          <input
+            name="discordInvite"
+            className="input"
+            defaultValue={settings.discordInvite}
+            placeholder="https://discord.gg/…"
+          />
           <p className="mt-1 text-xs text-slate-500">
-            Given to anyone with a player profile. Blank = off.
+            Used for server-rendered links. Client-baked links still need a redeploy.
           </p>
         </div>
+
         <div>
-          <label className="label">&ldquo;Team leader&rdquo; role</label>
-          {roleField("teamLeaderRoleId", settings.teamLeaderRoleId)}
+          <label className="label">Announcement channel</label>
+          {chanField("announceChannelId", settings.announceChannelId)}
           <p className="mt-1 text-xs text-slate-500">
-            Given to team leaders. The bot&apos;s role must sit above these in the role list.
+            Where a published event announces if it has no Discord space of its own. Changing this
+            only affects the <em>next</em> announcement — messages already posted stay put.
           </p>
         </div>
       </div>
 
-      <div>
-        <label className="label">Tiered veteran badges</label>
-        <textarea
-          name="veteranTiersText"
-          rows={4}
-          className="input font-mono text-sm"
-          defaultValue={settings.veteranTiersText}
-          placeholder={"5 | 123456789012345678\n20 | 234567890123456789"}
-        />
-        <p className="mt-1 text-xs text-slate-500">
-          One tier per line — <code>events played | Discord role id</code>. Every threshold a
-          player has reached is granted and stacks (Bronze, Silver, Gold, …) — unlike the other
-          roles here, these are never taken back off once earned.
-        </p>
+      <div id="events" className="mt-8 grid gap-5 border-t border-edge pt-6">
+        <h3 className="font-display font-bold text-white">Events</h3>
+        <div>
+          <label className="label">Default channels for new events</label>
+          <textarea
+            name="eventChannels"
+            rows={5}
+            className="input font-mono text-sm"
+            defaultValue={settings.eventChannels.join("\n")}
+          />
+          <p className="mt-1 text-xs text-slate-500">
+            One per line (or comma-separated) — add or remove names to change what &ldquo;Build
+            Discord space&rdquo; creates for a <em>new</em> event. Spaces become dashes. To
+            add/remove a channel on an event that already has its space, use the
+            &ldquo;Channels&rdquo; panel on that event&apos;s page instead — this list only sets the
+            starting template.
+          </p>
+        </div>
+
+        <label className="flex items-center gap-2 text-sm text-slate-300">
+          <input type="checkbox" name="autoBuildSpace" defaultChecked={settings.autoBuildSpace} />{" "}
+          Build the Discord space automatically when an event is published
+        </label>
+
+        <div>
+          <label className="label">Reminder lead time (minutes)</label>
+          <input
+            type="number"
+            name="reminderLeadMinutes"
+            min={0}
+            className="input max-w-[10rem]"
+            defaultValue={settings.reminderLeadMinutes}
+          />
+          <p className="mt-1 text-xs text-slate-500">
+            How long before an event the bot posts a &ldquo;starts soon&rdquo; reminder. 0 = off;
+            the bot only checks every 5 minutes, so anything else rounds up to at least 5.
+          </p>
+        </div>
+
+        <div>
+          <label className="label">&ldquo;How to join&rdquo; video (YouTube URL)</label>
+          <input
+            name="howToJoinVideoUrl"
+            className="input"
+            defaultValue={settings.howToJoinVideoUrl}
+            placeholder="https://youtube.com/watch?v=…"
+          />
+          <p className="mt-1 text-xs text-slate-500">
+            Shown on the landing page just before &ldquo;How it works&rdquo;. Leave blank to hide it.
+          </p>
+        </div>
       </div>
 
-      <div>
-        <label className="label">Social links (landing footer)</label>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <input
-            name="socialTiktokUrl"
-            className="input"
-            defaultValue={settings.socialTiktokUrl}
-            placeholder="TikTok URL"
+      <div id="roles" className="mt-8 grid gap-5 border-t border-edge pt-6">
+        <h3 className="font-display font-bold text-white">Roles &amp; badges</h3>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className="label">&ldquo;Registered&rdquo; role</label>
+            {roleField("registeredRoleId", settings.registeredRoleId)}
+            <p className="mt-1 text-xs text-slate-500">
+              Given to anyone with a player profile. Blank = off.
+            </p>
+          </div>
+          <div>
+            <label className="label">&ldquo;Team leader&rdquo; role</label>
+            {roleField("teamLeaderRoleId", settings.teamLeaderRoleId)}
+            <p className="mt-1 text-xs text-slate-500">
+              Given to team leaders. The bot&apos;s role must sit above these in the role list.
+            </p>
+          </div>
+        </div>
+
+        <div>
+          <label className="label">Tiered veteran badges</label>
+          <textarea
+            name="veteranTiersText"
+            rows={4}
+            className="input font-mono text-sm"
+            defaultValue={settings.veteranTiersText}
+            placeholder={"5 | 123456789012345678\n20 | 234567890123456789"}
           />
-          <input
-            name="socialTwitchUrl"
-            className="input"
-            defaultValue={settings.socialTwitchUrl}
-            placeholder="Twitch URL"
+          <p className="mt-1 text-xs text-slate-500">
+            One tier per line — <code>events played | Discord role id</code>. Every threshold a
+            player has reached is granted and stacks (Bronze, Silver, Gold, …) — unlike the other
+            roles here, these are never taken back off once earned.
+          </p>
+        </div>
+      </div>
+
+      <div id="social" className="mt-8 grid gap-5 border-t border-edge pt-6">
+        <h3 className="font-display font-bold text-white">Social</h3>
+        <div>
+          <label className="label">Social links (landing footer)</label>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <input
+              name="socialTiktokUrl"
+              className="input"
+              defaultValue={settings.socialTiktokUrl}
+              placeholder="TikTok URL"
+            />
+            <input
+              name="socialTwitchUrl"
+              className="input"
+              defaultValue={settings.socialTwitchUrl}
+              placeholder="Twitch URL"
+            />
+            <input
+              name="socialXUrl"
+              className="input"
+              defaultValue={settings.socialXUrl}
+              placeholder="X (Twitter) URL"
+            />
+            <input
+              name="socialFacebookUrl"
+              className="input"
+              defaultValue={settings.socialFacebookUrl}
+              placeholder="Facebook URL"
+            />
+          </div>
+          <p className="mt-1 text-xs text-slate-500">
+            Shown in the landing page footer. Leave any blank to hide that link.
+          </p>
+        </div>
+      </div>
+
+      <div id="rules" className="mt-8 grid gap-5 border-t border-edge pt-6">
+        <h3 className="font-display font-bold text-white">Rules pages</h3>
+        <div>
+          <label className="label">Community rules (/rules)</label>
+          <textarea
+            name="rulesText"
+            rows={7}
+            className="input font-mono text-xs"
+            defaultValue={settings.rulesText}
           />
-          <input
-            name="socialXUrl"
-            className="input"
-            defaultValue={settings.socialXUrl}
-            placeholder="X (Twitter) URL"
+          <p className="mt-1 text-xs text-slate-500">
+            One rule per line — <code>1. …</code> keeps the numbering.
+          </p>
+        </div>
+
+        <div>
+          <label className="label">Anti-cheat &amp; fair play (/rules)</label>
+          <textarea
+            name="antiCheatText"
+            rows={7}
+            className="input font-mono text-xs"
+            defaultValue={settings.antiCheatText}
           />
-          <input
-            name="socialFacebookUrl"
-            className="input"
-            defaultValue={settings.socialFacebookUrl}
-            placeholder="Facebook URL"
+          <p className="mt-1 text-xs text-slate-500">
+            A short line ending in <code>:</code> becomes a heading, blank line starts a new point.
+          </p>
+        </div>
+
+        <div>
+          <label className="label">Disputes &amp; appeals (/rules)</label>
+          <textarea
+            name="disputesText"
+            rows={4}
+            className="input font-mono text-xs"
+            defaultValue={settings.disputesText}
           />
         </div>
-        <p className="mt-1 text-xs text-slate-500">
-          Shown in the landing page footer. Leave any blank to hide that link.
-        </p>
       </div>
 
-      <div>
-        <label className="label">Community rules (/rules)</label>
-        <textarea
-          name="rulesText"
-          rows={7}
-          className="input font-mono text-xs"
-          defaultValue={settings.rulesText}
-        />
-        <p className="mt-1 text-xs text-slate-500">
-          One rule per line — <code>1. …</code> keeps the numbering.
-        </p>
-      </div>
-
-      <div>
-        <label className="label">Anti-cheat &amp; fair play (/rules)</label>
-        <textarea
-          name="antiCheatText"
-          rows={7}
-          className="input font-mono text-xs"
-          defaultValue={settings.antiCheatText}
-        />
-        <p className="mt-1 text-xs text-slate-500">
-          A short line ending in <code>:</code> becomes a heading, blank line starts a new point.
-        </p>
-      </div>
-
-      <div>
-        <label className="label">Disputes &amp; appeals (/rules)</label>
-        <textarea
-          name="disputesText"
-          rows={4}
-          className="input font-mono text-xs"
-          defaultValue={settings.disputesText}
-        />
-      </div>
-
-      <div>
+      <div className="mt-8 border-t border-edge pt-6">
         <button className="btn-primary" disabled={pending}>
           {pending ? "Saving…" : "Save settings"}
         </button>

@@ -13,23 +13,28 @@ export const dynamic = "force-dynamic";
 export default async function PortalRewardsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ eventId?: string }>;
+  searchParams: Promise<{ eventId?: string; page?: string }>;
 }) {
-  const { eventId } = await searchParams;
+  const { eventId, page } = await searchParams;
   const user = await requirePermission("reward:view");
   const canGrant = can(user.role, "reward:grant");
+  const pageN = Math.max(1, Number(page) || 1);
+  const take = 100;
+  const rewardWhere = eventId ? { eventId } : undefined;
 
-  const [rewards, disputed, players, eventsRaw] = await Promise.all([
+  const [rewards, matched, disputed, players, eventsRaw] = await Promise.all([
     db.reward.findMany({
-      where: eventId ? { eventId } : undefined,
+      where: rewardWhere,
       orderBy: { grantedAt: "desc" },
-      take: 100,
+      skip: (pageN - 1) * take,
+      take,
       include: {
         player: { select: { id: true, characterName: true } },
         event: { select: { title: true } },
         grantedBy: { select: { name: true, email: true } },
       },
     }),
+    db.reward.count({ where: rewardWhere }),
     db.reward.findMany({
       where: { disputedAt: { not: null } },
       orderBy: { disputedAt: "desc" },
@@ -121,6 +126,11 @@ export default async function PortalRewardsPage({
 
         <div className="flex flex-wrap items-center gap-3">
           <h2 className="font-display text-xl font-bold text-white">Reward log</h2>
+          <span className="text-sm text-slate-500">
+            {matched > take
+              ? `${(pageN - 1) * take + 1}–${(pageN - 1) * take + rewards.length} of ${matched}`
+              : `${rewards.length} shown`}
+          </span>
           <form action="/portal/rewards" className="ml-auto flex items-center gap-2">
             <select name="eventId" defaultValue={eventId ?? ""} className="input w-auto py-1 text-xs">
               <option value="">All events</option>
@@ -151,6 +161,28 @@ export default async function PortalRewardsPage({
             canGrant={canGrant}
           />
         </div>
+
+        {matched > take && (
+          <div className="mt-4 flex items-center gap-3 text-sm">
+            {pageN > 1 && (
+              <Link
+                href={`/portal/rewards?${new URLSearchParams({ ...(eventId ? { eventId } : {}), page: String(pageN - 1) })}`}
+                className="link"
+              >
+                ← Newer
+              </Link>
+            )}
+            <span className="text-slate-500">Page {pageN} / {Math.ceil(matched / take)}</span>
+            {pageN * take < matched && (
+              <Link
+                href={`/portal/rewards?${new URLSearchParams({ ...(eventId ? { eventId } : {}), page: String(pageN + 1) })}`}
+                className="link"
+              >
+                Older →
+              </Link>
+            )}
+          </div>
+        )}
       </div>
 
       {canGrant && (

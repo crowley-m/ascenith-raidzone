@@ -91,9 +91,7 @@ export default async function SeasonsPage() {
                     championNote: s.championNote,
                     posterUrl: s.posterUrl,
                     blurb: s.blurb,
-                    videosText: s.videos
-                      .map((v) => (v.title ? `${v.url} | ${v.title}` : v.url))
-                      .join("\n"),
+                    videos: s.videos.map((v) => ({ url: v.url, title: v.title })),
                   }}
                 />
 

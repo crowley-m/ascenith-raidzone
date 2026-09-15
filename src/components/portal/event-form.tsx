@@ -319,10 +319,13 @@ export function EventForm({
         </span>
       </div>
 
-      <nav className="sticky top-0 z-10 -mx-1 flex gap-4 border-b border-edge bg-panel/95 px-1 py-2 font-mono text-[0.66rem] uppercase tracking-widest text-slate-500 backdrop-blur">
+      <nav className="sticky top-0 z-10 -mx-1 flex items-center gap-4 border-b border-edge bg-panel/95 px-1 py-2 font-mono text-[0.66rem] uppercase tracking-widest text-slate-500 backdrop-blur">
         <a href="#basics" className="hover:text-teal">Basics</a>
         <a href="#brief" className="hover:text-teal">Public brief</a>
         <a href="#discord" className="hover:text-teal">Discord</a>
+        <button className="btn-primary ml-auto py-1 text-[0.66rem] normal-case tracking-normal" disabled={pending}>
+          {pending ? "Saving…" : event ? "Save event" : "Create event"}
+        </button>
       </nav>
 
       {!event && (
@@ -583,7 +586,7 @@ export function EventForm({
         />
       </div>
 
-      <div id="content-rules" className="scroll-mt-14">
+      <div id="content-rules" className={`scroll-mt-14 ${channelPlan.has("rules") ? "" : "opacity-50"}`}>
         <label className="flex items-center gap-2 label">
           <input
             type="checkbox"
@@ -791,11 +794,12 @@ export function EventForm({
         const initial = (event?.[name] as string | null) ?? "";
         const live = values[name] ?? initial;
         const forced = channelKey === "announcement";
+        const included = channelPlan.has(channelKey);
         return (
           <div
             key={name}
             id={`content-${channelKey}`}
-            className="scroll-mt-14 border border-edge/60 bg-panel/20 px-3 py-2"
+            className={`scroll-mt-14 border border-edge/60 bg-panel/20 px-3 py-2 ${included ? "" : "opacity-50"}`}
           >
             <label className="flex items-center gap-2 font-mono text-[0.64rem] font-bold uppercase tracking-[0.18em] text-slate-400">
               <input

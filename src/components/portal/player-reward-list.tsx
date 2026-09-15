@@ -27,11 +27,14 @@ export function PlayerRewardList({
   canGrant: boolean;
 }) {
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState(false);
+  const cap = 10;
+  const visible = rewards.length > cap && !expanded ? rewards.slice(0, cap) : rewards;
 
   return (
     <ul className="mt-3 divide-y divide-edge/60 text-sm">
       {rewards.length === 0 && <li className="py-2 text-slate-400">None yet.</li>}
-      {rewards.map((r) =>
+      {visible.map((r) =>
         editingId === r.id ? (
           <li key={r.id} className="py-2">
             <RewardEditForm reward={r} events={events} onDone={() => setEditingId(null)} />
@@ -63,6 +66,13 @@ export function PlayerRewardList({
             )}
           </li>
         ),
+      )}
+      {rewards.length > cap && !expanded && (
+        <li className="pt-2">
+          <button type="button" onClick={() => setExpanded(true)} className="text-xs text-teal hover:underline">
+            + {rewards.length - cap} more
+          </button>
+        </li>
       )}
     </ul>
   );

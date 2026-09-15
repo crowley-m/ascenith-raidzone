@@ -779,6 +779,63 @@ scoped to that event's roster, short enough that scrolling alone is fine).
   `formData.getAll(...)` on each name (a collapsed/voice card still emits the empty hidden inputs so
   every array stays the same length and positionally aligned).
 
+## Portal-wide UI/UX pass
+
+A follow-up audit (after the `/portal/discord` and event-detail-page polish
+above) covered every other portal page for the same class of issues —
+uncapped/unpaginated lists, free-text-list inputs, buried confirmation on a
+destructive action, a long form with no way to save except scrolling to the
+bottom. Eight fixes landed from it:
+
+- **Teams / Events lists paginate** — both now match `players/page.tsx`'s
+  `skip`/`take: 100` + "X–Y of Z" + Page N/M pattern (previously unbounded
+  `findMany`s). The events list also gained the same search+status-pill
+  filter bar `players` already had — status counts via `groupBy`. Its
+  "featured event" computation (same rule as the landing page: ongoing
+  published event, else soonest upcoming) now runs its own small unfiltered
+  `PUBLISHED`-only query rather than being derived from the current page's
+  own filtered/paginated result set, so it stays correct while browsing
+  page 2 or a status filter.
+- **Rewards log paginates** — `/portal/rewards` was silently capped at 100
+  rows with nothing indicating older ones existed past that; now the same
+  `skip`/`take` + count + Page N/M pattern, `eventId` filter preserved
+  across pages.
+- **Season "Match videos" is a card builder** — `season-form.tsx`'s
+  `VideoListBuilder` replaces the `url | optional title`-per-line textarea
+  with add/remove cards (separate URL + Title inputs), matching the
+  Discord category form's `ChannelListBuilder` pattern. Submitted as
+  index-aligned `videoUrls`/`videoTitles` arrays; `saveSeason` builds rows
+  via `buildSeasonVideos()` (`src/lib/validation.ts`, replaces the old
+  `parseSeasonVideos` text-parser) instead of splitting a string. The
+  builder's own React state can't be cleared by the form's native
+  `reset()` on a successful create, so `SeasonForm` bumps a `key` on it
+  (`videoBuilderKey`) alongside the reset to force a remount.
+- **Settings gets sections + a jump-nav** — `settings-form.tsx`'s ~15
+  unrelated fields were one flat list; now grouped under Discord / Events /
+  Roles & badges / Social / Rules pages headings with a sticky jump-nav,
+  the same `sticky top-0` bar pattern as the event form's.
+- **Player detail page caps long lists** — event history, notes, and flags
+  on `/portal/players/[id]` now go through `<CappedList>`
+  (`src/components/portal/capped-list.tsx`, generic: takes pre-rendered
+  `<li>` children, shows the first `cap` (10) plus a "+N more" expand
+  toggle) instead of rendering everything at once for a long-tenured
+  player. `<PlayerRewardList>` got the same cap/expand built directly into
+  its own state instead, since it already owns its list rendering.
+- **Banning a player needs confirmation** — `<PlayerStatusControl>`'s 4
+  status buttons looked identical and switched on one click; the BANNED
+  button is now styled distinctly (red, matching the red badge used for
+  BANNED status elsewhere) and clicking it (not the other 3) prompts a
+  confirm describing the cascade (withdraws signups, revokes Discord
+  access, strips roles) before calling `setPlayerStatus`.
+- **Event form: sticky save, dimmed skipped channels** — the jump-nav
+  (`#basics`/`#brief`/`#discord`) now also carries the Save/Create button
+  (`ml-auto` in the same sticky bar), so saving never requires scrolling
+  through the ~500-line form first. Each Discord-channel content block
+  (`rules` and the 7 `channelKey` fields further down) dims to `opacity-50`
+  when its `channelPlan` checkbox is unchecked, so a skipped channel's
+  full-height textarea doesn't read as "about to be built" while scanning
+  past it.
+
 ## Migrations
 
 Hand-write the SQL. `prisma migrate deploy` runs on web container boot (then
