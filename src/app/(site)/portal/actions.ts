@@ -54,10 +54,12 @@ import {
   ensureTeamVoice,
   grantEventAccess,
   revokeEventAccess,
+  revokeTeamVoice,
   teardownEventAccess,
   resyncEventAccess,
 } from "@/lib/event-space";
 import { promoteWaitlist } from "@/lib/events";
+import { dropFromTeamEvent } from "@/app/(site)/me/team/actions";
 import { BRACKET_SIZES, entrantsForEvent, roundCount, seedOrder } from "@/lib/bracket";
 import { DEFAULT_EVENT_TZ, isValidEventTz, zonedInputToUtc } from "@/lib/tz";
 import { Prisma } from "@prisma/client";
@@ -1377,12 +1379,18 @@ export async function assignRewardsToEvent(rewardIds: string[], eventId: string)
 
 export async function staffKickTeamMember(teamId: string, playerId: string) {
   const actor = await assertPermission("player:edit");
-  const team = await db.team.findUnique({ where: { id: teamId }, select: { leaderId: true, name: true } });
+  const team = await db.team.findUnique({
+    where: { id: teamId },
+    select: { leaderId: true, name: true, eventId: true },
+  });
   if (!team) throw new Error("Team not found.");
   if (team.leaderId === playerId) throw new Error("Transfer leadership or disband the team instead.");
   await db.teamMember.deleteMany({ where: { teamId, playerId } });
+  await dropFromTeamEvent(teamId, team.eventId, playerId);
   await logAudit({ actorId: actor.id, action: "team.staff_kick", targetType: "Team", targetId: teamId, meta: { playerId } });
   void notifyPlayer(playerId, notify.teamKicked(team.name));
+  void syncMemberRolesByPlayer(playerId);
+  void revokeTeamVoice(teamId, playerId);
   revalidatePath(`/portal/teams/${teamId}`);
   revalidatePath("/portal/teams");
   revalidatePath("/teams");
@@ -1394,6 +1402,7 @@ export async function staffDisbandTeam(teamId: string) {
     where: { id: teamId },
     select: {
       name: true,
+      eventId: true,
       discordRoleId: true,
       discordVoiceChannelId: true,
       members: { select: { playerId: true } },
@@ -1408,6 +1417,10 @@ export async function staffDisbandTeam(teamId: string) {
     }
     if (team.discordVoiceChannelId) void deleteChannel(team.discordVoiceChannelId);
     if (team.discordRoleId) void deleteGuildRole(team.discordRoleId);
+    // members become teamless free agents (EventSignup.teamId → null via
+    // onDelete: SetNull) rather than being withdrawn — this frees the
+    // team's registered slot, so the waitlist needs a nudge
+    void promoteWaitlist(team.eventId);
   }
   revalidatePath("/portal/teams");
   revalidatePath("/teams");
@@ -2743,6 +2756,7 @@ export async function postBroadcast(_prev: FormState, formData: FormData): Promi
 
   let imageUrl = ((formData.get("imageUrl") as string) || "").trim() || null;
   const imageFile = formData.get("imageFile");
+  let uploadedAssetUrl: string | null = null;
   if (imageFile instanceof File && imageFile.size > 0) {
     try {
       const asset = await createMediaAsset({
@@ -2751,6 +2765,7 @@ export async function postBroadcast(_prev: FormState, formData: FormData): Promi
         createdById: actor.id,
       });
       imageUrl = `${APP_URL}/api/media/${asset.id}`;
+      uploadedAssetUrl = imageUrl;
     } catch (e) {
       return { error: e instanceof Error ? e.message : "Could not process the image." };
     }
@@ -2772,7 +2787,11 @@ export async function postBroadcast(_prev: FormState, formData: FormData): Promi
           mentionEveryone,
         };
     const msg = await postToChannel(channelId, payload);
-    if (!msg) return { error: "Discord isn't configured (bot token / guild id)." };
+    if (!msg) {
+      // the upload succeeded but the post never went out — don't leave it orphaned
+      if (uploadedAssetUrl) void deleteMediaAssetFromUrl(uploadedAssetUrl);
+      return { error: "Discord isn't configured (bot token / guild id)." };
+    }
 
     await db.broadcast.create({
       data: {
@@ -2787,6 +2806,7 @@ export async function postBroadcast(_prev: FormState, formData: FormData): Promi
       },
     });
   } catch (err) {
+    if (uploadedAssetUrl) void deleteMediaAssetFromUrl(uploadedAssetUrl);
     return { error: `Discord: ${err instanceof Error ? err.message : "post failed"}` };
   }
 
@@ -2815,6 +2835,7 @@ export async function editBroadcast(_prev: FormState, formData: FormData): Promi
   if (!existing) return { error: "That broadcast is gone." };
 
   let imageUrl = existing.imageUrl;
+  let uploadedAssetUrl: string | null = null;
   if (formData.get("removeImage") === "on") {
     imageUrl = null;
   } else {
@@ -2829,6 +2850,7 @@ export async function editBroadcast(_prev: FormState, formData: FormData): Promi
           createdById: actor.id,
         });
         imageUrl = `${APP_URL}/api/media/${asset.id}`;
+        uploadedAssetUrl = imageUrl;
       } catch (e) {
         return { error: e instanceof Error ? e.message : "Could not process the image." };
       }
@@ -2845,6 +2867,8 @@ export async function editBroadcast(_prev: FormState, formData: FormData): Promi
         };
     await editChannelMessage(existing.channelId, existing.messageId, payload);
   } catch (err) {
+    // the upload succeeded but the edit never went out — don't leave it orphaned
+    if (uploadedAssetUrl) void deleteMediaAssetFromUrl(uploadedAssetUrl);
     return { error: `Discord: ${err instanceof Error ? err.message : "edit failed"}` };
   }
 
@@ -2909,6 +2933,19 @@ export async function generateBracket(
   const refBySeed = Array.from({ length: size }, (_, i) => list[i]?.ref ?? null);
   const order = seedOrder(size); // bracket position -> seed number
   const slots = order.map((seed) => refBySeed[seed - 1] ?? null);
+
+  // A round-1 pairing with neither slot filled has no possible winner to
+  // send upward — that branch (and everything above it in the tree) could
+  // never be decided, permanently stalling the bracket. Too few entrants
+  // for the chosen size produces exactly this with the standard seed
+  // order once byes outnumber real entrants in a given pairing.
+  for (let i = 0; i < slots.length; i += 2) {
+    if (!slots[i] && !slots[i + 1]) {
+      return {
+        error: `${entrants.length} entrants is too few for a size-${size} bracket — pick a smaller size or wait for more sign-ups.`,
+      };
+    }
+  }
 
   await db.bracket.deleteMany({ where: { eventId } });
   const bracket = await db.bracket.create({ data: { eventId, size } });

@@ -8,7 +8,7 @@ import { requireUser } from "@/lib/session";
 import { logAudit } from "@/lib/audit";
 import { teamCreateSchema, teamJoinSchema } from "@/lib/validation";
 import { uniqueInviteCode, teamForEvent, isBanned } from "@/lib/team";
-import { registerTeam } from "@/lib/events";
+import { registerTeam, promoteWaitlist } from "@/lib/events";
 import { updateEventNickname } from "@/app/(site)/events/actions";
 import { notify, notifyPlayer } from "@/lib/notify";
 import { syncMemberRolesByPlayer } from "@/lib/discord-roles";
@@ -183,7 +183,7 @@ export async function joinTeam(_prev: TeamState, formData: FormData): Promise<Te
 }
 
 /** Drop a player from a team's event roster when they leave / are kicked. */
-async function dropFromTeamEvent(teamId: string, eventId: string, playerId: string) {
+export async function dropFromTeamEvent(teamId: string, eventId: string, playerId: string) {
   const removed = await db.eventSignup.updateMany({
     where: { eventId, teamId, playerId, state: { in: ["SIGNED_UP", "WAITLIST"] } },
     data: { state: "WITHDRAWN", teamId: null },
@@ -309,6 +309,10 @@ export async function disbandTeam(teamId: string) {
   }
   if (full?.discordVoiceChannelId) void deleteChannel(full.discordVoiceChannelId);
   if (full?.discordRoleId) void deleteGuildRole(full.discordRoleId);
+  // the team's members become teamless free agents (EventSignup.teamId
+  // → null via the FK's onDelete: SetNull) rather than being withdrawn —
+  // this frees the team's registered slot, so the waitlist needs a nudge
+  void promoteWaitlist(team.eventId);
   revalidatePath("/me/team");
   revalidatePath("/teams");
 }

@@ -41,17 +41,36 @@ async function tick(client: Client) {
   for (const ev of due) {
     const channels = (ev.discordChannels ?? {}) as Record<string, string>;
     const channelId = channels.announcement || fallbackChannel;
-    if (!channelId) continue;
     const mins = Math.round((ev.startsAt.getTime() - now.getTime()) / 60000);
-    try {
-      const ch = await client.channels.fetch(channelId);
-      if (ch && "send" in ch && typeof ch.send === "function") {
-        await ch.send(
-          `⏰ **${ev.title}** starts <t:${Math.floor(ev.startsAt.getTime() / 1000)}:R>` +
-            ` (in ~${mins} min).\nLast call to sign up: ${APP_URL}/events/${ev.id}`,
-        );
+    const rel = `<t:${Math.floor(ev.startsAt.getTime() / 1000)}:R>`;
+
+    // Mark sent up front, before any of the best-effort work below — this
+    // event is due exactly once. Marking it late (after the DM loops) meant
+    // a broken announcement channel or a query throwing partway through
+    // both skipped the DM/nudge loops entirely AND left reminderSentAt
+    // unset, so the next tick re-fetched the channel and re-DMed the whole
+    // roster from scratch.
+    await db.event
+      .update({ where: { id: ev.id }, data: { reminderSentAt: now } })
+      .catch((err) => console.error(`reminder: couldn't mark ${ev.id} sent`, err));
+
+    if (channelId) {
+      try {
+        const ch = await client.channels.fetch(channelId);
+        if (ch && "send" in ch && typeof ch.send === "function") {
+          await ch.send(
+            `⏰ **${ev.title}** starts <t:${Math.floor(ev.startsAt.getTime() / 1000)}:R>` +
+              ` (in ~${mins} min).\nLast call to sign up: ${APP_URL}/events/${ev.id}`,
+          );
+        }
+      } catch (err) {
+        console.error(`reminder: channel post failed for ${ev.id}`, err);
       }
-      // DM everyone on the roster who opted in
+    }
+
+    // DM everyone on the roster who opted in — isolated from the channel
+    // post above, so a channel failure can't skip this too.
+    try {
       const roster = await db.eventSignup.findMany({
         where: { eventId: ev.id, state: "SIGNED_UP" },
         select: {
@@ -59,7 +78,6 @@ async function tick(client: Client) {
           player: { select: { dmNotifications: true, user: { select: { discordId: true } } } },
         },
       });
-      const rel = `<t:${Math.floor(ev.startsAt.getTime() / 1000)}:R>`;
       for (const s of roster) {
         if (!s.player.dmNotifications || !s.player.user.discordId) continue;
         const teamless = ev.format === "TEAM" && !s.teamId;
@@ -75,8 +93,12 @@ async function tick(client: Client) {
           /* DMs closed — skip */
         }
       }
+    } catch (err) {
+      console.error(`reminder: roster DM loop failed for ${ev.id}`, err);
+    }
 
-      // Nudge leaders of short teams
+    // Nudge leaders of short teams — also isolated.
+    try {
       if (ev.format === "TEAM" && ev.teamSize && ev.teamSize > 1) {
         const teams = await db.team.findMany({
           where: { eventId: ev.id, signups: { some: { state: "SIGNED_UP" } } },
@@ -104,10 +126,8 @@ async function tick(client: Client) {
           }
         }
       }
-
-      await db.event.update({ where: { id: ev.id }, data: { reminderSentAt: now } });
     } catch (err) {
-      console.error(`reminder failed for ${ev.id}`, err);
+      console.error(`reminder: leader nudge loop failed for ${ev.id}`, err);
     }
   }
 }

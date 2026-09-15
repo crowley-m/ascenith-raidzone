@@ -931,6 +931,57 @@ fixes:
   guarantee serializability) — proportionate given how rarely two staff
   members touch the same category within the same second.
 
+## Second correctness pass — team lifecycle, bot reminders, bracket, broadcast
+
+A follow-up bug-hunting round covering areas the first correctness pass
+didn't touch (that one was scoped to `/portal/discord` + event content-hash
+sync). Six more fixes:
+
+- **Staff-kicking a team member did less cleanup than the self-service
+  version it mirrors** — `staffKickTeamMember` only deleted the
+  `TeamMember` row; unlike `kickMember` (`me/team/actions.ts`) it never
+  called `dropFromTeamEvent` (now exported from that file and imported into
+  `portal/actions.ts`), `syncMemberRolesByPlayer`, or `revokeTeamVoice` — so
+  a staff-kicked player kept their `EventSignup` pointed at the team, the
+  event's Discord access role, and the team's voice-channel role.
+- **Disbanding a full team never promoted the waitlist** — `disbandTeam`
+  and `staffDisbandTeam` both `db.team.delete` (which `onDelete: SetNull`s
+  every member's `EventSignup.teamId`, so they become teamless free agents
+  rather than being withdrawn — left as-is, that's a reasonable outcome
+  already handled by the existing free-agent grouping) but neither called
+  `promoteWaitlist(eventId)` afterward, so a slot a disbanded team frees up
+  never actually reaches a waitlisted team. Both now call it.
+- **A broken announcement channel could silently kill an event's entire
+  reminder** — the bot's reminder `tick()` used one try/catch around the
+  channel post *and* the roster-DM loop *and* the short-team leader-nudge
+  loop *and* the `reminderSentAt` write, all for one event. A channel fetch
+  failure (deleted channel, lost access) threw straight past the DM/nudge
+  loops (which don't depend on that channel at all) and left
+  `reminderSentAt` unset — so the next tick retried the same broken channel
+  and re-DMed the whole roster from scratch, indefinitely. Restructured:
+  `reminderSentAt` is now written *first*, before any of the three
+  best-effort steps, each of which is now independently try/caught — the
+  event is marked handled exactly once regardless of which step(s) fail,
+  and one broken piece can't block the others.
+- **A sparse bracket could permanently stall with no possible champion** —
+  `generateBracket`'s round-1 bye auto-advance only handles one-side-filled
+  pairings; when byes outnumber real entrants in a given pairing (e.g. 3
+  entrants in a size-8 bracket, which the standard seed order does produce
+  for some entrant counts), a round-1 match can end up with *both* sides
+  empty — no possible winner, so that match and everything above it in the
+  tree can never be decided. Now rejected up front with a clear error
+  ("N entrants is too few for a size-N bracket") before anything is
+  written, rather than silently creating an unwinnable bracket.
+- **A failed broadcast post/edit could orphan its just-uploaded image** —
+  `postBroadcast`/`editBroadcast` upload the image via `createMediaAsset`
+  before the Discord call; if that call then fails (or, for post, if
+  Discord simply isn't configured), the function returned an error but the
+  freshly-created `MediaAsset` was never cleaned up. Both now delete the
+  asset they just created on that failure path — tracked via a separate
+  `uploadedAssetUrl` (not the general `imageUrl`, since that can also hold
+  a pasted external URL or, on edit, the pre-existing saved one, neither of
+  which this cleanup should ever touch).
+
 ## Migrations
 
 Hand-write the SQL. `prisma migrate deploy` runs on web container boot (then
