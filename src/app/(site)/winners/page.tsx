@@ -8,6 +8,7 @@ import { GalleryGrid } from "@/components/winners/gallery-grid";
 import { PageMasthead } from "@/components/page-masthead";
 import { winnersSections, WINNERS_SECTION_LIMIT } from "@/lib/gallery";
 import type { RewardTier } from "@/lib/validation";
+import type { Prisma } from "@prisma/client";
 
 export const metadata: Metadata = {
   title: "Winners",
@@ -24,15 +25,18 @@ export default async function WinnersPage() {
     sections.find((s) => s.slug === "champions")?.items.length ?? 0;
 
   let events: Awaited<ReturnType<typeof db.event.findMany>> = [];
+  let eventResultCount = 0;
   let looseRewards: Awaited<ReturnType<typeof db.reward.findMany>> = [];
   try {
-    [events, looseRewards] = await Promise.all([
+    const resultsWhere: Prisma.EventWhereInput = {
+      status: { in: ["PUBLISHED", "COMPLETED"] },
+      placements: { some: {} },
+    };
+    [events, eventResultCount, looseRewards] = await Promise.all([
       db.event.findMany({
-        where: {
-          status: { in: ["PUBLISHED", "COMPLETED"] },
-          placements: { some: {} },
-        },
+        where: resultsWhere,
         orderBy: { startsAt: "desc" },
+        take: 12,
         include: {
           placements: {
             orderBy: { rank: "asc" },
@@ -43,6 +47,7 @@ export default async function WinnersPage() {
           },
         },
       }),
+      db.event.count({ where: resultsWhere }),
       db.reward.findMany({
         where: { isPublic: true, eventId: null },
         orderBy: { grantedAt: "desc" },
@@ -64,7 +69,7 @@ export default async function WinnersPage() {
     <div className="bg-void">
       <PageMasthead
         title="Hall of winners"
-        kicker={`The honours — ${championCount} champion${championCount === 1 ? "" : "s"} · ${events.length} event${events.length === 1 ? "" : "s"} settled`}
+        kicker={`The honours — ${championCount} champion${championCount === 1 ? "" : "s"} · ${eventResultCount} event${eventResultCount === 1 ? "" : "s"} settled`}
         lead="Every RAIDZONE event, who placed, and what they took home. Real events, real payouts."
       />
       <div className="mx-auto w-full max-w-6xl px-5 pb-24 pt-10">
@@ -105,7 +110,17 @@ export default async function WinnersPage() {
           </p>
         ) : (
           <div data-reveal className="mt-14 space-y-12 border-t border-edge pt-6">
-            <h2 className="eyebrow">+ Event results</h2>
+            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+              <h2 className="eyebrow">+ Event results</h2>
+              {eventResultCount > events.length && (
+                <Link
+                  href="/events"
+                  className="font-mono text-[0.7rem] uppercase tracking-[0.18em] text-slate-500 hover:text-teal"
+                >
+                  View all events →
+                </Link>
+              )}
+            </div>
             {events.map((e) => {
               const ev = e as typeof e & {
                 placements: Array<{

@@ -210,9 +210,20 @@ export default async function EventDetailPage({
       <Link href="/events" className="link text-xs uppercase tracking-widest">
         &larr; All events
       </Link>
+
+      <nav className="sticky top-16 z-30 mt-4 flex flex-wrap gap-4 border-y border-edge bg-void/95 px-1 py-2 font-mono text-[0.66rem] uppercase tracking-widest text-slate-500 backdrop-blur">
+        <a href="#brief" className="hover:text-teal">Brief</a>
+        {(tiers.length > 0 || event.bonusText || event.rewardPoolText) && (
+          <a href="#rewards" className="hover:text-teal">Rewards</a>
+        )}
+        {event.rulesMd && <a href="#rules" className="hover:text-teal">Rules</a>}
+        <a href="#roster" className="hover:text-teal">{isTeamEvent ? "Teams" : "Roster"}</a>
+        {bracket && <a href="#bracket" className="hover:text-teal">Bracket</a>}
+      </nav>
+
       <div className="mt-4 grid gap-10 lg:grid-cols-[1fr_320px]">
         <div>
-          <p className="eyebrow">
+          <p id="brief" className="eyebrow scroll-mt-32">
             {event.mode ? `${event.mode} event` : "Event"} &mdash;{" "}
             <span className="text-slate-400">{statusWord}</span> &middot;{" "}
             {upcoming && !cancelled ? (
@@ -316,7 +327,7 @@ export default async function EventDetailPage({
           )}
 
           {(tiers.length > 0 || event.bonusText || event.rewardPoolText) && (
-            <div className="mt-8 border border-edge bg-panel/70 p-5">
+            <div id="rewards" className="mt-8 scroll-mt-32 border border-edge bg-panel/70 p-5">
               <div className="eyebrow">Rewards</div>
               {tiers.length > 0 && (
                 <ul className="mt-3 divide-y divide-edge">
@@ -383,7 +394,7 @@ export default async function EventDetailPage({
           )}
 
           {event.rulesMd && (
-            <div className="mt-10 max-w-2xl border-l-2 border-teal/50 pl-5">
+            <div id="rules" className="mt-10 max-w-2xl scroll-mt-32 border-l-2 border-teal/50 pl-5">
               <h2 className="font-poster text-2xl uppercase text-white">Rules</h2>
               <Markdown source={event.rulesMd} className="md mt-3" />
             </div>
@@ -411,7 +422,7 @@ export default async function EventDetailPage({
           </div>
 
           {bracket && (
-            <div className="mt-12">
+            <div id="bracket" className="mt-12 scroll-mt-32">
               <h2 className="font-poster text-2xl uppercase text-white">Bracket</h2>
               <div className="mt-4">
                 <BracketBoard eventId={id} bracket={bracket} />
@@ -419,7 +430,7 @@ export default async function EventDetailPage({
             </div>
           )}
 
-          <div className="mt-12">
+          <div id="roster" className="mt-12 scroll-mt-32">
             {isTeamEvent ? (
               <>
                 <h2 className="font-poster text-2xl uppercase text-white">
@@ -510,7 +521,7 @@ export default async function EventDetailPage({
           </div>
         </div>
 
-        <aside className="lg:sticky lg:top-24 lg:self-start">
+        <aside className="order-first lg:sticky lg:top-24 lg:order-2 lg:self-start">
           <div className="border border-edge bg-panel/70 p-5">
             <h2 className="font-poster text-xl uppercase text-white">
               {cancelled

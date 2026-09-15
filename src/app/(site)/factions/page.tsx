@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PageMasthead } from "@/components/page-masthead";
+import { CappedList } from "@/components/capped-list";
 import { factionBoard } from "@/lib/factions";
 
 export const metadata: Metadata = {
@@ -127,17 +128,19 @@ export default async function FactionsPage() {
               </span>
             </div>
             <ul className="mt-6 divide-y divide-edge/60">
-              {f.members.map((m) => (
-                <li
-                  key={m.id}
-                  className="flex flex-wrap items-center justify-between gap-2 py-2.5 text-sm"
-                >
-                  <Link href={`/players/${m.id}`} className="text-slate-100 hover:text-teal">
-                    {m.name}
-                  </Link>
-                  <span className="font-mono text-xs text-slate-500">{m.attended} attended</span>
-                </li>
-              ))}
+              <CappedList cap={20}>
+                {f.members.map((m) => (
+                  <li
+                    key={m.id}
+                    className="flex flex-wrap items-center justify-between gap-2 py-2.5 text-sm"
+                  >
+                    <Link href={`/players/${m.id}`} className="text-slate-100 hover:text-teal">
+                      {m.name}
+                    </Link>
+                    <span className="font-mono text-xs text-slate-500">{m.attended} attended</span>
+                  </li>
+                ))}
+              </CappedList>
             </ul>
           </section>
         ))}

@@ -836,6 +836,44 @@ bottom. Eight fixes landed from it:
   full-height textarea doesn't read as "about to be built" while scanning
   past it.
 
+## Public / player-facing UI/UX pass
+
+A second audit round, same method as the portal-wide one above but scoped to
+the public showcase pages and `/me/*` (the landing page itself is exempt —
+its own separate design system per the Stack notes). Five fixes:
+
+- **Public event page: mobile CTA order + jump-nav** — `events/[id]/page.tsx`'s
+  sign-up sidebar (`<aside>`) is the second grid column on desktop
+  (`lg:grid-cols-[1fr_320px]`) but, with no mobile-specific ordering, fell to
+  the very bottom of the DOM on a phone — past poster, rewards, gameplay,
+  schedule, rules, the whole roster — before "Claim a slot" ever appeared.
+  `order-first lg:order-2` on the aside puts it first on mobile, second (its
+  original desktop position) at `lg`. The page also gained a sticky jump-nav
+  (`Brief`/`Rewards`/`Rules`/`Roster`(or `Teams`)/`Bracket`, each link only
+  shown when that section actually renders) — `sticky top-16` (not `top-0`)
+  since `<SiteHeader>` itself is `sticky top-0` at `h-16`; every anchored
+  section carries `scroll-mt-32` to clear both stacked bars.
+- **`/winners` caps "Event results"** — was an unbounded `findMany` (every
+  event with placements, ever); now `take: 12` + a separate `db.event.count`
+  so the kicker line's total stays accurate even though the list is capped,
+  with a "View all events →" link to `/events` (an existing page, not a new
+  one) once there are more than what's shown.
+- **`CappedList` on the public side** — `src/components/capped-list.tsx` is
+  a non-portal duplicate of `src/components/portal/capped-list.tsx` (same
+  "first N + N more" behavior, kept separate since portal components and
+  public ones live in their own folders by convention here) — its "+N more"
+  renders as a plain teal text link rather than the portal version's bare
+  button, since it has to sit naturally both inside a flex-wrap badge list
+  and inside a `divide-y` row list. Used on the public player profile's
+  "Events competed in" badge wall and each faction's member roster on
+  `/factions` (`cap={20}`) — both previously rendered every item at once.
+- **`/me/rewards` table scrolls instead of crushing** — the 5-column rewards
+  table had no `overflow-x-auto` wrapper (every other data table in the app
+  does), so it would either force page-level horizontal scroll or crush
+  columns unreadably at phone width. Wrapped the same way as everywhere
+  else, with a `min-w-[520px]` floor so columns don't crush before the
+  scroll container kicks in.
+
 ## Migrations
 
 Hand-write the SQL. `prisma migrate deploy` runs on web container boot (then

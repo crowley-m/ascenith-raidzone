@@ -28,40 +28,42 @@ export default async function MyRewardsPage() {
           No rewards yet. Show up to events and staff will log them here.
         </p>
       ) : (
-        <table className="mt-4 w-full text-sm">
-          <thead className="text-left text-xs uppercase text-slate-500">
-            <tr>
-              <th className="py-2">Item</th>
-              <th className="py-2">Reason</th>
-              <th className="py-2">Event</th>
-              <th className="py-2">Date</th>
-              <th className="py-2 text-right">Received</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-edge/60">
-            {rewards.map((r) => (
-              <tr key={r.id}>
-                <td className="py-3 text-teal">{r.item}{r.amount ? ` ×${r.amount}` : ""}</td>
-                <td className="py-3 text-slate-300">{r.reason}</td>
-                <td className="py-3 text-slate-400">
-                  {r.event ? (
-                    <Link href={`/events/${r.event.id}`} className="link">{r.event.title}</Link>
-                  ) : (
-                    "—"
-                  )}
-                </td>
-                <td className="py-3 text-slate-500">{fmtDate(r.grantedAt)}</td>
-                <td className="py-3 text-right">
-                  <RewardReceipt
-                    rewardId={r.id}
-                    received={!!r.receivedAt}
-                    disputed={!!r.disputedAt}
-                  />
-                </td>
+        <div className="mt-4 overflow-x-auto">
+          <table className="w-full min-w-[520px] text-sm">
+            <thead className="text-left text-xs uppercase text-slate-500">
+              <tr>
+                <th className="py-2">Item</th>
+                <th className="py-2">Reason</th>
+                <th className="py-2">Event</th>
+                <th className="py-2">Date</th>
+                <th className="py-2 text-right">Received</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-edge/60">
+              {rewards.map((r) => (
+                <tr key={r.id}>
+                  <td className="py-3 text-teal">{r.item}{r.amount ? ` ×${r.amount}` : ""}</td>
+                  <td className="py-3 text-slate-300">{r.reason}</td>
+                  <td className="py-3 text-slate-400">
+                    {r.event ? (
+                      <Link href={`/events/${r.event.id}`} className="link">{r.event.title}</Link>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
+                  <td className="py-3 text-slate-500">{fmtDate(r.grantedAt)}</td>
+                  <td className="py-3 text-right">
+                    <RewardReceipt
+                      rewardId={r.id}
+                      received={!!r.receivedAt}
+                      disputed={!!r.disputedAt}
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );
