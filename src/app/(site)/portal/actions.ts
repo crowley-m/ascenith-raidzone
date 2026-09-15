@@ -36,6 +36,7 @@ import {
   eventIndexContent,
   pinMessage,
   createGuildCategory,
+  setCategoryRoles,
   createManagedChannel,
   setManagedChannelRoles,
   renameGuildChannel,
@@ -1643,6 +1644,7 @@ export async function saveDiscordCategory(_prev: FormState, formData: FormData):
   const actor = await assertPermission("discord:manage");
   const id = (formData.get("id") as string) || null;
   const name = ((formData.get("name") as string) || "").trim();
+  const roleIds = formData.getAll("roleIds").map(String).filter(Boolean);
   if (!name) return { error: "Name is required." };
 
   if (id) {
@@ -1651,28 +1653,33 @@ export async function saveDiscordCategory(_prev: FormState, formData: FormData):
     if (name !== existing.name) {
       const ok = await renameGuildChannel(existing.discordId, name);
       if (!ok) return { error: "Discord: couldn't rename that category — check the bot's permissions." };
-      await db.discordCategory.update({ where: { id }, data: { name } });
     }
+    const rolesOk = await setCategoryRoles(existing.discordId, roleIds);
+    if (!rolesOk) return { error: "Discord: couldn't update who can see that category." };
+    await db.discordCategory.update({
+      where: { id },
+      data: { name, roleIds: roleIds as Prisma.InputJsonValue },
+    });
     await logAudit({
       actorId: actor.id,
       action: "discord.category_rename",
       targetType: "Discord",
       targetId: existing.discordId,
-      meta: { name },
+      meta: { name, roleIds },
     });
   } else {
-    const discordId = await createGuildCategory(name);
+    const discordId = await createGuildCategory(name, roleIds);
     if (!discordId) return { error: "Discord: couldn't create that category — check the bot's permissions." };
     const count = await db.discordCategory.count();
     const created = await db.discordCategory.create({
-      data: { discordId, name, position: count, createdById: actor.id },
+      data: { discordId, name, position: count, roleIds: roleIds as Prisma.InputJsonValue, createdById: actor.id },
     });
     await logAudit({
       actorId: actor.id,
       action: "discord.category_create",
       targetType: "Discord",
       targetId: created.discordId,
-      meta: { name },
+      meta: { name, roleIds },
     });
   }
 

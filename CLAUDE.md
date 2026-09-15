@@ -492,6 +492,16 @@ one place tracking never silently drifts from reality:
   (`src/components/portal/discord-move-buttons.tsx`) is the shared ↑/↓
   control, used inside a `<summary>` so it calls `stopPropagation` to avoid
   also toggling the `<details>` open/closed.
+- **Category permissions** — categories now carry their own
+  `roleIds` too (`DiscordCategory.roleIds`, same shape as a channel's),
+  applied via `categoryOverwrites()` (view-only — there's nothing to "send"
+  or "connect" to on a category, unlike `managedChannelOverwrites()`).
+  Originally categories were created with no explicit overwrites at all.
+  **This only controls the category header itself** — each channel
+  underneath still gets its own explicit overwrites at creation
+  (`createManagedChannel`) rather than inheriting from the category, so
+  restricting a category doesn't by itself restrict what's in it; the UI
+  copy on `DiscordCategoryForm` says so.
 
 ## Player picker
 

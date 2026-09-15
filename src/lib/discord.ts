@@ -691,19 +691,60 @@ export async function setChannelPosition(channelId: string, position: number): P
 // see each channel; @everyone is always denied.
 // --------------------------------------------------------------------------
 
-/** Create a plain category (type 4). Returns the id, or null if the bot can't. */
-export async function createGuildCategory(name: string): Promise<string | null> {
+/**
+ * Overwrites for a category itself — view-only (there's nothing to "send" or
+ * "connect" to on a category), same deny-@everyone / allow-listed-roles
+ * shape as a channel's. Empty `roleIds` means staff/bot only.
+ */
+async function categoryOverwrites(roleIds: string[]) {
+  const gid = process.env.DISCORD_GUILD_ID!;
+  const view = BigInt(PERM_VIEW_CHANNEL);
+  const botId = await botUserId();
+  const ow: Array<{ id: string; type: number; allow?: string; deny?: string }> = [
+    { id: gid, type: 0, deny: view.toString() },
+  ];
+  for (const roleId of roleIds) ow.push({ id: roleId, type: 0, allow: view.toString() });
+  if (botId) ow.push({ id: botId, type: 1, allow: view.toString() });
+  return ow;
+}
+
+/**
+ * Create a category (type 4), visible only to `roleIds` (+ staff/bot) —
+ * @everyone is always denied. Empty `roleIds` means staff/bot only. Note
+ * this only controls the category header itself; each channel underneath
+ * gets its own explicit overwrites (`createManagedChannel`) rather than
+ * inheriting, so a category being restricted doesn't by itself restrict
+ * channels created in it. Returns the id, or null if the bot can't.
+ */
+export async function createGuildCategory(name: string, roleIds: string[] = []): Promise<string | null> {
   const gid = process.env.DISCORD_GUILD_ID;
   if (!gid || !process.env.DISCORD_BOT_TOKEN) return null;
   try {
+    const overwrites = await categoryOverwrites(roleIds);
     const c = (await discordFetch(`/guilds/${gid}/channels`, {
       method: "POST",
-      body: JSON.stringify({ name: name.slice(0, 100), type: 4 }),
+      body: JSON.stringify({ name: name.slice(0, 100), type: 4, permission_overwrites: overwrites }),
     })) as { id?: string };
     return c.id ?? null;
   } catch (err) {
     console.error("createGuildCategory failed", err);
     return null;
+  }
+}
+
+/** Replace which roles can see a category. Returns whether it stuck. */
+export async function setCategoryRoles(categoryId: string, roleIds: string[]): Promise<boolean> {
+  if (!process.env.DISCORD_BOT_TOKEN) return false;
+  try {
+    const overwrites = await categoryOverwrites(roleIds);
+    await discordFetch(`/channels/${categoryId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ permission_overwrites: overwrites }),
+    });
+    return true;
+  } catch (err) {
+    console.error("setCategoryRoles failed", err);
+    return false;
   }
 }
 

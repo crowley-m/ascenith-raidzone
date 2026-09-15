@@ -557,6 +557,7 @@ model DiscordCategory {
   discordId   String   @unique
   name        String
   position    Int      @default(0) // display/Discord order among categories — swap-based reordering
+  roleIds     Json     @default("[]") // Discord role ids allowed to view the category header — empty = staff/bot only. Channels underneath have their own overwrites, not inherited from this.
   createdById String
   createdBy   User     @relation("DiscordCategoryCreator", fields: [createdById], references: [id])
   createdAt   DateTime @default(now())

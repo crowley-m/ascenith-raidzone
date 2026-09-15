@@ -73,12 +73,13 @@ export default async function DiscordManagementPage() {
 
       <div className="card mt-6">
         <p className="label mb-2">New category</p>
-        <DiscordCategoryForm />
+        <DiscordCategoryForm roles={roles} />
       </div>
 
       <ul className="mt-6 space-y-3">
         {categories.map((c, ci) => {
           const catMissing = !exists.get(c.discordId);
+          const catRoleIds = Array.isArray(c.roleIds) ? (c.roleIds as string[]) : [];
           return (
             <li key={c.id} className="card">
               <details>
@@ -96,12 +97,24 @@ export default async function DiscordManagementPage() {
                   {catMissing && (
                     <span className="badge border-ember/40 text-ember">Not found on Discord</span>
                   )}
+                  {catRoleIds.length === 0 ? (
+                    <span className="text-xs text-slate-600">header: staff/bot only</span>
+                  ) : (
+                    catRoleIds.map((rid) => (
+                      <span key={rid} className="badge border-teal/40 text-teal">
+                        {roleName(rid)}
+                      </span>
+                    ))
+                  )}
                 </summary>
 
                 <div className="mt-4 space-y-4 border-t border-edge pt-4">
                   <div>
-                    <p className="label mb-1.5">Rename category</p>
-                    <DiscordCategoryForm category={{ id: c.id, name: c.name }} />
+                    <p className="label mb-1.5">Rename / edit category</p>
+                    <DiscordCategoryForm
+                      category={{ id: c.id, name: c.name, roleIds: catRoleIds }}
+                      roles={roles}
+                    />
                   </div>
 
                   <div>
