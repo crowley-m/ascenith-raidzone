@@ -7,7 +7,6 @@ import { guessEventForReason } from "@/lib/reward-match";
 import { RewardForm } from "@/components/portal/reward-form";
 import { RewardLogTable } from "@/components/portal/reward-log-table";
 import { DisputeActions } from "@/components/portal/dispute-actions";
-import { minDelay } from "@/lib/min-delay";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +19,7 @@ export default async function PortalRewardsPage({
   const user = await requirePermission("reward:view");
   const canGrant = can(user.role, "reward:grant");
 
-  const [rewards, disputed, players, eventsRaw] = await minDelay(Promise.all([
+  const [rewards, disputed, players, eventsRaw] = await Promise.all([
     db.reward.findMany({
       where: eventId ? { eventId } : undefined,
       orderBy: { grantedAt: "desc" },
@@ -51,7 +50,7 @@ export default async function PortalRewardsPage({
       take: 50,
       select: { id: true, title: true, startsAt: true },
     }),
-  ]));
+  ]);
 
   // Most likely-relevant first: already-happened events (most recent first), then upcoming (soonest first).
   const now = Date.now();

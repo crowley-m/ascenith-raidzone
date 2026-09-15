@@ -492,30 +492,21 @@ scoped to that event's roster, short enough that scrolling alone is fine).
   different path/query) and snaps to 100%+fades once `usePathname()` +
   `useSearchParams()` actually change — i.e. the next page's data has
   landed. A 5s failsafe clears it if a click never becomes a navigation.
-  Covers the gap `loading.tsx` skeletons don't — those only exist on a
-  handful of routes; this fires on every internal link everywhere. Styled
-  after the "deadline" meme (a chaser closing in on a fixed target across a
-  red/cream bar) rather than a plain hairline — `ChaserIcon` (a small skull,
-  positioned as a child of the growing crimson fill so it rides its own
-  right edge automatically, no separate synced animation needed) and
-  `TargetIcon` (a running figure, fixed near the bar's right end) are both
-  inline SVGs in the same file.
-- **Skeleton loading** — `<Skeleton>`/`<TableSkeleton>`/`<TileSkeleton>`
-  (`src/components/skeleton.tsx`) back a handful of route `loading.tsx`
-  files (`/portal`, `/portal/players`, `/portal/events`, `/portal/rewards`,
-  `/events`) using Next's App Router streaming convention — not every portal
-  route has one yet, add more the same way as they're needed. `<Skeleton>`
-  itself uses a diagonal crimson-tinted shimmer sweep (`.skeleton-shimmer`
-  in `globals.css`, a `::after` gradient animated via `transform`) rather
-  than a flat opacity pulse — falls back to a static dimmed block under
-  `prefers-reduced-motion`. Each of those 5 pages wraps its main data fetch
-  in `minDelay()` (`src/lib/min-delay.ts`) — the app and Postgres share a
-  box, so most of these queries resolve in a few ms, too fast for the
-  Suspense fallback to ever actually be visible; `minDelay` holds the
-  promise's resolution back to a 400ms floor without adding anything on top
-  of a fetch that's already slower than that. A deliberate trade-off (every
-  load on these 5 routes takes at least 400ms now, even a trivially fast
-  one) made because the skeleton being genuinely invisible was worse.
+  Covers the gap a per-route loading state doesn't — no route currently has
+  one; this fires on every internal link everywhere, so it's the only
+  navigation feedback in the app right now. Plain crimson hairline — a
+  "deadline meme"-styled version (chaser icon riding the fill, fixed target
+  icon) was tried and reverted; see the loading-animations note below.
+- **No per-route loading skeletons right now.** `loading.tsx` files
+  (`/portal`, `/portal/players`, `/portal/events`, `/portal/rewards`,
+  `/events`) plus a shimmer-styled `<Skeleton>` component and a `minDelay()`
+  helper (holding a promise's resolution to a 400ms floor so the fallback
+  had a visible window, since same-box Postgres queries usually resolve in
+  a few ms) were built, then all removed — the artificial 400ms floor added
+  real latency to genuinely fast page loads, which wasn't worth it. If this
+  gets revisited, don't reach for an artificial minimum delay again; either
+  accept that a fast fetch means the skeleton is invisible (correct
+  behavior, not a bug) or solve it a different way.
 - **Live countdown** — `<LiveCountdown target={isoString} fallback={...} />`
   (`src/components/live-countdown.tsx`) renders `fallback` (the existing
   `relative()` string) until mounted and swaps to a ticking `Dd HH:MM:SS`
