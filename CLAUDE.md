@@ -484,8 +484,11 @@ scoped to that event's roster, short enough that scrolling alone is fine).
   strip (`.page-wipe-edge`) is only rendered while `status !== "idle"` —
   its `box-shadow` blur bleeds ~16px past the element's own bounds, so
   always rendering it (even "off-screen") left a persistent thin glow
-  pinned to the left edge of every page, most visible on narrow/mobile
-  viewports.
+  pinned to the left edge of every page. **Desktop only** (`≥1024px`,
+  `DESKTOP_QUERY` in the component, matching the same cutoff `PortalNav`
+  uses for its own layout switch) — guarded at both the JS trigger point
+  and with a `max-width: 1023px { display: none }` CSS backstop, since it
+  read as actively getting in the way on a phone rather than as polish.
 - **Landing intro loader** — `<IntroLoader>`
   (`src/components/landing/IntroLoader.tsx`, mounted first inside
   `Landing.tsx`'s root) is a separate thing from `PageTransition`: a

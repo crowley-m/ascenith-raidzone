@@ -8,11 +8,18 @@ type Status = "idle" | "covering" | "revealing";
 const REVEAL_MS = 300;
 const FAILSAFE_MS = 4000;
 
+const DESKTOP_QUERY = "(min-width: 1024px)";
+
 /**
  * Curtain-wipe page transition: a panel slides in from the left to cover
  * the screen the instant an internal link is clicked, then slides on off to
  * the right once the destination page's data has actually landed
  * (pathname/search change), revealing it underneath.
+ *
+ * Desktop only (matches the same 1024px cutoff PortalNav uses for its own
+ * desktop-vs-mobile layout switch) — on a phone this got in the way rather
+ * than reading as polish, so it's disabled outright below that width
+ * rather than just toned down.
  *
  * Deliberately a standalone overlay, always mounted — like <NavProgress> —
  * rather than something wrapping page content. The app's previous fade
@@ -62,6 +69,7 @@ export function PageWipe() {
     };
 
     function onClick(e: MouseEvent) {
+      if (!window.matchMedia(DESKTOP_QUERY).matches) return;
       if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
       if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
       const a = (e.target as HTMLElement)?.closest("a");
@@ -82,6 +90,7 @@ export function PageWipe() {
     // fires popstate, not a click on an <a>, so it needs its own trigger to
     // get the same wipe instead of just snapping to the previous page.
     function onPopState() {
+      if (!window.matchMedia(DESKTOP_QUERY).matches) return;
       if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
       startCovering();
     }
