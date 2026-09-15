@@ -1,24 +1,26 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useLayoutEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 
 /**
- * Replays a brief fade+rise on route change by retriggering a CSS animation
- * class on a stable wrapper — deliberately NOT `key`-ing the wrapper by
- * pathname. Keying it forced a full unmount/remount of the entire page
- * subtree on every navigation, which raced with <ScrollReveal>'s own
- * pathname-driven effect (querying `[data-reveal]` for fresh elements to
- * observe) and could leave whole sections permanently stuck at opacity: 0.
- * This way the content updates through React's normal reconciliation, same
- * as before this component existed — only the animation class is replayed.
+ * Replays a brief fade on route change by retriggering a CSS animation class
+ * on a stable (non-`key`-ed) wrapper — see the CLAUDE.md note on why it's not
+ * keyed by pathname: that forced a full remount and raced with ScrollReveal.
+ *
+ * Uses `useLayoutEffect`, not `useEffect`: the class swap must happen before
+ * the browser paints, or the freshly-navigated content briefly paints at
+ * full opacity (its default, class-less state) before the animation class
+ * gets reapplied a frame later — a visible "flash, then fade back in" that
+ * read as janky/slow. `useLayoutEffect` runs synchronously pre-paint, so the
+ * browser only ever paints the animated state.
  */
 export function PageTransition({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const ref = useRef<HTMLDivElement>(null);
   const firstRender = useRef(true);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (firstRender.current) {
       firstRender.current = false;
       return;

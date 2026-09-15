@@ -461,14 +461,30 @@ scoped to that event's roster, short enough that scrolling alone is fine).
   incrementally rather than assuming it's done everywhere.
 - **Page transitions** — `<PageTransition>` (`src/components/page-transition.tsx`)
   wraps `{children}` in `(site)/layout.tsx` in a stable (non-keyed) div and
-  replays the `.page-fade-in` CSS animation (`globals.css`, skipped under
-  `prefers-reduced-motion`) on route change by toggling the class off/on
-  with a forced reflow in between. **Deliberately not** `key={pathname}`-ed
-  — an earlier version was, which forced a full unmount/remount of the
-  entire page subtree on every navigation and intermittently raced with
-  `<ScrollReveal>`'s own pathname-driven effect, leaving whole
-  `data-reveal` sections stuck invisible. Content updates through normal
-  React reconciliation now; only the animation class replays.
+  replays the `.page-fade-in` CSS animation (`globals.css`, 0.2s, skipped
+  under `prefers-reduced-motion`) on route change by toggling the class
+  off/on with a forced reflow in between. **Deliberately not**
+  `key={pathname}`-ed — an earlier version was, which forced a full
+  unmount/remount of the entire page subtree on every navigation and
+  intermittently raced with `<ScrollReveal>`'s own pathname-driven effect,
+  leaving whole `data-reveal` sections stuck invisible. Content updates
+  through normal React reconciliation now; only the animation class
+  replays. Also uses `useLayoutEffect`, not `useEffect` — the class swap has
+  to land before the browser paints, or the new page briefly paints at full
+  opacity (its class-less default) before the animation class reapplies a
+  frame later, which read as a flash-then-fade-in glitch rather than a
+  clean transition.
+- **Landing intro loader** — `<IntroLoader>`
+  (`src/components/landing/IntroLoader.tsx`, mounted first inside
+  `Landing.tsx`'s root) is a separate thing from `PageTransition`: a
+  full-screen boot-sequence overlay (wordmark, fill bar, blinking-cursor
+  terminal line — matches the landing's own `.term`/scanline aesthetic, its
+  own `landing.module.css` palette, not the app's dark/crimson tokens) shown
+  once on the site's actual entry point, not on every page. A module-level
+  `introShown` flag (not React state) means it only plays on a genuine fresh
+  load — surviving client-side navigation away from and back to `/` within
+  the same session without replaying. Skipped entirely under
+  `prefers-reduced-motion`.
 - **Top loading bar** — `<NavProgress>` (`src/components/nav-progress.tsx`,
   mounted in `(site)/layout.tsx` inside a `<Suspense>` since it reads
   `useSearchParams()`) is the NProgress-style bar: since App Router exposes

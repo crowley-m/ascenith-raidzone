@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import { isStaff } from "@/lib/rbac";
 import { fmtInZone, DEFAULT_EVENT_TZ } from "@/lib/tz";
 import { NavOverlay } from "@/components/nav-overlay";
+import { IntroLoader } from "./IntroLoader";
 import s from "./landing.module.css";
 import { useImmersive } from "./useImmersive";
 import { SparkleField } from "./SparkleField";
@@ -213,6 +214,7 @@ export function Landing({
 
   return (
     <div className={s.root} ref={rootRef}>
+      <IntroLoader />
       <div className={s.grain} aria-hidden />
       <div className={s.vignette} aria-hidden />
       {mounted && <SparkleField />}
