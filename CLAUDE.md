@@ -394,6 +394,50 @@ mutation writes an `AuditLog` row via `logAudit(...)`; viewer at `/portal/audit`
   small-label only apply when uploading exactly one image at a time, since
   they can't sensibly apply to a batch.
 
+## Portal event detail page
+
+`/portal/events/[id]` — the header toolbar is grouped by how often each
+action is used, not all crammed into one row: the top strip keeps only
+"Public page", "Clone", and a status badge ("Discord: N channels" /
+"Discord archived") plus "Build Discord space" when there's no space yet.
+Sync channels / Resync event roles / Repost announcement (all
+Discord-space actions staff reach for together while working on channel
+content) live in a small toolbar at the top of the **Channels** panel
+itself instead, right next to what they act on. "Archive Discord space"
+(and its "Re-lock private" retry) moved into the Danger zone at the bottom
+next to Delete event — it's rare and semi-destructive (locks everything
+private), not a everyday action.
+
+- **Per-channel change tracking** — `Event.discordContentHashes` (Json,
+  `{ channelName: "<serialized payload>" }`) records what was actually last
+  pushed to each channel. `pushEventChannelContent()` (`portal/actions.ts`)
+  recomputes every channel's payload via `eventChannelPayloads()`, compares
+  it against the stored hash, and **skips the Discord call for anything
+  unchanged** — editing one field and saving now only touches that one
+  channel's message, not a silent re-edit of every channel every time.
+  `opts.only` restricts a push to specific channel names (a single-channel
+  push shouldn't also re-touch the pinned channel-guide index);
+  `opts.force` bypasses the hash check — used by `reannounceEventChannels`
+  (the old messages were just deleted, so a "nothing changed" false
+  positive would leave a channel with no message at all) and always true
+  for `pushSingleEventChannel`, since clicking "Push now" is itself the
+  signal to push regardless.
+- **"Push now" per channel** — `pushSingleEventChannel(eventId, name)` pushes
+  just one channel's content on demand, without touching the rest or saving
+  the whole event form. `EventChannelsManager` shows each content channel's
+  live status — "not posted yet" / "content changed — not pushed yet" /
+  "up to date" (`event/[id]/page.tsx` computes the pending set the same way,
+  comparing fresh payloads against `discordContentHashes`) — and only shows
+  "Push now" when there's actually something to push.
+- **"Sync channels" reports what happened** — `syncEventChannels` now
+  returns `changed: string[]`; the button shows "Already synced — nothing
+  changed." when nothing did, or names what got updated / how many new
+  channels were created, instead of a flat "Channels updated" every time.
+- **Team roster collapse** — each registered team (and the "Free agents"
+  block) on the Registrations tab is now a `<details>`, collapsed by
+  default — with several teams registered the roster used to render every
+  member row for every team at once regardless of scroll position.
+
 ## Portal event form
 
 Also: a delegated `onChange` on the `<form>` tracks a handful of fields

@@ -352,6 +352,7 @@ model Event {
   discordChannelPlan  Json? // which channels to create on first build, e.g. ["announcement","rules"] — null = use the Settings default template
   discordChannels     Json? // { announcement: "id", rules: "id", ... }
   discordSeedMessages Json? // { announcement: "messageId", ... } — for re-sync
+  discordContentHashes Json? // { announcement: "<serialized payload>", ... } — what was last actually pushed, so a sync only touches channels whose content changed
   discordRoleId       String? // per-event access role — granted on sign-up, deleted on archive
   discordArchivedAt   DateTime? // when the space was archived (renamed + sunk)
   reminderSentAt      DateTime? // when the bot posted the "starts soon" reminder

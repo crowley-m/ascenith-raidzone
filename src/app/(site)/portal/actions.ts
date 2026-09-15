@@ -63,7 +63,7 @@ import { DEFAULT_EVENT_TZ, isValidEventTz, zonedInputToUtc } from "@/lib/tz";
 import { Prisma } from "@prisma/client";
 import type { PlayerStatus, Role } from "@prisma/client";
 
-type FormState = { ok?: boolean; error?: string; count?: number };
+type FormState = { ok?: boolean; error?: string; count?: number; changed?: string[] };
 
 const APP_URL = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
 
@@ -430,21 +430,36 @@ async function handleEventCancelled(eventId: string): Promise<void> {
 
 /**
  * Post (or edit, if a seed message id exists) the event's channel content.
- * Stores the message ids on the event for the next re-sync.
+ * Stores the message ids on the event for the next re-sync. Compares each
+ * channel's freshly-computed payload against what was actually pushed last
+ * time (`discordContentHashes`) and skips the Discord call for anything
+ * unchanged — so editing one field only touches that one channel's message,
+ * not every channel's. `only` restricts to specific channel names (a
+ * single-channel push); `force` bypasses the hash check (used when the
+ * message was just deleted and has to be reposted regardless of content).
+ * Returns which channels actually got pushed.
  */
 async function pushEventChannelContent(
   eventId: string,
   channels: Record<string, string>,
   seed: Record<string, string>,
-): Promise<void> {
+  opts: { only?: string[]; force?: boolean } = {},
+): Promise<{ changed: string[] }> {
   const ev = await db.event.findUnique({ where: { id: eventId } });
-  if (!ev) return;
+  if (!ev) return { changed: [] };
   const payloads = eventChannelPayloads(ev);
   const next: Record<string, string> = { ...seed };
+  const prevHashes = (ev.discordContentHashes as Record<string, string>) ?? {};
+  const nextHashes = { ...prevHashes };
+  const changed: string[] = [];
 
   for (const [name, payload] of Object.entries(payloads)) {
+    if (opts.only && !opts.only.includes(name)) continue;
     const channelId = channels[name];
     if (!channelId || (!payload.content && !payload.embed)) continue;
+    const hash = JSON.stringify(payload);
+    if (!opts.force && prevHashes[name] === hash) continue; // content hasn't changed since the last push
+
     const existing = seed[name];
     try {
       if (existing) {
@@ -453,6 +468,8 @@ async function pushEventChannelContent(
         const m = await postToChannel(channelId, payload);
         if (m) next[name] = m.id;
       }
+      nextHashes[name] = hash;
+      changed.push(name);
     } catch (err) {
       console.error(`channel sync failed for ${name}`, err);
       // a deleted message → post a fresh one next time
@@ -461,8 +478,10 @@ async function pushEventChannelContent(
   }
 
   // Pinned channel guide in #announcement — jump-links to every channel.
+  // Skipped on a single-channel push (`only`) — its content depends on the
+  // channel id map, not on any one channel's text.
   const indexChannel = channels.announcement;
-  if (indexChannel) {
+  if (!opts.only && indexChannel) {
     const content = eventIndexContent(ev.title, channels, EVENT_CHANNEL_ORDER);
     try {
       if (seed.index) {
@@ -484,10 +503,12 @@ async function pushEventChannelContent(
     where: { id: eventId },
     data: {
       discordSeedMessages: next as Prisma.InputJsonValue,
+      discordContentHashes: nextHashes as Prisma.InputJsonValue,
       discordMessageId: next.announcement ?? ev.discordMessageId,
       discordChannelId: channels.announcement ?? ev.discordChannelId,
     },
   });
+  return { changed };
 }
 
 /**
@@ -501,6 +522,7 @@ export async function syncEventChannels(eventId: string): Promise<FormState> {
   let channels = (ev.discordChannels as Record<string, string>) ?? {};
   const seed = (ev.discordSeedMessages as Record<string, string>) ?? {};
   let added: string[] = [];
+  let changed: string[] = [];
   try {
     // bring an older space up to the current channel set (e.g. #schedule)
     const { eventChannels } = await getSettings();
@@ -520,7 +542,8 @@ export async function syncEventChannels(eventId: string): Promise<FormState> {
     }
     // re-assert channel perms first — also grants the bot a send override
     await applyEventChannelPerms(channels, ev.discordRoleId);
-    await pushEventChannelContent(eventId, channels, seed);
+    const result = await pushEventChannelContent(eventId, channels, seed);
+    changed = result.changed;
   } catch (err) {
     return { error: `Discord: ${err instanceof Error ? err.message : "sync failed"}` };
   }
@@ -529,13 +552,41 @@ export async function syncEventChannels(eventId: string): Promise<FormState> {
     action: "event.discord_sync",
     targetType: "Event",
     targetId: eventId,
-    meta: added.length ? { addedChannels: added } : undefined,
+    meta: added.length || changed.length ? { addedChannels: added, changedChannels: changed } : undefined,
   });
   revalidatePath(`/portal/events/${eventId}`);
   return {
     ok: true,
+    changed,
     ...(added.length ? { count: added.length } : {}),
   };
+}
+
+/** Push just one channel's content now, regardless of whether it's detected as changed. */
+export async function pushSingleEventChannel(eventId: string, name: string): Promise<FormState> {
+  const actor = await assertPermission("event:manage");
+  const ev = await db.event.findUnique({ where: { id: eventId } });
+  if (!ev?.discordCategoryId) return { error: "This event has no Discord space yet." };
+  const channels = (ev.discordChannels as Record<string, string>) ?? {};
+  if (!channels[name]) return { error: `#${name} doesn't exist yet.` };
+  const seed = (ev.discordSeedMessages as Record<string, string>) ?? {};
+
+  let changed: string[] = [];
+  try {
+    const result = await pushEventChannelContent(eventId, channels, seed, { only: [name], force: true });
+    changed = result.changed;
+  } catch (err) {
+    return { error: `Discord: ${err instanceof Error ? err.message : "push failed"}` };
+  }
+  await logAudit({
+    actorId: actor.id,
+    action: "event.channel_push",
+    targetType: "Event",
+    targetId: eventId,
+    meta: { name },
+  });
+  revalidatePath(`/portal/events/${eventId}`);
+  return { ok: true, changed };
 }
 
 /**
@@ -700,8 +751,10 @@ export async function reannounceEventChannels(eventId: string): Promise<FormStat
       data: { discordSeedMessages: {} as Prisma.InputJsonValue },
     });
     // repost fresh (empty seed → new posts → pings per announcePing / announcePingAll)
+    // force: true — the old messages are gone, so a matching content hash
+    // would otherwise wrongly skip reposting them
     await applyEventChannelPerms(channels, ev.discordRoleId);
-    await pushEventChannelContent(eventId, channels, {});
+    await pushEventChannelContent(eventId, channels, {}, { force: true });
   } catch (err) {
     return { error: `Discord: ${err instanceof Error ? err.message : "repost failed"}` };
   }

@@ -26,11 +26,10 @@ export function SyncChannelsButton({ eventId }: { eventId: string }) {
             const res = await syncEventChannels(eventId);
             if (res?.error) setMsg(res.error);
             else {
-              setMsg(
-                res?.count
-                  ? `Channels updated · ${res.count} new channel${res.count === 1 ? "" : "s"} created.`
-                  : "Channels updated.",
-              );
+              const parts: string[] = [];
+              if (res?.count) parts.push(`${res.count} new channel${res.count === 1 ? "" : "s"} created`);
+              if (res?.changed?.length) parts.push(`updated: ${res.changed.join(", ")}`);
+              setMsg(parts.length ? parts.join(" · ") : "Already synced — nothing changed.");
               router.refresh();
             }
           });

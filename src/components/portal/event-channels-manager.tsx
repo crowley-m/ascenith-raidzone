@@ -2,7 +2,8 @@
 
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { addEventChannel, removeEventChannel } from "@/app/(site)/portal/actions";
+import { addEventChannel, removeEventChannel, pushSingleEventChannel } from "@/app/(site)/portal/actions";
+import { SyncChannelsButton, ResyncRolesButton, ReannounceButton } from "@/components/portal/build-space-button";
 
 const KNOWN_ORDER = [
   "announcement",
@@ -34,19 +35,25 @@ export function EventChannelsManager({
   eventId,
   channels,
   seeded,
+  pending,
   guildId,
+  archived = false,
 }: {
   eventId: string;
   channels: Record<string, string>;
   seeded: string[];
+  pending: string[];
   guildId?: string;
+  archived?: boolean;
 }) {
   const router = useRouter();
-  const [pending, start] = useTransition();
+  const [pendingTx, start] = useTransition();
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const [pushMsg, setPushMsg] = useState<Record<string, string>>({});
   const inputRef = useRef<HTMLInputElement>(null);
   const seededSet = new Set(seeded);
+  const pendingSet = new Set(pending);
 
   const names = Object.keys(channels).sort((a, b) => {
     const ia = KNOWN_ORDER.indexOf(a);
@@ -87,9 +94,29 @@ export function EventChannelsManager({
     });
   }
 
+  function pushNow(name: string) {
+    setBusy(`push:${name}`);
+    setPushMsg((m) => ({ ...m, [name]: "" }));
+    start(async () => {
+      const res = await pushSingleEventChannel(eventId, name);
+      setBusy(null);
+      setPushMsg((m) => ({ ...m, [name]: res?.error ?? "Pushed." }));
+      router.refresh();
+    });
+  }
+
   return (
     <div className="card mt-4">
-      <h3 className="font-display font-bold text-white">Channels</h3>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h3 className="font-display font-bold text-white">Channels</h3>
+        {!archived && (
+          <div className="flex flex-wrap items-center gap-2">
+            <SyncChannelsButton eventId={eventId} />
+            <ResyncRolesButton eventId={eventId} />
+            <ReannounceButton eventId={eventId} />
+          </div>
+        )}
+      </div>
       <p className="mt-1 text-xs text-slate-500">
         Every channel this event&apos;s space actually has right now, and what to do with each
         one. This only affects this event — the default set new events start with lives in
@@ -100,16 +127,22 @@ export function EventChannelsManager({
         {names.map((name) => {
           const hasContentField = HAS_CONTENT_FIELD.has(name);
           const isSeeded = seededSet.has(name);
+          const isPending = pendingSet.has(name);
           return (
             <li key={name} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 py-2.5 text-sm">
               <div>
                 <span className="font-mono text-slate-200">#{name}</span>
                 {hasContentField ? (
-                  <span className={`ml-2 text-xs ${isSeeded ? "text-teal" : "text-ember"}`}>
-                    {isSeeded ? "posted" : "not posted yet — save the event to push it"}
+                  <span
+                    className={`ml-2 text-xs ${!isSeeded || isPending ? "text-ember" : "text-teal"}`}
+                  >
+                    {!isSeeded ? "not posted yet" : isPending ? "content changed — not pushed yet" : "up to date"}
                   </span>
                 ) : (
                   <span className="ml-2 text-xs text-slate-600">plain channel, no content</span>
+                )}
+                {pushMsg[name] && (
+                  <span className="ml-2 text-[0.66rem] text-slate-400">{pushMsg[name]}</span>
                 )}
               </div>
               <div className="flex shrink-0 items-center gap-3 font-mono text-[0.66rem] uppercase tracking-widest">
@@ -117,6 +150,15 @@ export function EventChannelsManager({
                   <a href={`#content-${name}`} className="text-slate-400 hover:text-teal">
                     Edit content
                   </a>
+                )}
+                {hasContentField && (!isSeeded || isPending) && (
+                  <button
+                    className="text-teal hover:text-cream disabled:opacity-50"
+                    disabled={pendingTx && busy === `push:${name}`}
+                    onClick={() => pushNow(name)}
+                  >
+                    {pendingTx && busy === `push:${name}` ? "…" : "Push now"}
+                  </button>
                 )}
                 {guildId && channels[name] && (
                   <a
@@ -130,10 +172,10 @@ export function EventChannelsManager({
                 )}
                 <button
                   className="text-slate-500 hover:text-red-300 disabled:opacity-50"
-                  disabled={pending && busy === name}
+                  disabled={pendingTx && busy === name}
                   onClick={() => remove(name)}
                 >
-                  {pending && busy === name ? "…" : "Remove"}
+                  {pendingTx && busy === name ? "…" : "Remove"}
                 </button>
               </div>
             </li>
@@ -161,10 +203,10 @@ export function EventChannelsManager({
           <button
             type="button"
             className="btn-ghost text-xs"
-            disabled={pending && busy === "__add__"}
+            disabled={pendingTx && busy === "__add__"}
             onClick={add}
           >
-            {pending && busy === "__add__" ? "Adding…" : "Add channel"}
+            {pendingTx && busy === "__add__" ? "Adding…" : "Add channel"}
           </button>
         </div>
         <p className="mt-1 text-xs text-slate-500">
@@ -175,10 +217,11 @@ export function EventChannelsManager({
       </div>
 
       <p className="mt-3 border-t border-edge pt-3 text-xs text-slate-500">
-        Changed a field below? Hit <span className="text-slate-300">Save event</span> — it
-        re-posts to every channel that already exists, right away. Want to re-fire the{" "}
-        <span className="font-mono">@everyone</span> ping too? Use{" "}
-        <span className="text-slate-300">Repost announcement</span> in the header above instead.
+        Changed a field below? Saving the event pushes that field&apos;s channel right away — no need to
+        hit &ldquo;Sync channels&rdquo; unless you want to also pick up channels added outside this
+        page, or use &ldquo;Push now&rdquo; above for a one-off update without saving the whole
+        form. &ldquo;Repost announcement&rdquo; is different — it deletes and reposts so the{" "}
+        <span className="font-mono">@everyone</span> ping fires again.
       </p>
 
       {msg && <p className="mt-2 text-xs text-ember">{msg}</p>}

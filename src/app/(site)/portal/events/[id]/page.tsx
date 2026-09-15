@@ -10,18 +10,13 @@ import { EventForm } from "@/components/portal/event-form";
 import { AttendanceToggle } from "@/components/portal/attendance-toggle";
 import { RewardForm } from "@/components/portal/reward-form";
 import { RosterCopy } from "@/components/portal/roster-copy";
-import {
-  BuildSpaceButton,
-  ArchiveSpaceButton,
-  SyncChannelsButton,
-  ReannounceButton,
-  ResyncRolesButton,
-} from "@/components/portal/build-space-button";
+import { BuildSpaceButton, ArchiveSpaceButton, ReannounceButton } from "@/components/portal/build-space-button";
 import { ResultsForm, AttendeeRewardForm } from "@/components/portal/results-form";
 import { DiscordPreview } from "@/components/portal/discord-preview";
 import { LandingPreview } from "@/components/portal/landing-preview";
 import { RosterTools } from "@/components/portal/roster-tools";
 import { EventChannelsManager } from "@/components/portal/event-channels-manager";
+import { eventChannelPayloads } from "@/lib/event-channels";
 import { BracketEditor } from "@/components/portal/bracket-editor";
 import { bracketForEvent, entrantsForEvent } from "@/lib/bracket";
 import { ConfirmButton } from "@/components/portal/confirm-button";
@@ -77,6 +72,15 @@ export default async function PortalEventDetail({
   const canManage = can(user.role, "event:manage");
   const canMark = can(user.role, "attendance:mark");
   const canReward = can(user.role, "reward:grant");
+
+  // channels whose freshly-computed content no longer matches what was
+  // actually last pushed to Discord — surfaced in the Channels panel so
+  // staff know what still needs a push, instead of re-syncing everything
+  const contentHashes = (event.discordContentHashes as Record<string, string>) ?? {};
+  const pendingChannels = Object.entries(eventChannelPayloads(event))
+    .filter(([, payload]) => payload.content || payload.embed)
+    .filter(([name, payload]) => contentHashes[name] !== JSON.stringify(payload))
+    .map(([name]) => name);
 
   const isTeamEvent = event.format === "TEAM";
   const confirmed = event.signups.filter((s) => s.state === "SIGNED_UP");
@@ -202,22 +206,13 @@ export default async function PortalEventDetail({
           {canManage &&
             (event.discordCategoryId ? (
               event.discordArchivedAt ? (
-                <>
-                  <span className="badge border-edge text-slate-500">Discord archived</span>
-                  <ArchiveSpaceButton eventId={event.id} relock />
-                </>
+                <span className="badge border-edge text-slate-500">Discord archived</span>
               ) : (
-                <>
-                  <span className="badge border-teal/40 text-teal">
-                    Discord:{" "}
-                    {Object.keys((event.discordChannels as Record<string, string>) ?? {}).length}{" "}
-                    channels
-                  </span>
-                  <SyncChannelsButton eventId={event.id} />
-                  <ResyncRolesButton eventId={event.id} />
-                  <ReannounceButton eventId={event.id} />
-                  <ArchiveSpaceButton eventId={event.id} />
-                </>
+                <span className="badge border-teal/40 text-teal">
+                  Discord:{" "}
+                  {Object.keys((event.discordChannels as Record<string, string>) ?? {}).length}{" "}
+                  channels
+                </span>
               )
             ) : (
               <>
@@ -285,8 +280,8 @@ export default async function PortalEventDetail({
                 <p className="text-sm text-slate-400">No teams registered yet.</p>
               )}
               {[...teamGroups.values()].map((g) => (
-                <div key={g.name} className="border border-edge">
-                  <div className="flex items-center justify-between border-b border-edge bg-panel/50 px-3 py-2 text-sm font-bold text-white">
+                <details key={g.name} className="border border-edge">
+                  <summary className="flex cursor-pointer list-none items-center justify-between border-b border-edge bg-panel/50 px-3 py-2 text-sm font-bold text-white">
                     <span>
                       {g.tag && <span className="text-teal">[{g.tag}] </span>}
                       {g.name}
@@ -294,7 +289,7 @@ export default async function PortalEventDetail({
                     <span className="text-xs font-normal text-slate-500">
                       {g.members.length} player{g.members.length === 1 ? "" : "s"}
                     </span>
-                  </div>
+                  </summary>
                   <table className="w-full text-sm">
                     <tbody className="divide-y divide-edge/60">
                       {g.members.map((s) => (
@@ -328,17 +323,17 @@ export default async function PortalEventDetail({
                       ))}
                     </tbody>
                   </table>
-                </div>
+                </details>
               ))}
 
               {freeAgents.length > 0 && (
-                <div className="border border-edge">
-                  <div className="border-b border-edge bg-panel/50 px-3 py-2 text-sm font-bold text-white">
+                <details className="border border-edge">
+                  <summary className="cursor-pointer list-none border-b border-edge bg-panel/50 px-3 py-2 text-sm font-bold text-white">
                     Free agents — looking for a team
                     <span className="ml-2 text-xs font-normal text-slate-500">
                       {freeAgents.length}
                     </span>
-                  </div>
+                  </summary>
                   <table className="w-full text-sm">
                     <tbody className="divide-y divide-edge/60">
                       {freeAgents.map((s) => (
@@ -363,7 +358,7 @@ export default async function PortalEventDetail({
                       ))}
                     </tbody>
                   </table>
-                </div>
+                </details>
               )}
             </div>
           ) : (
@@ -547,7 +542,9 @@ export default async function PortalEventDetail({
               eventId={event.id}
               channels={(event.discordChannels as Record<string, string>) ?? {}}
               seeded={Object.keys((event.discordSeedMessages as Record<string, string>) ?? {})}
+              pending={pendingChannels}
               guildId={process.env.DISCORD_GUILD_ID}
+              archived={!!event.discordArchivedAt}
             />
           </div>
         )}
@@ -604,7 +601,21 @@ export default async function PortalEventDetail({
 
               <div className="mt-6 border-t border-edge pt-4">
                 <h3 className="font-display font-bold text-white">Danger zone</h3>
-                <p className="mt-1 text-xs text-slate-500">
+
+                {event.discordCategoryId && (
+                  <div className="mt-3 border-b border-edge/60 pb-4">
+                    <p className="text-xs text-slate-500">
+                      {event.discordArchivedAt
+                        ? "This space is archived — renamed, sunk to the bottom, and locked private. Re-lock it if the bot's permissions changed and something didn't take."
+                        : "Renames the category, sinks it to the bottom, and locks every channel private. Nothing is deleted — reversible by rebuilding permissions manually if ever needed."}
+                    </p>
+                    <div className="mt-2">
+                      <ArchiveSpaceButton eventId={event.id} relock={!!event.discordArchivedAt} />
+                    </div>
+                  </div>
+                )}
+
+                <p className="mt-3 text-xs text-slate-500">
                   Deletes the event, its roster, attendance and placements. Player rewards and
                   teams are kept. Any Discord space is archived first.
                 </p>
