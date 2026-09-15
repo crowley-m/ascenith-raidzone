@@ -459,21 +459,25 @@ scoped to that event's roster, short enough that scrolling alone is fine).
   actually changes). Other forms still using inline `state.ok`/`state.error`
   text haven't been migrated yet — adopt the same one-`useEffect` pattern
   incrementally rather than assuming it's done everywhere.
-- **Page transitions** — `<PageTransition>` (`src/components/page-transition.tsx`)
-  wraps `{children}` in `(site)/layout.tsx` in a stable (non-keyed) div and
-  replays the `.page-fade-in` CSS animation (`globals.css`, 0.2s, skipped
-  under `prefers-reduced-motion`) on route change by toggling the class
-  off/on with a forced reflow in between. **Deliberately not**
-  `key={pathname}`-ed — an earlier version was, which forced a full
-  unmount/remount of the entire page subtree on every navigation and
-  intermittently raced with `<ScrollReveal>`'s own pathname-driven effect,
-  leaving whole `data-reveal` sections stuck invisible. Content updates
-  through normal React reconciliation now; only the animation class
-  replays. Also uses `useLayoutEffect`, not `useEffect` — the class swap has
-  to land before the browser paints, or the new page briefly paints at full
-  opacity (its class-less default) before the animation class reapplies a
-  frame later, which read as a flash-then-fade-in glitch rather than a
-  clean transition.
+- **Page transitions** — `<PageWipe>` (`src/components/page-wipe.tsx`,
+  mounted in `(site)/layout.tsx` next to `<NavProgress>`) is a curtain-wipe:
+  a full-screen panel slides in from the left the instant an internal link
+  is clicked, then slides the rest of the way off to the right once the
+  destination page's data has actually landed (`pathname`/`searchParams`
+  change), revealing it underneath. It's a **standalone overlay that never
+  touches page content** — deliberately, after the previous fade-based
+  `PageTransition` (now removed) caused two real bugs by wrapping
+  `{children}`: a `key={pathname}`-remounted version forced a full
+  unmount/remount every navigation and raced with `<ScrollReveal>`, and even
+  the non-remounting class-toggle version that replaced it could flash
+  content at full opacity for a frame before its animation class reapplied.
+  `PageWipe` sidesteps that whole failure mode by animating a `position:
+  fixed` element that sits in front of everything, same idea as
+  `NavProgress`, not something the actual page tree passes through. Uses
+  `useLayoutEffect` for its own class swap (`wipe-cover`/`wipe-reveal` in
+  `globals.css`) with the same remove→reflow→re-add pattern, plus a 4s
+  failsafe back to idle if a click never turns into a navigation. Skipped
+  under `prefers-reduced-motion`.
 - **Landing intro loader** — `<IntroLoader>`
   (`src/components/landing/IntroLoader.tsx`, mounted first inside
   `Landing.tsx`'s root) is a separate thing from `PageTransition`: a
