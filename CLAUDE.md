@@ -459,54 +459,55 @@ scoped to that event's roster, short enough that scrolling alone is fine).
   actually changes). Other forms still using inline `state.ok`/`state.error`
   text haven't been migrated yet — adopt the same one-`useEffect` pattern
   incrementally rather than assuming it's done everywhere.
-- **Page transitions — removed.** Two approaches were tried and both were
-  pulled back out: a fade that wrapped `{children}` (`PageTransition`) and
-  later a curtain-wipe standalone overlay (`PageWipe`). The wipe in
-  particular caused a string of real problems — a persistent glow-bleed
-  artifact, back/forward navigation feeling stuck since a `force-dynamic`
-  page's back-nav isn't actually instant (no client cache to fall back on,
-  so the covering curtain sat there for the real fetch time, not just an
-  animation artifact), and general mobile trouble — enough that it was
-  removed outright rather than patched further. There is currently no
-  page-transition effect; `<NavProgress>` (the top loading bar) is the only
-  navigation feedback. If this gets revisited, keep it as a standalone
-  overlay (never wrap page content — that's what broke `ScrollReveal`
-  twice) and account for `force-dynamic` pages not being instant on
-  back/forward before assuming any fixed-duration animation will feel right.
-- **Landing intro loader** — `<IntroLoader>`
-  (`src/components/landing/IntroLoader.tsx`, mounted first inside
-  `Landing.tsx`'s root) is a separate thing from `PageTransition`: a
-  full-screen boot-sequence overlay (wordmark, fill bar, blinking-cursor
-  terminal line — matches the landing's own `.term`/scanline aesthetic, its
-  own `landing.module.css` palette, not the app's dark/crimson tokens) shown
-  once on the site's actual entry point, not on every page. A module-level
-  `introShown` flag (not React state) means it only plays on a genuine fresh
-  load — surviving client-side navigation away from and back to `/` within
-  the same session without replaying. Skipped entirely under
-  `prefers-reduced-motion`.
-- **Top loading bar** — `<NavProgress>` (`src/components/nav-progress.tsx`,
-  mounted in `(site)/layout.tsx` inside a `<Suspense>` since it reads
-  `useSearchParams()`) is the NProgress-style bar: since App Router exposes
-  no navigation-start event, it starts growing the instant an internal
-  `<a>` is clicked (a same-origin, same-tab, non-download link to a
-  different path/query) and snaps to 100%+fades once `usePathname()` +
-  `useSearchParams()` actually change — i.e. the next page's data has
-  landed. A 5s failsafe clears it if a click never becomes a navigation.
-  Covers the gap a per-route loading state doesn't — no route currently has
-  one; this fires on every internal link everywhere, so it's the only
-  navigation feedback in the app right now. Plain crimson hairline — a
-  "deadline meme"-styled version (chaser icon riding the fill, fixed target
-  icon) was tried and reverted; see the loading-animations note below.
-- **No per-route loading skeletons right now.** `loading.tsx` files
-  (`/portal`, `/portal/players`, `/portal/events`, `/portal/rewards`,
-  `/events`) plus a shimmer-styled `<Skeleton>` component and a `minDelay()`
-  helper (holding a promise's resolution to a 400ms floor so the fallback
-  had a visible window, since same-box Postgres queries usually resolve in
-  a few ms) were built, then all removed — the artificial 400ms floor added
-  real latency to genuinely fast page loads, which wasn't worth it. If this
-  gets revisited, don't reach for an artificial minimum delay again; either
-  accept that a fast fetch means the skeleton is invisible (correct
-  behavior, not a bug) or solve it a different way.
+- **Loading & transition system** — three independent pieces, each solving a
+  different moment. All three went through multiple discarded attempts
+  before landing here (previewed side-by-side as working demos in an
+  artifact before building any of them for real — worth doing again if this
+  area changes further, rather than iterating live).
+  - **Intro loader** — `<IntroLoader>` (`src/components/landing/IntroLoader.tsx`,
+    mounted first inside `Landing.tsx`'s root) is a full-screen **glitch-decode**
+    boot sequence shown once, only on the site's actual entry point (not on
+    every page): the wordmark resolves out of scrambled characters via a
+    `requestAnimationFrame` loop mutating `textContent` directly through a
+    ref (safe alongside React's own re-renders here since the JSX output for
+    that node never changes, so React's diff never overwrites it), with a
+    red scan-band flicker and a "Status: Online" line fading in after. Uses
+    the landing's own palette (`landing.module.css`), not the app's tokens.
+    A module-level `introShown` flag (not React state) means it only plays
+    on a genuine fresh load, surviving client-side nav away from and back to
+    `/` without replaying. Skipped under `prefers-reduced-motion`.
+  - **Page transition** — `<PageWipe>` (`src/components/page-wipe.tsx`,
+    mounted in `(site)/layout.tsx` next to `<NavProgress>`) is a **short
+    chaser-wipe**: a crimson bar with a runner icon on its leading edge
+    sweeps across on click, sweeping the rest of the way off once the
+    destination page's data has landed. This is a second attempt — the
+    first `PageWipe` had a persistent `box-shadow` glow-bleed artifact and
+    made back/forward navigation feel stuck (a `force-dynamic` page's
+    back-nav isn't actually instant — no client cache to fall back on, so
+    the covering panel sat there for the real fetch time, not just an
+    animation artifact) badly enough to be removed outright. This version:
+    deliberately short durations (170ms cover / 180ms reveal), the
+    edge-glow removed entirely rather than fixed (nothing renders at rest,
+    so there's nothing to bleed), a back/forward nav (`popstate`, via an
+    `isBackNav` ref) skips the reveal-out animation and snaps clear the
+    instant data lands — though a genuinely slow back-nav fetch is still a
+    genuinely slow fetch, no animation fixes that — and desktop-only
+    (`≥1024px`, matching `PortalNav`'s own cutoff, guarded at both the JS
+    trigger point and a CSS `max-width: 1023px` backstop) since it got in
+    the way on mobile before. Standalone overlay, never wraps page content
+    — that's what broke `ScrollReveal` twice with the earlier fade-based
+    `PageTransition` (removed).
+  - **Loading indicator** — `<NavProgress>` (`src/components/nav-progress.tsx`,
+    mounted in a `<Suspense>` since it reads `useSearchParams()`) is a
+    **HUD corner readout**, not a bar: a small bordered box, bottom-right,
+    cycling `LINKING…` / `SYNCING…` while `status === "loading"` and
+    showing `READY` briefly once the pathname/search actually change,
+    before fading. Same click-detection mechanics as before (App Router has
+    no navigation-start event, so this starts the instant an internal `<a>`
+    is clicked; a 5s failsafe clears it if a click never becomes a
+    navigation) — only the visual changed, from a plain hairline / a
+    "deadline meme"-styled bar (chaser+target icons, tried and reverted) to
+    this HUD box.
 - **Live countdown** — `<LiveCountdown target={isoString} fallback={...} />`
   (`src/components/live-countdown.tsx`) renders `fallback` (the existing
   `relative()` string) until mounted and swaps to a ticking `Dd HH:MM:SS`
