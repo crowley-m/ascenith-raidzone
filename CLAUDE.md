@@ -437,6 +437,34 @@ private), not a everyday action.
   block) on the Registrations tab is now a `<details>`, collapsed by
   default — with several teams registered the roster used to render every
   member row for every team at once regardless of scroll position.
+  `<TeamRosterList>` (`src/components/portal/team-roster-list.tsx`) is a
+  client component holding an `allOpen: boolean | undefined` state — passed
+  straight through as each `<details>`'s `open` prop, `undefined` leaves
+  every team's own manual toggle alone (React only forces the DOM attribute
+  when the prop value itself changes between renders), so "Expand all" /
+  "Collapse all" can force every team open or shut without fighting
+  individual clicks in between.
+- **Sticky jump-nav** — same pattern as the event *form*'s own jump-nav
+  (`#basics`/`#brief`/`#discord`), one level up: a `sticky top-0` bar
+  linking `#registrations`/`#bracket`/`#results`/`#previews`/`#channels`/
+  `#edit`/`#danger`, each entry conditionally shown only when that section
+  actually renders for this event/permission level.
+- **Edit form collapsed by default** — the whole Edit card is a `<details
+  open={event.status === "DRAFT"}>` — open automatically for a still-being-
+  set-up draft, collapsed for anything already published, since a huge
+  form sitting fully expanded at the bottom of every settled event's page
+  added most of the page's scroll length for no reason once it's done.
+  "Danger zone" lives inside it (`id="danger"`) — navigating to that anchor
+  auto-expands the ancestor `<details>` in every modern browser.
+- **Attendance-at-a-glance** — a slim 2-segment bar (attended / no-show,
+  the remainder implicitly "not marked yet") under the stat tiles, next to
+  a small legend — a quick read without doing the subtraction from the raw
+  counts yourself.
+- **Unsynced-channel banner** — reuses the same `pendingChannels` computed
+  for the Channels panel (see above) to show a banner right under the page
+  header ("N channels with unpushed content changes") with a jump link to
+  `#channels`, instead of only surfacing that state after scrolling all the
+  way down to the panel itself.
 
 ## Portal event form
 

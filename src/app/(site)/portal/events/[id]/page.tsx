@@ -15,6 +15,7 @@ import { ResultsForm, AttendeeRewardForm } from "@/components/portal/results-for
 import { DiscordPreview } from "@/components/portal/discord-preview";
 import { LandingPreview } from "@/components/portal/landing-preview";
 import { RosterTools } from "@/components/portal/roster-tools";
+import { TeamRosterList } from "@/components/portal/team-roster-list";
 import { EventChannelsManager } from "@/components/portal/event-channels-manager";
 import { eventChannelPayloads } from "@/lib/event-channels";
 import { BracketEditor } from "@/components/portal/bracket-editor";
@@ -227,9 +228,32 @@ export default async function PortalEventDetail({
         {event.discordMessageId && " · announced in Discord"}
       </p>
 
+      {canManage && pendingChannels.length > 0 && (
+        <div className="mt-4 border border-ember/40 bg-ember/5 p-3 text-xs text-ember">
+          {pendingChannels.length} channel{pendingChannels.length === 1 ? "" : "s"} with unpushed
+          content changes — see{" "}
+          <a href="#channels" className="underline hover:no-underline">
+            Channels
+          </a>{" "}
+          below.
+        </div>
+      )}
+
+      {canManage && (
+        <nav className="sticky top-0 z-10 mt-6 -mx-1 flex flex-wrap gap-4 border-b border-edge bg-panel/95 px-1 py-2 font-mono text-[0.66rem] uppercase tracking-widest text-slate-500 backdrop-blur">
+          <a href="#registrations" className="hover:text-teal">Registrations</a>
+          <a href="#bracket" className="hover:text-teal">Bracket</a>
+          {confirmed.length > 0 && <a href="#results" className="hover:text-teal">Results</a>}
+          <a href="#previews" className="hover:text-teal">Previews</a>
+          {event.discordCategoryId && <a href="#channels" className="hover:text-teal">Channels</a>}
+          <a href="#edit" className="hover:text-teal">Edit</a>
+          <a href="#danger" className="hover:text-teal">Danger zone</a>
+        </nav>
+      )}
+
       <div className="mt-8 space-y-12">
         {/* Registrations */}
-        <div>
+        <div id="registrations">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h3 className="font-display font-bold text-white">
               {isTeamEvent ? "Registered teams" : "Registrations"}{" "}
@@ -274,92 +298,36 @@ export default async function PortalEventDetail({
             ))}
           </div>
 
-          {isTeamEvent ? (
-            <div className="mt-4 space-y-4">
-              {teamGroups.size === 0 && (
-                <p className="text-sm text-slate-400">No teams registered yet.</p>
-              )}
-              {[...teamGroups.values()].map((g) => (
-                <details key={g.name} className="border border-edge">
-                  <summary className="flex cursor-pointer list-none items-center justify-between border-b border-edge bg-panel/50 px-3 py-2 text-sm font-bold text-white">
-                    <span>
-                      {g.tag && <span className="text-teal">[{g.tag}] </span>}
-                      {g.name}
-                    </span>
-                    <span className="text-xs font-normal text-slate-500">
-                      {g.members.length} player{g.members.length === 1 ? "" : "s"}
-                    </span>
-                  </summary>
-                  <table className="w-full text-sm">
-                    <tbody className="divide-y divide-edge/60">
-                      {g.members.map((s) => (
-                        <tr key={s.id}>
-                          <td className="px-3 py-2">
-                            <Link
-                              href={`/portal/players/${s.player.id}`}
-                              className="text-slate-200 hover:text-teal"
-                            >
-                              {s.player.characterName ?? "Unnamed"}
-                            </Link>
-                            {s.nickname && (
-                              <span className="ml-1.5 text-xs text-teal">as {s.nickname}</span>
-                            )}
-                            {s.player.gameUid && (
-                              <span className="block text-xs text-slate-500">
-                                UID {s.player.gameUid}
-                              </span>
-                            )}
-                          </td>
-                          {canMark && (
-                            <td className="px-3 py-2 text-right">
-                              <AttendanceToggle
-                                eventId={event.id}
-                                playerId={s.player.id}
-                                attended={attMap.get(s.player.id) ?? null}
-                              />
-                            </td>
-                          )}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </details>
-              ))}
+          {confirmed.length > 0 && (
+            <div className="mt-2">
+              <div className="flex h-1.5 overflow-hidden bg-panel/40">
+                {attendedCount > 0 && (
+                  <div className="bg-teal" style={{ width: `${(attendedCount / confirmed.length) * 100}%` }} />
+                )}
+                {noShow.length > 0 && (
+                  <div className="bg-ember" style={{ width: `${(noShow.length / confirmed.length) * 100}%` }} />
+                )}
+              </div>
+              <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 font-mono text-[0.6rem] uppercase tracking-wide text-slate-500">
+                <span><span className="text-teal">■</span> attended {attendedCount}</span>
+                <span><span className="text-ember">■</span> no-show {noShow.length}</span>
+                <span>
+                  <span className="text-slate-600">■</span> not marked{" "}
+                  {confirmed.length - attendedCount - noShow.length}
+                </span>
+              </div>
+            </div>
+          )}
 
-              {freeAgents.length > 0 && (
-                <details className="border border-edge">
-                  <summary className="cursor-pointer list-none border-b border-edge bg-panel/50 px-3 py-2 text-sm font-bold text-white">
-                    Free agents — looking for a team
-                    <span className="ml-2 text-xs font-normal text-slate-500">
-                      {freeAgents.length}
-                    </span>
-                  </summary>
-                  <table className="w-full text-sm">
-                    <tbody className="divide-y divide-edge/60">
-                      {freeAgents.map((s) => (
-                        <tr key={s.id}>
-                          <td className="px-3 py-2">
-                            <Link
-                              href={`/portal/players/${s.player.id}`}
-                              className="text-slate-200 hover:text-teal"
-                            >
-                              {s.player.characterName ?? "Unnamed"}
-                            </Link>
-                            {s.nickname && (
-                              <span className="ml-1.5 text-xs text-teal">as {s.nickname}</span>
-                            )}
-                            {s.player.gameUid && (
-                              <span className="block text-xs text-slate-500">
-                                UID {s.player.gameUid}
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </details>
-              )}
+          {isTeamEvent ? (
+            <div className="mt-4">
+              <TeamRosterList
+                eventId={event.id}
+                groups={[...teamGroups.values()]}
+                freeAgents={freeAgents}
+                attendance={Object.fromEntries(attMap)}
+                canMark={canMark}
+              />
             </div>
           ) : (
             <div className="mt-4 overflow-x-auto">
@@ -444,7 +412,7 @@ export default async function PortalEventDetail({
           )}
 
           {canManage && (
-            <div className="mt-8">
+            <div id="bracket" className="mt-8">
               <BracketEditor
                 eventId={event.id}
                 bracket={bracket}
@@ -454,7 +422,7 @@ export default async function PortalEventDetail({
           )}
 
           {canManage && confirmed.length > 0 && (
-            <div className="mt-8">
+            <div id="results" className="mt-8">
               <ResultsForm
                 eventId={event.id}
                 entrants={entrants}
@@ -510,7 +478,7 @@ export default async function PortalEventDetail({
 
         {/* Previews */}
         {canManage && (
-          <div className="max-w-3xl space-y-3">
+          <div id="previews" className="max-w-3xl space-y-3">
             <details>
               <summary className="cursor-pointer font-display font-bold text-white">
                 Landing preview
@@ -537,7 +505,7 @@ export default async function PortalEventDetail({
         )}
 
         {canManage && event.discordCategoryId && (
-          <div className="max-w-3xl">
+          <div id="channels" className="max-w-3xl">
             <EventChannelsManager
               eventId={event.id}
               channels={(event.discordChannels as Record<string, string>) ?? {}}
@@ -550,10 +518,10 @@ export default async function PortalEventDetail({
         )}
 
         {/* Edit */}
-        <div className="max-w-3xl">
+        <div id="edit" className="max-w-3xl">
           {canManage ? (
-            <div className="card">
-              <h3 className="font-display font-bold text-white">Edit</h3>
+            <details className="card" open={event.status === "DRAFT"}>
+              <summary className="cursor-pointer font-display font-bold text-white">Edit</summary>
               <div className="mt-3">
                 <EventForm
                   seasons={seasons}
@@ -599,7 +567,7 @@ export default async function PortalEventDetail({
                 />
               </div>
 
-              <div className="mt-6 border-t border-edge pt-4">
+              <div id="danger" className="mt-6 border-t border-edge pt-4">
                 <h3 className="font-display font-bold text-white">Danger zone</h3>
 
                 {event.discordCategoryId && (
@@ -628,7 +596,7 @@ export default async function PortalEventDetail({
                   </ConfirmButton>
                 </div>
               </div>
-            </div>
+            </details>
           ) : (
             <div className="card text-sm text-slate-400">
               You can view rosters and mark attendance. Editing events needs Admin.
