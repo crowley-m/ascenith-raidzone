@@ -1103,6 +1103,43 @@ pages (landing page exempt, own design system). Nine fixes:
   more than one season's edit form is open in the same accordion page —
   now derived from the same per-instance `useId()`.
 
+## Discord bot slash-command UX pass
+
+A dedicated audit of `src/bot/commands.ts` command quality (not backend
+correctness — the reminder loop already had a correctness pass earlier).
+Five fixes:
+
+- **`/join` now defers its reply** — the handler runs several sequential DB
+  writes plus Discord API calls (a guild-member fetch, role grants, a DM)
+  before it had anything to say; without `deferReply()`, a slow round-trip
+  could lapse Discord's 3-second interaction window and show the player a
+  generic "This interaction failed" even though the join had already gone
+  through. Every early-return path in the case now uses `editReply()`
+  instead of `reply()` to match.
+- **A failed Discord role grant on `/join` no longer goes unmentioned** —
+  previously `.catch(() => {})`'d silently; the reply still said
+  "✅ Joined" unconditionally even if the team/event role never actually
+  landed. Now tracked as `roleIssue` and appended as a caveat ("⚠️ Couldn't
+  grant your Discord access for this — ping staff to fix it") when either
+  role grant fails, mirroring the DM-failure-visibility precedent in
+  `src/lib/notify.ts`.
+- **Autocomplete now filters in the query, not after a fixed `take: 25`**
+  — `/signup`'s event option and `/standings`'s season option both used to
+  fetch only the 25 most recent rows *then* filter by what was typed, so a
+  community with more than 25 open events/seasons couldn't autocomplete to
+  one outside that pre-fetched batch even though it was a valid,
+  selectable option. The Prisma `where` now does the filtering (season
+  search matches `series`/`name`; event search matches `title`), so the
+  25-cap applies to matches instead of the pre-filter pool.
+- **`/standings`'s podium medals now index by `p.rank`, not array
+  position** — `medal[i]` (position in the top-3 slice) could show 🥇 next
+  to the actual 2nd-place finisher whenever staff log placements with a
+  skipped rank (no 1st recorded, say — `savePlacements` explicitly allows
+  this). Now `medal[p.rank - 1]`, matching the convention `resultsEmbed`
+  and `/seasons/[slug]` already use on the web side for the same data.
+- **`/events`'s embed gets the same footer every other bot embed has** —
+  `.setFooter({ text: "ASCENITH RAIDZONE" })`, for visual consistency.
+
 ## Migrations
 
 Hand-write the SQL. `prisma migrate deploy` runs on web container boot (then

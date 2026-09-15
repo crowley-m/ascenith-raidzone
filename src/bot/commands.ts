@@ -65,33 +65,32 @@ function seasonLabel(s: { series: string; number: number; name: string | null })
 export async function handleAutocomplete(interaction: AutocompleteInteraction) {
   const q = interaction.options.getFocused().toLowerCase();
 
+  // Filter in the query itself, not after a fixed take: 25 — otherwise once
+  // a community has more than 25 seasons/open events, searching for one
+  // outside that pre-fetched top-25 (by date) silently returns nothing,
+  // even though it's a real, selectable option.
   if (interaction.commandName === "standings") {
     const seasons = await db.season.findMany({
+      where: q
+        ? { OR: [{ series: { contains: q, mode: "insensitive" } }, { name: { contains: q, mode: "insensitive" } }] }
+        : undefined,
       orderBy: [{ startsAt: "desc" }, { number: "desc" }],
       take: 25,
       select: { slug: true, series: true, number: true, name: true },
     });
     return interaction.respond(
-      seasons
-        .filter((s) => seasonLabel(s).toLowerCase().includes(q))
-        .slice(0, 25)
-        .map((s) => ({ name: seasonLabel(s).slice(0, 100), value: s.slug })),
+      seasons.map((s) => ({ name: seasonLabel(s).slice(0, 100), value: s.slug })),
     );
   }
 
   if (interaction.commandName !== "signup") return interaction.respond([]);
   const events = await db.event.findMany({
-    where: openSoloEventFilter(),
+    where: { ...openSoloEventFilter(), ...(q ? { title: { contains: q, mode: "insensitive" } } : {}) },
     orderBy: { startsAt: "asc" },
     take: 25,
     select: { id: true, title: true },
   });
-  await interaction.respond(
-    events
-      .filter((e) => e.title.toLowerCase().includes(q))
-      .slice(0, 25)
-      .map((e) => ({ name: e.title.slice(0, 100), value: e.id })),
-  );
+  await interaction.respond(events.map((e) => ({ name: e.title.slice(0, 100), value: e.id })));
 }
 
 export async function handleCommand(interaction: ChatInputCommandInteraction) {
@@ -166,7 +165,8 @@ export async function handleCommand(interaction: ChatInputCommandInteraction) {
                 `${e._count.signups}${e.maxSlots ? `/${e.maxSlots}` : ""} signed up · ${APP_URL}/events/${e.id}`,
             )
             .join("\n\n"),
-        );
+        )
+        .setFooter({ text: "ASCENITH RAIDZONE" });
       const row: APIActionRowComponent<APIButtonComponent> = {
         type: ComponentType.ActionRow,
         components: events.slice(0, 5).map((e) => ({
@@ -321,16 +321,19 @@ export async function handleCommand(interaction: ChatInputCommandInteraction) {
 
     case "join": {
       const code = interaction.options.getString("code", true).trim().toUpperCase();
+      // this handler does several sequential DB writes + Discord API calls
+      // (role grants, a DM) before it has anything to say — deferring keeps
+      // Discord's 3-second interaction window from lapsing on a slow one,
+      // which would otherwise show the player a generic "interaction
+      // failed" even though the join actually went through.
+      await interaction.deferReply({ ephemeral: true });
+
       const user = await playerForDiscordUser(interaction.user.id);
       if (!user?.player) {
-        return interaction.reply({
-          ephemeral: true,
-          content: `You need a profile first — ${APP_URL}/register`,
-        });
+        return interaction.editReply({ content: `You need a profile first — ${APP_URL}/register` });
       }
       if (user.player.status === "BANNED") {
-        return interaction.reply({
-          ephemeral: true,
+        return interaction.editReply({
           content: "Your account is suspended — contact staff to resolve this.",
         });
       }
@@ -344,7 +347,7 @@ export async function handleCommand(interaction: ChatInputCommandInteraction) {
         },
       });
       if (!team) {
-        return interaction.reply({ ephemeral: true, content: "No team matches that code." });
+        return interaction.editReply({ content: "No team matches that code." });
       }
 
       const existingTeam = await db.team.findFirst({
@@ -355,8 +358,7 @@ export async function handleCommand(interaction: ChatInputCommandInteraction) {
         select: { id: true },
       });
       if (existingTeam) {
-        return interaction.reply({
-          ephemeral: true,
+        return interaction.editReply({
           content:
             existingTeam.id === team.id
               ? "You're already on that team."
@@ -367,8 +369,7 @@ export async function handleCommand(interaction: ChatInputCommandInteraction) {
       if (team.event.teamSize) {
         const memberCount = await db.teamMember.count({ where: { teamId: team.id } });
         if (memberCount >= team.event.teamSize) {
-          return interaction.reply({
-            ephemeral: true,
+          return interaction.editReply({
             content: `That team is full — it caps at ${team.event.teamSize} members.`,
           });
         }
@@ -377,7 +378,7 @@ export async function handleCommand(interaction: ChatInputCommandInteraction) {
       try {
         await db.teamMember.create({ data: { teamId: team.id, playerId: player.id } });
       } catch {
-        return interaction.reply({ ephemeral: true, content: "Couldn't join that team — try again." });
+        return interaction.editReply({ content: "Couldn't join that team — try again." });
       }
       await db.auditLog
         .create({
@@ -394,8 +395,15 @@ export async function handleCommand(interaction: ChatInputCommandInteraction) {
       const guildMember = interaction.guild
         ? await interaction.guild.members.fetch(interaction.user.id).catch(() => null)
         : null;
-      if (team.discordRoleId && guildMember) {
-        await guildMember.roles.add(team.discordRoleId).catch(() => {});
+      // track whether a role that *should* have been granted actually
+      // stuck — the join itself already succeeded in the DB either way,
+      // so this can't block the reply, but a silent "✅ Joined" when the
+      // player doesn't actually have the access it implies is worse than
+      // no message at all
+      let roleIssue = false;
+      if (team.discordRoleId) {
+        const ok = guildMember ? await guildMember.roles.add(team.discordRoleId).then(() => true).catch(() => false) : false;
+        if (!ok) roleIssue = true;
       }
 
       // if the team's already registered for its event, this join puts them on the roster too
@@ -413,8 +421,9 @@ export async function handleCommand(interaction: ChatInputCommandInteraction) {
           where: { id: team.eventId },
           select: { discordRoleId: true },
         });
-        if (event?.discordRoleId && guildMember) {
-          await guildMember.roles.add(event.discordRoleId).catch(() => {});
+        if (event?.discordRoleId) {
+          const ok = guildMember ? await guildMember.roles.add(event.discordRoleId).then(() => true).catch(() => false) : false;
+          if (!ok) roleIssue = true;
         }
       }
 
@@ -426,11 +435,11 @@ export async function handleCommand(interaction: ChatInputCommandInteraction) {
       }
 
       const forEvent = team.event.mode ? `RAIDZONE ${team.event.mode}` : team.event.title;
-      return interaction.reply({
-        ephemeral: true,
+      return interaction.editReply({
         content:
           `✅ Joined **${team.name}** for **${forEvent}**.` +
-          (registered ? " You're on the roster." : ""),
+          (registered ? " You're on the roster." : "") +
+          (roleIssue ? "\n⚠️ Couldn't grant your Discord access for this — ping staff to fix it." : ""),
       });
     }
 
@@ -475,7 +484,10 @@ export async function handleCommand(interaction: ChatInputCommandInteraction) {
               const title = e.mode ? `RAIDZONE ${e.mode}` : e.title;
               const podium = e.placements
                 .slice(0, 3)
-                .map((p, i) => `${medal[i] ?? `#${p.rank}`} ${p.team ? `${p.team.tag ? `[${p.team.tag}] ` : ""}${p.team.name}` : (p.player?.characterName ?? "—")}`)
+                // by p.rank, not array position — staff can log placements
+                // with a skipped rank (no 1st recorded, say), so indexing
+                // by position here could show 🥇 next to the actual runner-up
+                .map((p) => `${medal[p.rank - 1] ?? `#${p.rank}`} ${p.team ? `${p.team.tag ? `[${p.team.tag}] ` : ""}${p.team.name}` : (p.player?.characterName ?? "—")}`)
                 .join("  ");
               return `**${title}**\n${podium}`;
             })
