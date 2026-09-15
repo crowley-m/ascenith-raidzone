@@ -477,7 +477,15 @@ scoped to that event's roster, short enough that scrolling alone is fine).
   `useLayoutEffect` for its own class swap (`wipe-cover`/`wipe-reveal` in
   `globals.css`) with the same remove→reflow→re-add pattern, plus a 4s
   failsafe back to idle if a click never turns into a navigation. Skipped
-  under `prefers-reduced-motion`.
+  under `prefers-reduced-motion`. Also listens for `popstate` (browser
+  back/forward, including a mobile edge-swipe-back gesture) and triggers
+  the same wipe — that doesn't fire a click on an `<a>`, so without this it
+  would just snap to the previous page with no transition. The edge-glow
+  strip (`.page-wipe-edge`) is only rendered while `status !== "idle"` —
+  its `box-shadow` blur bleeds ~16px past the element's own bounds, so
+  always rendering it (even "off-screen") left a persistent thin glow
+  pinned to the left edge of every page, most visible on narrow/mobile
+  viewports.
 - **Landing intro loader** — `<IntroLoader>`
   (`src/components/landing/IntroLoader.tsx`, mounted first inside
   `Landing.tsx`'s root) is a separate thing from `PageTransition`: a

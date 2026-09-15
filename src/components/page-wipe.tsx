@@ -55,6 +55,12 @@ export function PageWipe() {
   }, [status]);
 
   useEffect(() => {
+    const startCovering = () => {
+      setStatus("covering");
+      if (failsafe.current) window.clearTimeout(failsafe.current);
+      failsafe.current = window.setTimeout(() => setStatus("idle"), FAILSAFE_MS);
+    };
+
     function onClick(e: MouseEvent) {
       if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
       if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
@@ -69,17 +75,28 @@ export function PageWipe() {
       }
       if (url.origin !== window.location.origin) return;
       if (url.pathname === window.location.pathname && url.search === window.location.search) return;
-      setStatus("covering");
-      if (failsafe.current) window.clearTimeout(failsafe.current);
-      failsafe.current = window.setTimeout(() => setStatus("idle"), FAILSAFE_MS);
+      startCovering();
     }
+
+    // Browser back/forward — including a mobile edge-swipe-back gesture —
+    // fires popstate, not a click on an <a>, so it needs its own trigger to
+    // get the same wipe instead of just snapping to the previous page.
+    function onPopState() {
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      startCovering();
+    }
+
     document.addEventListener("click", onClick);
-    return () => document.removeEventListener("click", onClick);
+    window.addEventListener("popstate", onPopState);
+    return () => {
+      document.removeEventListener("click", onClick);
+      window.removeEventListener("popstate", onPopState);
+    };
   }, []);
 
   return (
     <div ref={elRef} aria-hidden className="page-wipe">
-      <div className="page-wipe-edge" />
+      {status !== "idle" && <div className="page-wipe-edge" />}
     </div>
   );
 }
