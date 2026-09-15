@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { assertPermission } from "@/lib/guard";
+import { can } from "@/lib/rbac";
 import { logAudit } from "@/lib/audit";
 import {
   eventSchema,
@@ -73,27 +74,37 @@ const APP_URL = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
 // Players
 // --------------------------------------------------------------------------
 
+/**
+ * Ban doesn't just relabel the player — pull them off every roster they're
+ * still on and strip the Discord access that came with it, so it actually
+ * stops them from playing instead of just marking them. Shared by
+ * `setPlayerStatus` (the real status control, ADMIN-only) and `addFlag`'s
+ * BAN flag type below, so a ban logged either way gets the same
+ * enforcement — not just a DB label with none of the teeth.
+ */
+async function banPlayer(playerId: string): Promise<void> {
+  await db.player.update({ where: { id: playerId }, data: { status: "BANNED" } });
+  const signups = await db.eventSignup.findMany({
+    where: { playerId, state: { in: ["SIGNED_UP", "WAITLIST"] } },
+    select: { eventId: true },
+  });
+  await db.eventSignup.updateMany({
+    where: { playerId, state: { in: ["SIGNED_UP", "WAITLIST"] } },
+    data: { state: "WITHDRAWN", teamId: null },
+  });
+  for (const s of signups) {
+    void revokeEventAccess(s.eventId, playerId);
+    void promoteWaitlist(s.eventId);
+  }
+  void syncMemberRolesByPlayer(playerId);
+}
+
 export async function setPlayerStatus(playerId: string, status: PlayerStatus) {
   const actor = await assertPermission("player:status");
-  await db.player.update({ where: { id: playerId }, data: { status } });
-
-  // A ban doesn't just relabel the player — pull them off every roster they're
-  // still on and strip the Discord access that came with it, so it actually
-  // stops them from playing instead of just marking them.
   if (status === "BANNED") {
-    const signups = await db.eventSignup.findMany({
-      where: { playerId, state: { in: ["SIGNED_UP", "WAITLIST"] } },
-      select: { eventId: true },
-    });
-    await db.eventSignup.updateMany({
-      where: { playerId, state: { in: ["SIGNED_UP", "WAITLIST"] } },
-      data: { state: "WITHDRAWN", teamId: null },
-    });
-    for (const s of signups) {
-      void revokeEventAccess(s.eventId, playerId);
-      void promoteWaitlist(s.eventId);
-    }
-    void syncMemberRolesByPlayer(playerId);
+    await banPlayer(playerId);
+  } else {
+    await db.player.update({ where: { id: playerId }, data: { status } });
   }
 
   await logAudit({
@@ -157,9 +168,20 @@ export async function addFlag(_prev: FormState, formData: FormData): Promise<For
   });
   if (!parsed.success) return { error: "Pick a type and give a reason." };
 
+  // A BAN flag actually changes the player's status — that needs the same
+  // Admin-only permission (and full enforcement) the real status control
+  // does, not just flag:write, or a Moderator could "ban" someone through
+  // this form with none of the teeth (still signed up, still has Discord
+  // access) while staff believe they're actually banned.
+  if (parsed.data.type === "BAN" && !can(actor.role, "player:status")) {
+    return {
+      error: "Banning a player needs Admin — ask an Admin to change their status, or log this as a Warning instead.",
+    };
+  }
+
   await db.flag.create({ data: { ...parsed.data, authorId: actor.id } });
   if (parsed.data.type === "BAN") {
-    await db.player.update({ where: { id: parsed.data.playerId }, data: { status: "BANNED" } });
+    await banPlayer(parsed.data.playerId);
   }
   await logAudit({
     actorId: actor.id,

@@ -982,6 +982,45 @@ sync). Six more fixes:
   a pasted external URL or, on edit, the pre-existing saved one, neither of
   which this cleanup should ever touch).
 
+## Third correctness pass — permission bypass, data exposure, session staleness
+
+A third bug-hunting round targeting areas the first two hadn't touched
+(auth/session, API routes, and the remaining portal action groups). Three
+fixes, the first a real permission-bypass:
+
+- **A Moderator could "ban" a player through the Flag form with none of a
+  ban's teeth** — `addFlag`'s `type: "BAN"` case wrote `status: "BANNED"`
+  straight to the DB, gated only by `flag:write` (MODERATOR) — bypassing
+  both the ADMIN-only `player:status` permission the real ban control
+  requires, and every enforcement step a real ban does (withdrawing
+  signups, revoking Discord access, `promoteWaitlist`, role sync). The
+  player ended up *labeled* BANNED while still fully signed up and still
+  holding Discord access — worse than not flagging it, since staff now
+  believe they're actually banned. The ban logic itself is now
+  `banPlayer()`, a shared helper both `setPlayerStatus` (the real control)
+  and `addFlag` call — `addFlag` pre-checks `can(actor.role,
+  "player:status")` before allowing the BAN type and returns a friendly
+  error ("ask an Admin, or log this as a Warning instead") rather than
+  silently downgrading to a label-only ban.
+- **A draft event's bracket was publicly fetchable** —
+  `/api/events/[id]/bracket` had no status check at all, unlike every
+  other public event surface (the event page, the calendar route), all of
+  which gate to `PUBLISHED`/`COMPLETED`/`CANCELLED`. Anyone who knew or
+  guessed a draft event's id could see its bracket (team/player names)
+  before the event was ever meant to be visible. Now checks status the
+  same way the event page does before calling `bracketForEvent`.
+- **Session staleness window tightened from 10 minutes to 1** — `auth.ts`'s
+  `jwt` callback only re-reads a user's role/ban status from the DB once
+  the cached copy is older than this window (deliberately, to avoid a DB
+  round-trip on every request — see the comment there). 10 minutes was too
+  long a gap between a staff demotion or a player ban and it actually
+  taking effect against that user's already-open session; 1 minute keeps
+  the same no-DB-hit-per-request design while capping the exposure far
+  tighter. Not a move to instant revocation (that would need a real
+  invalidation mechanism — database sessions or a revocation list — which
+  is a bigger change than this app's scale warrants right now), just a
+  tighter version of the existing trade-off.
+
 ## Migrations
 
 Hand-write the SQL. `prisma migrate deploy` runs on web container boot (then

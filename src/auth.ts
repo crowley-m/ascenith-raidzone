@@ -128,10 +128,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
       // The jwt callback runs on *every* request that reads the session. Only
       // touch the DB on sign-in or an explicit session update, or once the
-      // cached copy is older than 10 minutes — and never let a DB hiccup throw,
-      // because a throw here silently signs the user out.
+      // cached copy is older than 1 minute — and never let a DB hiccup throw,
+      // because a throw here silently signs the user out. Deliberately short
+      // (not, say, 10 minutes) since a role demotion or a ban needs to
+      // actually take effect against an already-open session quickly —
+      // this is a single indexed lookup, cheap enough to eat every minute
+      // per active user in exchange for that.
       const last = typeof token.checkedAt === "number" ? token.checkedAt : 0;
-      const stale = Date.now() - last > 10 * 60 * 1000;
+      const stale = Date.now() - last > 60 * 1000;
       const isSignIn = !!user;
       if (!isSignIn && trigger !== "update" && !stale) return token;
 
