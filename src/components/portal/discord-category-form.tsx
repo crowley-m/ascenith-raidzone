@@ -1,9 +1,59 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { saveDiscordCategory } from "@/app/(site)/portal/actions";
+import { DiscordRolePicker } from "@/components/portal/discord-role-picker";
 
 type Role = { id: string; name: string };
+
+let nextRowId = 0;
+
+function ChannelListBuilder() {
+  const [rows, setRows] = useState<{ id: number; value: string }[]>([]);
+
+  return (
+    <div>
+      <label className="label">Channels to create (optional)</label>
+      <div className="space-y-2">
+        {rows.map((row) => (
+          <div key={row.id} className="flex items-center gap-2 border border-edge/60 bg-void/40 px-2.5 py-1.5">
+            <span className="font-mono text-xs text-slate-600">#</span>
+            <input
+              name="channelNames"
+              value={row.value}
+              onChange={(e) => {
+                const v = e.target.value;
+                setRows((rs) => rs.map((r) => (r.id === row.id ? { ...r, value: v } : r)));
+              }}
+              maxLength={90}
+              className="flex-1 bg-transparent text-sm text-slate-200 outline-none placeholder:text-slate-600"
+              placeholder="channel-name"
+            />
+            <button
+              type="button"
+              onClick={() => setRows((rs) => rs.filter((r) => r.id !== row.id))}
+              className="px-1 text-slate-500 hover:text-ember"
+              aria-label="Remove channel"
+            >
+              ×
+            </button>
+          </div>
+        ))}
+        <button
+          type="button"
+          onClick={() => setRows((rs) => [...rs, { id: nextRowId++, value: "" }])}
+          className="btn-ghost w-full text-xs"
+        >
+          + Add channel
+        </button>
+      </div>
+      <p className="mt-1.5 text-xs text-slate-500">
+        Created as text channels, synced to the roles picked above. Add a voice channel or give
+        one its own roles afterward with &ldquo;Add channel.&rdquo;
+      </p>
+    </div>
+  );
+}
 
 export function DiscordCategoryForm({
   category,
@@ -19,7 +69,7 @@ export function DiscordCategoryForm({
   }, [state.ok, category]);
 
   return (
-    <form ref={ref} action={action} className="grid gap-3">
+    <form ref={ref} action={action} className="grid gap-4">
       {category && <input type="hidden" name="id" value={category.id} />}
       <div className="flex flex-wrap items-end gap-3">
         <div className="flex-1">
@@ -40,47 +90,16 @@ export function DiscordCategoryForm({
 
       <div>
         <p className="label mb-1.5">Who can see it</p>
-        {roles.length === 0 ? (
-          <p className="text-xs text-slate-500">
-            No assignable roles found on the server yet — leave blank for staff/bot only.
-          </p>
-        ) : (
-          <div className="flex flex-wrap gap-x-4 gap-y-1.5">
-            {roles.map((r) => (
-              <label key={r.id} className="flex items-center gap-1.5 text-xs text-slate-300">
-                <input
-                  type="checkbox"
-                  name="roleIds"
-                  value={r.id}
-                  defaultChecked={category?.roleIds?.includes(r.id) ?? false}
-                />
-                {r.name}
-              </label>
-            ))}
-          </div>
-        )}
+        <DiscordRolePicker roles={roles} defaultRoleIds={category?.roleIds ?? []} />
         <p className="mt-1.5 text-xs text-slate-500">
-          Only controls the category header itself — each channel underneath still needs its own
-          roles set, it doesn&apos;t inherit from here (unless it&apos;s marked &ldquo;sync to
-          category&rdquo;).
+          Only the category header itself — each channel underneath still needs its own roles set
+          (unless it&apos;s marked &ldquo;sync to category&rdquo;).
         </p>
       </div>
 
       {!category && (
         <>
-          <div>
-            <label className="label">Channels to create (optional)</label>
-            <textarea
-              name="channelNames"
-              rows={3}
-              className="input font-mono text-sm"
-              placeholder={"general-chat\nannouncements\nscreenshots"}
-            />
-            <p className="mt-1 text-xs text-slate-500">
-              One per line — created as text channels, synced to the roles picked above. Add
-              voice channels or fine-tune one individually afterward with &ldquo;Add channel.&rdquo;
-            </p>
-          </div>
+          <ChannelListBuilder />
           <div>
             <label className="label">Welcome message for those channels (optional)</label>
             <textarea name="seedMessage" rows={2} className="input text-sm" />

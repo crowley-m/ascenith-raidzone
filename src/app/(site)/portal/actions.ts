@@ -1706,10 +1706,10 @@ export async function saveDiscordCategory(_prev: FormState, formData: FormData):
       meta: { name, roleIds },
     });
 
-    // optional starter channels — plain text, synced to the category's roles
-    const channelNames = ((formData.get("channelNames") as string) || "")
-      .split(/[\n,]/)
-      .map((s) => s.trim())
+    // optional starter channels — one input per card, synced to the category's roles
+    const channelNames = formData
+      .getAll("channelNames")
+      .map((v) => String(v).trim())
       .filter(Boolean)
       .slice(0, 20);
     const seedMessage = (formData.get("seedMessage") as string) || "";

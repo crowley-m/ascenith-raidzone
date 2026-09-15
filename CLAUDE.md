@@ -615,6 +615,15 @@ scoped to that event's roster, short enough that scrolling alone is fine).
   the Discord invite link — that's a click-to-open link, not text someone
   needs to copy.
 
+- **`/portal/discord` form UX** — `<DiscordRolePicker>` (`src/components/portal/discord-role-picker.tsx`)
+  is the one role selector both `DiscordCategoryForm` and `DiscordChannelForm` use — checkbox-driven
+  pill/chip toggles (`peer` + `sr-only` input, visual state on the sibling `<span>`) instead of a
+  cramped flat-wrapped row of native checkboxes, same `name="roleIds"` multi-value convention. The
+  category form's "Channels to create" is a card-by-card list (`ChannelListBuilder`, client
+  `useState` array of `{id, value}` rows, one `<input name="channelNames">` per card with its own
+  remove button, "+ Add channel" to append) instead of a newline-split textarea — the server action
+  reads it with `formData.getAll("channelNames")`, not a single split string.
+
 ## Migrations
 
 Hand-write the SQL. `prisma migrate deploy` runs on web container boot (then
