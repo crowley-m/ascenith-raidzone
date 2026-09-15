@@ -1640,6 +1640,29 @@ export async function setPlayerFaction(playerId: string, factionId: string | nul
 // manually in Discord never shows up here.
 // --------------------------------------------------------------------------
 
+/** Post an optional seed message into a freshly created channel, pin it if asked. Best-effort. */
+async function seedChannelMessage(discordId: string, message: string, pin: boolean) {
+  const text = message.trim();
+  if (!text) return;
+  const posted = await postToChannel(discordId, { content: text.slice(0, 1900) }).catch(() => null);
+  if (posted?.id && pin) await pinMessage(discordId, posted.id).catch(() => {});
+}
+
+/** Push a category's current roleIds onto every channel under it that has "sync to category" on. */
+async function cascadeSyncedChannelRoles(categoryDbId: string, roleIds: string[]) {
+  const synced = await db.discordManagedChannel.findMany({
+    where: { categoryId: categoryDbId, synced: true },
+  });
+  for (const ch of synced) {
+    const ok = await setManagedChannelRoles(ch.discordId, ch.kind as "text" | "voice", roleIds);
+    if (ok) {
+      await db.discordManagedChannel
+        .update({ where: { id: ch.id }, data: { roleIds: roleIds as Prisma.InputJsonValue } })
+        .catch(() => {});
+    }
+  }
+}
+
 export async function saveDiscordCategory(_prev: FormState, formData: FormData): Promise<FormState> {
   const actor = await assertPermission("discord:manage");
   const id = (formData.get("id") as string) || null;
@@ -1660,6 +1683,7 @@ export async function saveDiscordCategory(_prev: FormState, formData: FormData):
       where: { id },
       data: { name, roleIds: roleIds as Prisma.InputJsonValue },
     });
+    await cascadeSyncedChannelRoles(id, roleIds);
     await logAudit({
       actorId: actor.id,
       action: "discord.category_rename",
@@ -1681,6 +1705,37 @@ export async function saveDiscordCategory(_prev: FormState, formData: FormData):
       targetId: created.discordId,
       meta: { name, roleIds },
     });
+
+    // optional starter channels — plain text, synced to the category's roles
+    const channelNames = ((formData.get("channelNames") as string) || "")
+      .split(/[\n,]/)
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .slice(0, 20);
+    const seedMessage = (formData.get("seedMessage") as string) || "";
+    const pinSeed = formData.get("pinSeed") === "on";
+    for (let i = 0; i < channelNames.length; i++) {
+      const chDiscordId = await createManagedChannel({
+        name: channelNames[i],
+        categoryId: discordId,
+        kind: "text",
+        roleIds,
+      });
+      if (!chDiscordId) continue; // one failing shouldn't block the rest
+      await db.discordManagedChannel.create({
+        data: {
+          discordId: chDiscordId,
+          name: channelNames[i],
+          kind: "text",
+          categoryId: created.id,
+          position: i,
+          roleIds: roleIds as Prisma.InputJsonValue,
+          synced: true,
+          createdById: actor.id,
+        },
+      });
+      void seedChannelMessage(chDiscordId, seedMessage, pinSeed);
+    }
   }
 
   revalidatePath("/portal/discord");
@@ -1733,7 +1788,8 @@ export async function saveDiscordChannel(_prev: FormState, formData: FormData): 
   const categoryId = (formData.get("categoryId") as string) || "";
   const name = ((formData.get("name") as string) || "").trim();
   const kind = formData.get("kind") === "voice" ? "voice" : "text";
-  const roleIds = formData.getAll("roleIds").map(String).filter(Boolean);
+  const synced = formData.get("synced") === "on";
+  const submittedRoleIds = formData.getAll("roleIds").map(String).filter(Boolean);
   if (!name) return { error: "Name is required." };
 
   if (id) {
@@ -1743,11 +1799,10 @@ export async function saveDiscordChannel(_prev: FormState, formData: FormData): 
       const ok = await renameGuildChannel(existing.discordId, name);
       if (!ok) return { error: "Discord: couldn't rename that channel — check the bot's permissions." };
     }
-    const rolesOk = await setManagedChannelRoles(existing.discordId, existing.kind as "text" | "voice", roleIds);
-    if (!rolesOk) return { error: "Discord: couldn't update who can see that channel." };
 
     let newCategoryId = existing.categoryId;
     let newPosition = existing.position;
+    let targetCategory = await db.discordCategory.findUnique({ where: { id: existing.categoryId } });
     if (categoryId && categoryId !== existing.categoryId) {
       const target = await db.discordCategory.findUnique({ where: { id: categoryId } });
       if (!target) return { error: "That destination category is gone." };
@@ -1755,13 +1810,23 @@ export async function saveDiscordChannel(_prev: FormState, formData: FormData): 
       if (!moved) return { error: "Discord: couldn't move that channel — check the bot's permissions." };
       newCategoryId = categoryId;
       newPosition = await db.discordManagedChannel.count({ where: { categoryId } }); // append at the end
+      targetCategory = target;
     }
+
+    // synced channels always take the (possibly new) category's roles instead of the checkboxes
+    const roleIds = synced
+      ? (Array.isArray(targetCategory?.roleIds) ? (targetCategory.roleIds as string[]) : [])
+      : submittedRoleIds;
+
+    const rolesOk = await setManagedChannelRoles(existing.discordId, existing.kind as "text" | "voice", roleIds);
+    if (!rolesOk) return { error: "Discord: couldn't update who can see that channel." };
 
     await db.discordManagedChannel.update({
       where: { id },
       data: {
         name,
         roleIds: roleIds as Prisma.InputJsonValue,
+        synced,
         categoryId: newCategoryId,
         position: newPosition,
       },
@@ -1771,12 +1836,15 @@ export async function saveDiscordChannel(_prev: FormState, formData: FormData): 
       action: "discord.channel_update",
       targetType: "Discord",
       targetId: existing.discordId,
-      meta: { name, roleIds, categoryId: newCategoryId },
+      meta: { name, roleIds, synced, categoryId: newCategoryId },
     });
   } else {
     if (!categoryId) return { error: "Pick a category." };
     const category = await db.discordCategory.findUnique({ where: { id: categoryId } });
     if (!category) return { error: "That category is gone." };
+    const categoryRoleIds = Array.isArray(category.roleIds) ? (category.roleIds as string[]) : [];
+    const roleIds = synced ? categoryRoleIds : submittedRoleIds;
+
     const discordId = await createManagedChannel({ name, categoryId: category.discordId, kind, roleIds });
     if (!discordId) return { error: "Discord: couldn't create that channel — check the bot's permissions." };
     const count = await db.discordManagedChannel.count({ where: { categoryId } });
@@ -1788,6 +1856,7 @@ export async function saveDiscordChannel(_prev: FormState, formData: FormData): 
         categoryId,
         position: count,
         roleIds: roleIds as Prisma.InputJsonValue,
+        synced,
         createdById: actor.id,
       },
     });
@@ -1796,8 +1865,14 @@ export async function saveDiscordChannel(_prev: FormState, formData: FormData): 
       action: "discord.channel_create",
       targetType: "Discord",
       targetId: created.discordId,
-      meta: { name, kind, roleIds },
+      meta: { name, kind, roleIds, synced },
     });
+
+    if (kind === "text") {
+      const seedMessage = (formData.get("seedMessage") as string) || "";
+      const pinSeed = formData.get("pinSeed") === "on";
+      void seedChannelMessage(discordId, seedMessage, pinSeed);
+    }
   }
 
   revalidatePath("/portal/discord");
@@ -1837,6 +1912,69 @@ export async function moveDiscordCategory(id: string, dir: -1 | 1) {
   void setChannelPosition(a.discordId, b.position);
   void setChannelPosition(b.discordId, a.position);
   revalidatePath("/portal/discord");
+}
+
+/**
+ * Clone a category — a fresh Discord category with the same name/roles,
+ * plus a fresh copy of every one of its channels (own roles preserved,
+ * `synced` carried over so a duplicated synced channel stays synced to
+ * *its own* new category, not the original). For recurring setups (a
+ * seasonal category, say) without rebuilding it by hand every time.
+ */
+export async function duplicateDiscordCategory(id: string): Promise<FormState> {
+  const actor = await assertPermission("discord:manage");
+  const source = await db.discordCategory.findUnique({ where: { id }, include: { channels: true } });
+  if (!source) return { error: "That category is gone." };
+
+  const roleIds = Array.isArray(source.roleIds) ? (source.roleIds as string[]) : [];
+  const newName = `${source.name} (copy)`.slice(0, 90);
+  const newDiscordId = await createGuildCategory(newName, roleIds);
+  if (!newDiscordId) return { error: "Discord: couldn't create the duplicate category." };
+
+  const count = await db.discordCategory.count();
+  const created = await db.discordCategory.create({
+    data: {
+      discordId: newDiscordId,
+      name: newName,
+      position: count,
+      roleIds: roleIds as Prisma.InputJsonValue,
+      createdById: actor.id,
+    },
+  });
+
+  for (let i = 0; i < source.channels.length; i++) {
+    const ch = source.channels[i];
+    const chRoleIds = Array.isArray(ch.roleIds) ? (ch.roleIds as string[]) : [];
+    const chDiscordId = await createManagedChannel({
+      name: ch.name,
+      categoryId: newDiscordId,
+      kind: ch.kind as "text" | "voice",
+      roleIds: chRoleIds,
+    });
+    if (!chDiscordId) continue; // one failing channel shouldn't abort the rest
+    await db.discordManagedChannel.create({
+      data: {
+        discordId: chDiscordId,
+        name: ch.name,
+        kind: ch.kind,
+        categoryId: created.id,
+        position: i,
+        roleIds: chRoleIds as Prisma.InputJsonValue,
+        synced: ch.synced,
+        createdById: actor.id,
+      },
+    });
+  }
+
+  await logAudit({
+    actorId: actor.id,
+    action: "discord.category_duplicate",
+    targetType: "Discord",
+    targetId: newDiscordId,
+    meta: { from: source.discordId, name: newName, channels: source.channels.length },
+  });
+  revalidatePath("/portal/discord");
+  return { ok: true };
 }
 
 /** Swap a channel with its immediate neighbor within the same category. */

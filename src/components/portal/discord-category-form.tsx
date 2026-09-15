@@ -61,9 +61,36 @@ export function DiscordCategoryForm({
         )}
         <p className="mt-1.5 text-xs text-slate-500">
           Only controls the category header itself — each channel underneath still needs its own
-          roles set, it doesn&apos;t inherit from here.
+          roles set, it doesn&apos;t inherit from here (unless it&apos;s marked &ldquo;sync to
+          category&rdquo;).
         </p>
       </div>
+
+      {!category && (
+        <>
+          <div>
+            <label className="label">Channels to create (optional)</label>
+            <textarea
+              name="channelNames"
+              rows={3}
+              className="input font-mono text-sm"
+              placeholder={"general-chat\nannouncements\nscreenshots"}
+            />
+            <p className="mt-1 text-xs text-slate-500">
+              One per line — created as text channels, synced to the roles picked above. Add
+              voice channels or fine-tune one individually afterward with &ldquo;Add channel.&rdquo;
+            </p>
+          </div>
+          <div>
+            <label className="label">Welcome message for those channels (optional)</label>
+            <textarea name="seedMessage" rows={2} className="input text-sm" />
+            <label className="mt-1.5 flex items-center gap-1.5 text-xs text-slate-300">
+              <input type="checkbox" name="pinSeed" />
+              Pin it
+            </label>
+          </div>
+        </>
+      )}
 
       {state.error && <p className="text-xs text-ember">{state.error}</p>}
       {state.ok && category && <p className="text-xs text-teal">Saved.</p>}

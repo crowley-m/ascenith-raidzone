@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { saveDiscordChannel } from "@/app/(site)/portal/actions";
 
 type Role = { id: string; name: string };
@@ -12,6 +12,7 @@ type ChannelInit = {
   kind: string;
   categoryId: string;
   roleIds: string[];
+  synced: boolean;
 };
 
 export function DiscordChannelForm({
@@ -27,6 +28,8 @@ export function DiscordChannelForm({
 }) {
   const [state, action, pending] = useActionState(saveDiscordChannel, {});
   const ref = useRef<HTMLFormElement>(null);
+  const [synced, setSynced] = useState(channel?.synced ?? false);
+  const [kind, setKind] = useState(channel?.kind ?? "text");
   useEffect(() => {
     if (state.ok && !channel) ref.current?.reset();
   }, [state.ok, channel]);
@@ -49,7 +52,7 @@ export function DiscordChannelForm({
         {!channel && (
           <div>
             <label className="label">Type</label>
-            <select name="kind" className="input" defaultValue="text">
+            <select name="kind" className="input" value={kind} onChange={(e) => setKind(e.target.value)}>
               <option value="text">Text</option>
               <option value="voice">Voice</option>
             </select>
@@ -72,7 +75,17 @@ export function DiscordChannelForm({
         !channel && <input type="hidden" name="categoryId" value={categoryId} />
       )}
 
-      <div>
+      <label className="flex items-center gap-1.5 text-xs text-slate-300">
+        <input
+          type="checkbox"
+          name="synced"
+          checked={synced}
+          onChange={(e) => setSynced(e.target.checked)}
+        />
+        Sync to category — follow its roles automatically, instead of setting its own
+      </label>
+
+      <div className={synced ? "opacity-40" : ""}>
         <p className="label mb-1.5">Who can see it</p>
         {roles.length === 0 ? (
           <p className="text-xs text-slate-500">
@@ -86,6 +99,7 @@ export function DiscordChannelForm({
                   type="checkbox"
                   name="roleIds"
                   value={r.id}
+                  disabled={synced}
                   defaultChecked={channel?.roleIds.includes(r.id) ?? false}
                 />
                 {r.name}
@@ -94,10 +108,22 @@ export function DiscordChannelForm({
           </div>
         )}
         <p className="mt-1.5 text-xs text-slate-500">
-          Leave every box unchecked for a staff/bot-only channel — nobody else can see it, even
-          without picking a role.
+          {synced
+            ? "Following the category's roles — untick “sync” to set its own instead."
+            : "Leave every box unchecked for a staff/bot-only channel — nobody else can see it, even without picking a role."}
         </p>
       </div>
+
+      {!channel && kind === "text" && (
+        <div>
+          <label className="label">Welcome message (optional)</label>
+          <textarea name="seedMessage" rows={2} className="input text-sm" />
+          <label className="mt-1.5 flex items-center gap-1.5 text-xs text-slate-300">
+            <input type="checkbox" name="pinSeed" />
+            Pin it
+          </label>
+        </div>
+      )}
 
       <div className="flex items-center gap-3">
         <button className="btn-primary" disabled={pending}>

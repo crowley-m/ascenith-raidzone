@@ -574,6 +574,7 @@ model DiscordManagedChannel {
   categoryId  String
   category    DiscordCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   roleIds     Json            @default("[]") // Discord role ids allowed to view this channel — empty = staff/bot only
+  synced      Boolean         @default(false) // follows the category's roleIds automatically instead of its own
   createdById String
   createdBy   User            @relation("DiscordChannelCreator", fields: [createdById], references: [id])
   createdAt   DateTime        @default(now())

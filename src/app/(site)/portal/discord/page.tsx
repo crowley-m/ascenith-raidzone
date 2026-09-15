@@ -10,6 +10,7 @@ import {
   deleteDiscordChannel,
   moveDiscordCategory,
   moveDiscordChannel,
+  duplicateDiscordCategory,
 } from "@/app/(site)/portal/actions";
 
 export const dynamic = "force-dynamic";
@@ -135,6 +136,9 @@ export default async function DiscordManagementPage() {
                                 />
                                 <span className="badge">{ch.kind === "voice" ? "voice" : "text"}</span>
                                 <span className="text-sm text-slate-100">{ch.name}</span>
+                                {ch.synced && (
+                                  <span className="badge border-teal/40 text-teal">synced</span>
+                                )}
                                 {chMissing && (
                                   <span className="badge border-ember/40 text-ember">
                                     Not found on Discord
@@ -161,6 +165,7 @@ export default async function DiscordManagementPage() {
                                     kind: ch.kind,
                                     categoryId: c.id,
                                     roleIds: chRoleIds,
+                                    synced: ch.synced,
                                   }}
                                 />
                                 <div className="mt-3">
@@ -187,7 +192,14 @@ export default async function DiscordManagementPage() {
                     <DiscordChannelForm categoryId={c.id} roles={roles} />
                   </div>
 
-                  <div className="border-t border-edge/60 pt-3">
+                  <div className="flex flex-wrap gap-2 border-t border-edge/60 pt-3">
+                    <ConfirmButton
+                      action={duplicateDiscordCategory.bind(null, c.id)}
+                      confirm={`Duplicate "${c.name}" and its ${c.channels.length} channel${c.channels.length === 1 ? "" : "s"} into a new category?`}
+                      className="btn-ghost text-xs"
+                    >
+                      Duplicate category
+                    </ConfirmButton>
                     <ConfirmButton
                       action={deleteDiscordCategory.bind(null, c.id)}
                       confirm={`Delete "${c.name}" and all ${c.channels.length} of its channels? This deletes them on Discord too.`}

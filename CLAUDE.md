@@ -501,7 +501,35 @@ one place tracking never silently drifts from reality:
   underneath still gets its own explicit overwrites at creation
   (`createManagedChannel`) rather than inheriting from the category, so
   restricting a category doesn't by itself restrict what's in it; the UI
-  copy on `DiscordCategoryForm` says so.
+  copy on `DiscordCategoryForm` says so — **unless** the channel opts into
+  "sync to category" below.
+- **Sync to category** — `DiscordManagedChannel.synced`. A synced channel's
+  `roleIds` always mirrors its category's rather than being set
+  independently — the role checkboxes disable in the UI while it's on.
+  Editing a category's roles (`saveDiscordCategory`) cascades to every
+  synced child via `cascadeSyncedChannelRoles()`; moving a synced channel to
+  a different category (`saveDiscordChannel`) re-syncs it to the *new*
+  category's roles in the same save, not the old one.
+- **Seed message on channel creation** — the "Add channel" form (text
+  channels only) and the bulk channel list on "New category" both take an
+  optional welcome message, posted (and optionally pinned) once via the
+  same `postToChannel`/`pinMessage` helpers event channels use to seed
+  content — `seedChannelMessage()` in `portal/actions.ts`. Fire-once, not
+  stored anywhere — re-editing a channel later has no way to re-send it.
+- **Bulk channels on category creation** — `DiscordCategoryForm`'s create
+  mode has a "Channels to create" textarea (one name per line, same
+  free-typed-list convention as `Settings.eventChannels`) — each becomes a
+  text channel, synced to the roles just picked for the category, optionally
+  seeded with the shared welcome message above. For anything needing its own
+  roles, a voice channel, or no seed message, create it via "Add channel"
+  afterward instead — the bulk path is deliberately simple (uniform
+  synced+text+shared-message), not a fully custom per-row builder.
+- **Duplicate a category** — `duplicateDiscordCategory` clones a category
+  (name suffixed " (copy)", same `roleIds`) and every one of its channels
+  (own roles and `synced` flag preserved — a duplicated synced channel
+  follows its *own* new category, not the original) into a fresh set on
+  Discord. For recurring setups (a seasonal category) without rebuilding by
+  hand each time. One channel failing to clone doesn't abort the rest.
 
 ## Player picker
 
