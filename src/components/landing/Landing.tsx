@@ -47,16 +47,19 @@ function Box({
   k,
   children,
   variant,
+  external,
 }: {
   href: string;
   k?: string;
   children: React.ReactNode;
   variant?: "solid" | "plain";
+  external?: boolean;
 }) {
   return (
     <a
       className={`${s.box} ${variant === "solid" ? s.solid : ""} ${variant === "plain" ? s.plain : ""}`}
       href={href}
+      {...(external ? { target: "_blank", rel: "noreferrer" } : {})}
     >
       {k ? <span className={s.k}>{k}</span> : null}
       <span className={s.t}>{children}</span>
@@ -219,7 +222,7 @@ export function Landing({
       <div className={s.vignette} aria-hidden />
       {mounted && <SparkleField />}
 
-      <nav className={s.nav}>
+      <nav className={s.nav} aria-label="Main">
         <span className={s.brand}>
           <span className={s.dot} />
           ASCENITH&middot;RAIDZONE
@@ -283,9 +286,9 @@ export function Landing({
           <div className={s.heroTint} />
         </div>
 
-        <div className={s.kinWrap}>
+        <h1 className={s.kinWrap}>
           <Wordmark />
-        </div>
+        </h1>
 
         <div className={s.heroUnder}>
           <p className={s.heroTag} data-reveal>
@@ -314,7 +317,7 @@ export function Landing({
                 Register your raider
               </Box>
             )}
-            <Box href={DISCORD} k="·" variant="plain">
+            <Box href={DISCORD} k="·" variant="plain" external>
               Join Discord
             </Box>
           </div>
@@ -334,9 +337,9 @@ export function Landing({
 
         <HowItWorks />
 
-        <About />
-
         {seasons.length > 0 && <SeasonHistory seasons={seasons} />}
+
+        <About />
 
         <Watch videos={videos} />
 
@@ -414,7 +417,7 @@ export function Landing({
 
         <footer className={s.footer}>
           <span>ASCENITH&middot;RAIDZONE</span>
-          <nav>
+          <nav aria-label="Footer">
             <Link href="/about">About</Link>
             <Link href="/events">Events</Link>
             <Link href="/seasons">Seasons</Link>
@@ -431,9 +434,11 @@ export function Landing({
                 <Link href={LOGIN}>Sign in</Link>
               </>
             )}
-            <a href={DISCORD}>Discord</a>
+            <a href={DISCORD} target="_blank" rel="noreferrer">
+              Discord
+            </a>
           </nav>
-          <nav>
+          <nav aria-label="Social links">
             {socials.map((sm) => (
               <a key={sm.href} href={sm.href} target="_blank" rel="noreferrer">
                 {sm.label}

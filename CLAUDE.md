@@ -1140,6 +1140,36 @@ Five fixes:
 - **`/events`'s embed gets the same footer every other bot embed has** —
   `.setFooter({ text: "ASCENITH RAIDZONE" })`, for visual consistency.
 
+## Landing page pass
+
+A dedicated audit of `src/components/landing/` — exempt from every prior UI/UX
+and accessibility pass since it's the one page with its own design system.
+Four fixes:
+
+- **"Join Discord" tab-nabbed the whole site** — the hero and footer Discord
+  links (`Landing.tsx`) were plain `<a href={DISCORD}>` with no
+  `target="_blank"`/`rel="noreferrer"`, unlike every other Discord link on
+  the page (`EventBrief`, `Watch`, the nav overlay). Clicking either one
+  navigated the visitor's whole tab away instead of opening a new one like
+  the rest of the site. `Box` (the shared CTA-pill component) gained an
+  `external` prop; the footer anchor got the attributes directly.
+- **No `<h1>` anywhere on the landing page** — headings started at `<h2>`;
+  the hero wordmark was a bare `<div>` wrapping an `<svg role="img"
+  aria-label="RAIDZONE">`. That wrapper (`s.kinWrap`) is now an `<h1>`, so
+  the page's most important page has a real top-level heading (Tailwind
+  preflight already zeroes default heading margins app-wide, so the change
+  is purely semantic, no layout shift).
+- **Three unlabeled `<nav>` landmarks** — the site nav and the two footer
+  navs (links / socials) had no `aria-label`, so a screen-reader user
+  navigating by landmark heard "navigation" three times with no way to
+  tell them apart. Now "Main" / "Footer" / "Social links".
+- **Section numbers rendered out of scroll order** — `About` ("03 · Who we
+  are") used to render before `SeasonHistory` ("02 · The record"), so a
+  visitor scrolling down read 01 → 03 → 02 → 04 — a visible break in a page
+  whose whole editorial conceit is a numbered walkthrough. Swapped their
+  render order in `Landing()` instead of relabeling, since 02/03 already
+  read correctly for their content.
+
 ## Migrations
 
 Hand-write the SQL. `prisma migrate deploy` runs on web container boot (then
